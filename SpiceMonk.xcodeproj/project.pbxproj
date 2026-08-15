@@ -6,34 +6,117 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXFileReference section */
-		DD2F21A1302F20850025FC97 /* SpiceMonk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpiceMonk.app; sourceTree = BUILT_PRODUCTS_DIR; };
-/* End PBXFileReference section */
+/* Begin PBXBuildFile section */
+		9D9AADD0DA30E07F320071A3 /* Pods_SpiceMonk.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2B952BC166F1B3357A409EC /* Pods_SpiceMonk.framework */; };
+		DD2F2278302F29FD0025FC97 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD2F2274302F29FD0025FC97 /* Assets.xcassets */; };
+		DD2F2279302F29FD0025FC97 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DD2F2275302F29FD0025FC97 /* LaunchScreen.storyboard */; };
+		DD2F227A302F29FD0025FC97 /* NetworkServiceManagable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2256302F29FD0025FC97 /* NetworkServiceManagable.swift */; };
+		DD2F227B302F29FD0025FC97 /* NetworkServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2257302F29FD0025FC97 /* NetworkServiceManager.swift */; };
+		DD2F227C302F29FD0025FC97 /* RequestConstant.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2258302F29FD0025FC97 /* RequestConstant.swift */; };
+		DD2F229F302F5C010025FC97 /* LenientDecoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F229E302F5C010025FC97 /* LenientDecoding.swift */; };
+		DD2F227D302F29FD0025FC97 /* APIRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F225A302F29FD0025FC97 /* APIRouter.swift */; };
+		DD2F227E302F29FD0025FC97 /* RouterManagable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F225B302F29FD0025FC97 /* RouterManagable.swift */; };
+		DD2F227F302F29FD0025FC97 /* AppRootManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F225D302F29FD0025FC97 /* AppRootManager.swift */; };
+		DD2F2280302F29FD0025FC97 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F225E302F29FD0025FC97 /* NetworkMonitor.swift */; };
+		DD2F2281302F29FD0025FC97 /* UserDefaultManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F225F302F29FD0025FC97 /* UserDefaultManager.swift */; };
+		DD2F2282302F29FD0025FC97 /* Color+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2261302F29FD0025FC97 /* Color+Extension.swift */; };
+		DD2F2283302F29FD0025FC97 /* String+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2262302F29FD0025FC97 /* String+Extension.swift */; };
+		DD2F2284302F29FD0025FC97 /* View+NoInternet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2263302F29FD0025FC97 /* View+NoInternet.swift */; };
+		DD2F2285302F29FD0025FC97 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2265302F29FD0025FC97 /* HomeScreen.swift */; };
+		DD2F2286302F29FD0025FC97 /* HomeServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2266302F29FD0025FC97 /* HomeServiceManager.swift */; };
+		DD2F2287302F29FD0025FC97 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2267302F29FD0025FC97 /* HomeViewModel.swift */; };
+		DD2F2288302F29FD0025FC97 /* LoginScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2269302F29FD0025FC97 /* LoginScreen.swift */; };
+		DD2F2289302F29FD0025FC97 /* LoginServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F226A302F29FD0025FC97 /* LoginServiceManager.swift */; };
+		DD2F228A302F29FD0025FC97 /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F226B302F29FD0025FC97 /* LoginViewModel.swift */; };
+		DD2F228B302F29FD0025FC97 /* SplashScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F226D302F29FD0025FC97 /* SplashScreen.swift */; };
+		DD2F228C302F29FD0025FC97 /* AlertToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2270302F29FD0025FC97 /* AlertToast.swift */; };
+		DD2F228D302F29FD0025FC97 /* AppConstant.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2271302F29FD0025FC97 /* AppConstant.swift */; };
+		DD2F228E302F29FD0025FC97 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2273302F29FD0025FC97 /* AppDelegate.swift */; };
+		DD2F228F302F29FD0025FC97 /* SpiceMonkApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2276302F29FD0025FC97 /* SpiceMonkApp.swift */; };
+		DD2F2294302F3A010025FC97 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2290302F3A010025FC97 /* AppTheme.swift */; };
+		DD2F2295302F3A010025FC97 /* SpiceDecorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2291302F3A010025FC97 /* SpiceDecorView.swift */; };
+		DD2F2296302F3A010025FC97 /* OTPVerifyScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2292302F3A010025FC97 /* OTPVerifyScreen.swift */; };
+		DD2F2297302F3A010025FC97 /* OTPVerifyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2293302F3A010025FC97 /* OTPVerifyViewModel.swift */; };
+		DD2F229B302F4B010025FC97 /* SpiceIllustrations.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2298302F4B010025FC97 /* SpiceIllustrations.swift */; };
+		DD2F229C302F4B010025FC97 /* AnimatedBrandBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2299302F4B010025FC97 /* AnimatedBrandBackground.swift */; };
+		DD2F229D302F4B010025FC97 /* SpiceBackdrops.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F229A302F4B010025FC97 /* SpiceBackdrops.swift */; };
+/* End PBXBuildFile section */
 
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		DD2F21A3302F20850025FC97 /* SpiceMonk */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = SpiceMonk;
-			sourceTree = "<group>";
-		};
-/* End PBXFileSystemSynchronizedRootGroup section */
+/* Begin PBXFileReference section */
+		429F89C368C7C076766D02F9 /* Pods-SpiceMonk.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SpiceMonk.debug.xcconfig"; path = "Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk.debug.xcconfig"; sourceTree = "<group>"; };
+		8D15CEC326777E54DCEB7B24 /* Pods-SpiceMonk.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SpiceMonk.release.xcconfig"; path = "Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk.release.xcconfig"; sourceTree = "<group>"; };
+		B2B952BC166F1B3357A409EC /* Pods_SpiceMonk.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SpiceMonk.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		DD2F21A1302F20850025FC97 /* SpiceMonk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpiceMonk.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DD2F2256302F29FD0025FC97 /* NetworkServiceManagable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkServiceManagable.swift; sourceTree = "<group>"; };
+		DD2F2257302F29FD0025FC97 /* NetworkServiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkServiceManager.swift; sourceTree = "<group>"; };
+		DD2F2258302F29FD0025FC97 /* RequestConstant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RequestConstant.swift; sourceTree = "<group>"; };
+		DD2F229E302F5C010025FC97 /* LenientDecoding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LenientDecoding.swift; sourceTree = "<group>"; };
+		DD2F225A302F29FD0025FC97 /* APIRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIRouter.swift; sourceTree = "<group>"; };
+		DD2F225B302F29FD0025FC97 /* RouterManagable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouterManagable.swift; sourceTree = "<group>"; };
+		DD2F225D302F29FD0025FC97 /* AppRootManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootManager.swift; sourceTree = "<group>"; };
+		DD2F225E302F29FD0025FC97 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		DD2F225F302F29FD0025FC97 /* UserDefaultManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultManager.swift; sourceTree = "<group>"; };
+		DD2F2261302F29FD0025FC97 /* Color+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extension.swift"; sourceTree = "<group>"; };
+		DD2F2262302F29FD0025FC97 /* String+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Extension.swift"; sourceTree = "<group>"; };
+		DD2F2263302F29FD0025FC97 /* View+NoInternet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+NoInternet.swift"; sourceTree = "<group>"; };
+		DD2F2265302F29FD0025FC97 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
+		DD2F2266302F29FD0025FC97 /* HomeServiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeServiceManager.swift; sourceTree = "<group>"; };
+		DD2F2267302F29FD0025FC97 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
+		DD2F2269302F29FD0025FC97 /* LoginScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginScreen.swift; sourceTree = "<group>"; };
+		DD2F226A302F29FD0025FC97 /* LoginServiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginServiceManager.swift; sourceTree = "<group>"; };
+		DD2F226B302F29FD0025FC97 /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
+		DD2F226D302F29FD0025FC97 /* SplashScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreen.swift; sourceTree = "<group>"; };
+		DD2F2270302F29FD0025FC97 /* AlertToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertToast.swift; sourceTree = "<group>"; };
+		DD2F2271302F29FD0025FC97 /* AppConstant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstant.swift; sourceTree = "<group>"; };
+		DD2F2273302F29FD0025FC97 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		DD2F2274302F29FD0025FC97 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		DD2F2275302F29FD0025FC97 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		DD2F2276302F29FD0025FC97 /* SpiceMonkApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpiceMonkApp.swift; sourceTree = "<group>"; };
+		DD2F2290302F3A010025FC97 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		DD2F2291302F3A010025FC97 /* SpiceDecorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpiceDecorView.swift; sourceTree = "<group>"; };
+		DD2F2292302F3A010025FC97 /* OTPVerifyScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTPVerifyScreen.swift; sourceTree = "<group>"; };
+		DD2F2293302F3A010025FC97 /* OTPVerifyViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTPVerifyViewModel.swift; sourceTree = "<group>"; };
+		DD2F2298302F4B010025FC97 /* SpiceIllustrations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpiceIllustrations.swift; sourceTree = "<group>"; };
+		DD2F2299302F4B010025FC97 /* AnimatedBrandBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedBrandBackground.swift; sourceTree = "<group>"; };
+		DD2F229A302F4B010025FC97 /* SpiceBackdrops.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpiceBackdrops.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		DD2F219E302F20850025FC97 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9D9AADD0DA30E07F320071A3 /* Pods_SpiceMonk.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0D890A37118ECBCCAD676CAB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B2B952BC166F1B3357A409EC /* Pods_SpiceMonk.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		5D0E515AB5C2DF7C8F77F179 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				429F89C368C7C076766D02F9 /* Pods-SpiceMonk.debug.xcconfig */,
+				8D15CEC326777E54DCEB7B24 /* Pods-SpiceMonk.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		DD2F2198302F20850025FC97 = {
 			isa = PBXGroup;
 			children = (
-				DD2F21A3302F20850025FC97 /* SpiceMonk */,
+				DD2F2277302F29FD0025FC97 /* SpiceMonk */,
 				DD2F21A2302F20850025FC97 /* Products */,
+				5D0E515AB5C2DF7C8F77F179 /* Pods */,
+				0D890A37118ECBCCAD676CAB /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -45,6 +128,117 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		DD2F2259302F29FD0025FC97 /* Network */ = {
+			isa = PBXGroup;
+			children = (
+				DD2F2256302F29FD0025FC97 /* NetworkServiceManagable.swift */,
+				DD2F2257302F29FD0025FC97 /* NetworkServiceManager.swift */,
+				DD2F2258302F29FD0025FC97 /* RequestConstant.swift */,
+				DD2F229E302F5C010025FC97 /* LenientDecoding.swift */,
+			);
+			path = Network;
+			sourceTree = "<group>";
+		};
+		DD2F225C302F29FD0025FC97 /* Router */ = {
+			isa = PBXGroup;
+			children = (
+				DD2F225A302F29FD0025FC97 /* APIRouter.swift */,
+				DD2F225B302F29FD0025FC97 /* RouterManagable.swift */,
+			);
+			path = Router;
+			sourceTree = "<group>";
+		};
+		DD2F2260302F29FD0025FC97 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				DD2F2259302F29FD0025FC97 /* Network */,
+				DD2F225C302F29FD0025FC97 /* Router */,
+				DD2F225D302F29FD0025FC97 /* AppRootManager.swift */,
+				DD2F225E302F29FD0025FC97 /* NetworkMonitor.swift */,
+				DD2F225F302F29FD0025FC97 /* UserDefaultManager.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		DD2F2264302F29FD0025FC97 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				DD2F2261302F29FD0025FC97 /* Color+Extension.swift */,
+				DD2F2262302F29FD0025FC97 /* String+Extension.swift */,
+				DD2F2263302F29FD0025FC97 /* View+NoInternet.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		DD2F2268302F29FD0025FC97 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				DD2F2265302F29FD0025FC97 /* HomeScreen.swift */,
+				DD2F2266302F29FD0025FC97 /* HomeServiceManager.swift */,
+				DD2F2267302F29FD0025FC97 /* HomeViewModel.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		DD2F226C302F29FD0025FC97 /* Login */ = {
+			isa = PBXGroup;
+			children = (
+				DD2F2269302F29FD0025FC97 /* LoginScreen.swift */,
+				DD2F226A302F29FD0025FC97 /* LoginServiceManager.swift */,
+				DD2F226B302F29FD0025FC97 /* LoginViewModel.swift */,
+				DD2F2292302F3A010025FC97 /* OTPVerifyScreen.swift */,
+				DD2F2293302F3A010025FC97 /* OTPVerifyViewModel.swift */,
+			);
+			path = Login;
+			sourceTree = "<group>";
+		};
+		DD2F226E302F29FD0025FC97 /* Splash */ = {
+			isa = PBXGroup;
+			children = (
+				DD2F226D302F29FD0025FC97 /* SplashScreen.swift */,
+			);
+			path = Splash;
+			sourceTree = "<group>";
+		};
+		DD2F226F302F29FD0025FC97 /* Screens */ = {
+			isa = PBXGroup;
+			children = (
+				DD2F2268302F29FD0025FC97 /* Home */,
+				DD2F226C302F29FD0025FC97 /* Login */,
+				DD2F226E302F29FD0025FC97 /* Splash */,
+			);
+			path = Screens;
+			sourceTree = "<group>";
+		};
+		DD2F2272302F29FD0025FC97 /* Utility */ = {
+			isa = PBXGroup;
+			children = (
+				DD2F2270302F29FD0025FC97 /* AlertToast.swift */,
+				DD2F2271302F29FD0025FC97 /* AppConstant.swift */,
+				DD2F2290302F3A010025FC97 /* AppTheme.swift */,
+				DD2F2291302F3A010025FC97 /* SpiceDecorView.swift */,
+				DD2F2298302F4B010025FC97 /* SpiceIllustrations.swift */,
+				DD2F2299302F4B010025FC97 /* AnimatedBrandBackground.swift */,
+				DD2F229A302F4B010025FC97 /* SpiceBackdrops.swift */,
+			);
+			path = Utility;
+			sourceTree = "<group>";
+		};
+		DD2F2277302F29FD0025FC97 /* SpiceMonk */ = {
+			isa = PBXGroup;
+			children = (
+				DD2F2260302F29FD0025FC97 /* Core */,
+				DD2F2264302F29FD0025FC97 /* Extensions */,
+				DD2F226F302F29FD0025FC97 /* Screens */,
+				DD2F2272302F29FD0025FC97 /* Utility */,
+				DD2F2273302F29FD0025FC97 /* AppDelegate.swift */,
+				DD2F2274302F29FD0025FC97 /* Assets.xcassets */,
+				DD2F2275302F29FD0025FC97 /* LaunchScreen.storyboard */,
+				DD2F2276302F29FD0025FC97 /* SpiceMonkApp.swift */,
+			);
+			path = SpiceMonk;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -52,20 +246,17 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = DD2F21AC302F20870025FC97 /* Build configuration list for PBXNativeTarget "SpiceMonk" */;
 			buildPhases = (
+				B5CDCFD748F5783BAA6D43DD /* [CP] Check Pods Manifest.lock */,
 				DD2F219D302F20850025FC97 /* Sources */,
 				DD2F219E302F20850025FC97 /* Frameworks */,
 				DD2F219F302F20850025FC97 /* Resources */,
+				A33641257FE050EBCF638D26 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			fileSystemSynchronizedGroups = (
-				DD2F21A3302F20850025FC97 /* SpiceMonk */,
-			);
 			name = SpiceMonk;
-			packageProductDependencies = (
-			);
 			productName = SpiceMonk;
 			productReference = DD2F21A1302F20850025FC97 /* SpiceMonk.app */;
 			productType = "com.apple.product-type.application";
@@ -109,16 +300,94 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DD2F2278302F29FD0025FC97 /* Assets.xcassets in Resources */,
+				DD2F2279302F29FD0025FC97 /* LaunchScreen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A33641257FE050EBCF638D26 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		B5CDCFD748F5783BAA6D43DD /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-SpiceMonk-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		DD2F219D302F20850025FC97 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DD2F227A302F29FD0025FC97 /* NetworkServiceManagable.swift in Sources */,
+				DD2F227B302F29FD0025FC97 /* NetworkServiceManager.swift in Sources */,
+				DD2F227C302F29FD0025FC97 /* RequestConstant.swift in Sources */,
+				DD2F229F302F5C010025FC97 /* LenientDecoding.swift in Sources */,
+				DD2F227D302F29FD0025FC97 /* APIRouter.swift in Sources */,
+				DD2F227E302F29FD0025FC97 /* RouterManagable.swift in Sources */,
+				DD2F227F302F29FD0025FC97 /* AppRootManager.swift in Sources */,
+				DD2F2280302F29FD0025FC97 /* NetworkMonitor.swift in Sources */,
+				DD2F2281302F29FD0025FC97 /* UserDefaultManager.swift in Sources */,
+				DD2F2282302F29FD0025FC97 /* Color+Extension.swift in Sources */,
+				DD2F2283302F29FD0025FC97 /* String+Extension.swift in Sources */,
+				DD2F2284302F29FD0025FC97 /* View+NoInternet.swift in Sources */,
+				DD2F2285302F29FD0025FC97 /* HomeScreen.swift in Sources */,
+				DD2F2286302F29FD0025FC97 /* HomeServiceManager.swift in Sources */,
+				DD2F2287302F29FD0025FC97 /* HomeViewModel.swift in Sources */,
+				DD2F2288302F29FD0025FC97 /* LoginScreen.swift in Sources */,
+				DD2F2289302F29FD0025FC97 /* LoginServiceManager.swift in Sources */,
+				DD2F228A302F29FD0025FC97 /* LoginViewModel.swift in Sources */,
+				DD2F228B302F29FD0025FC97 /* SplashScreen.swift in Sources */,
+				DD2F228C302F29FD0025FC97 /* AlertToast.swift in Sources */,
+				DD2F228D302F29FD0025FC97 /* AppConstant.swift in Sources */,
+				DD2F228E302F29FD0025FC97 /* AppDelegate.swift in Sources */,
+				DD2F228F302F29FD0025FC97 /* SpiceMonkApp.swift in Sources */,
+				DD2F2294302F3A010025FC97 /* AppTheme.swift in Sources */,
+				DD2F2295302F3A010025FC97 /* SpiceDecorView.swift in Sources */,
+				DD2F2296302F3A010025FC97 /* OTPVerifyScreen.swift in Sources */,
+				DD2F2297302F3A010025FC97 /* OTPVerifyViewModel.swift in Sources */,
+				DD2F229B302F4B010025FC97 /* SpiceIllustrations.swift in Sources */,
+				DD2F229C302F4B010025FC97 /* AnimatedBrandBackground.swift in Sources */,
+				DD2F229D302F4B010025FC97 /* SpiceBackdrops.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -241,6 +510,7 @@
 		};
 		DD2F21AD302F20870025FC97 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 429F89C368C7C076766D02F9 /* Pods-SpiceMonk.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -248,20 +518,25 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = NO;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = NO;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.5;
 				MARKETING_VERSION = 1.0;
@@ -283,6 +558,7 @@
 		};
 		DD2F21AE302F20870025FC97 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8D15CEC326777E54DCEB7B24 /* Pods-SpiceMonk.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -290,20 +566,25 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = NO;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = NO;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.5;
 				MARKETING_VERSION = 1.0;

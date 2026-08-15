@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+
+# Xcode build output
+build/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.moved-aside
+
+# Per-user Xcode state: window layout, breakpoints, last-opened scheme. Machine-specific,
+# so keeping it out avoids conflicts on every checkout.
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# CocoaPods: Podfile and Podfile.lock are committed so `pod install` reproduces the exact
+# versions. The 69 MB of vendored sources they resolve to does not belong in history.
+Pods/
