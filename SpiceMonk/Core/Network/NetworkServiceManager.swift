@@ -32,10 +32,16 @@ class NetworkServiceManager: NetworkServiceManagable {
         var request = URLRequest(url: url)
         request.httpMethod = endpoint.requestType.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue(
-            endpoint.contentType.headerValue(boundary: boundary),
-            forHTTPHeaderField: "Content-Type"
-        )
+
+        // Endpoints like `customer/home` are POSTs that take nothing but the auth header. Sending a
+        // Content-Type with an empty form body would describe a payload that is not there.
+        let hasPayload = !Self.fields(from: params).isEmpty
+        if hasPayload {
+            request.setValue(
+                endpoint.contentType.headerValue(boundary: boundary),
+                forHTTPHeaderField: "Content-Type"
+            )
+        }
 
         #if DEBUG
         print("===================================================================")
@@ -47,21 +53,23 @@ class NetworkServiceManager: NetworkServiceManagable {
         print("===================================================================")
         #endif
 
-        switch endpoint.contentType {
-        case .json:
-            do {
-                request.httpBody = try JSONSerialization.data(
-                    withJSONObject: params,
-                    options: .fragmentsAllowed
-                )
-            } catch {
-                return Fail(error: error)
-                    .eraseToAnyPublisher()
+        if hasPayload {
+            switch endpoint.contentType {
+            case .json:
+                do {
+                    request.httpBody = try JSONSerialization.data(
+                        withJSONObject: params,
+                        options: .fragmentsAllowed
+                    )
+                } catch {
+                    return Fail(error: error)
+                        .eraseToAnyPublisher()
+                }
+            case .urlEncoded:
+                request.httpBody = Self.urlEncodedBody(from: params)
+            case .multipartForm:
+                request.httpBody = Self.multipartBody(from: params, boundary: boundary)
             }
-        case .urlEncoded:
-            request.httpBody = Self.urlEncodedBody(from: params)
-        case .multipartForm:
-            request.httpBody = Self.multipartBody(from: params, boundary: boundary)
         }
 
         headers.forEach { request.addValue($0.value, forHTTPHeaderField: $0.key) }

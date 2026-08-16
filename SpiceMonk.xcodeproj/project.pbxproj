@@ -23,6 +23,16 @@
 		DD2F2283302F29FD0025FC97 /* String+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2262302F29FD0025FC97 /* String+Extension.swift */; };
 		DD2F2284302F29FD0025FC97 /* View+NoInternet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2263302F29FD0025FC97 /* View+NoInternet.swift */; };
 		DD2F2285302F29FD0025FC97 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2265302F29FD0025FC97 /* HomeScreen.swift */; };
+		DD2F22A4302F6D010025FC97 /* HomeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F22A0302F6D010025FC97 /* HomeModels.swift */; };
+		DD2F22A5302F6D010025FC97 /* ProductCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F22A1302F6D010025FC97 /* ProductCard.swift */; };
+		DD2F22A6302F6D010025FC97 /* HomeWidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F22A2302F6D010025FC97 /* HomeWidgetViews.swift */; };
+		DD2F22A7302F6D010025FC97 /* HomeChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F22A3302F6D010025FC97 /* HomeChrome.swift */; };
+		DD2F22AD302F7E010025FC97 /* AddressModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F22A9302F7E010025FC97 /* AddressModels.swift */; };
+		DD2F22AE302F7E010025FC97 /* AddressServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F22AA302F7E010025FC97 /* AddressServiceManager.swift */; };
+		DD2F22AF302F7E010025FC97 /* AddressViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F22AB302F7E010025FC97 /* AddressViewModel.swift */; };
+		DD2F22B0302F7E010025FC97 /* AddressPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F22AC302F7E010025FC97 /* AddressPickerSheet.swift */; };
+		DD2F22B3302F8F010025FC97 /* AddressFormViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F22B1302F8F010025FC97 /* AddressFormViewModel.swift */; };
+		DD2F22B4302F8F010025FC97 /* AddressFormScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F22B2302F8F010025FC97 /* AddressFormScreen.swift */; };
 		DD2F2286302F29FD0025FC97 /* HomeServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2266302F29FD0025FC97 /* HomeServiceManager.swift */; };
 		DD2F2287302F29FD0025FC97 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2267302F29FD0025FC97 /* HomeViewModel.swift */; };
 		DD2F2288302F29FD0025FC97 /* LoginScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2269302F29FD0025FC97 /* LoginScreen.swift */; };
@@ -40,6 +50,7 @@
 		DD2F229B302F4B010025FC97 /* SpiceIllustrations.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2298302F4B010025FC97 /* SpiceIllustrations.swift */; };
 		DD2F229C302F4B010025FC97 /* AnimatedBrandBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2299302F4B010025FC97 /* AnimatedBrandBackground.swift */; };
 		DD2F229D302F4B010025FC97 /* SpiceBackdrops.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F229A302F4B010025FC97 /* SpiceBackdrops.swift */; };
+		DD2F22C1302FA0010025FC97 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F22C0302FA0010025FC97 /* RemoteImage.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -60,6 +71,16 @@
 		DD2F2262302F29FD0025FC97 /* String+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Extension.swift"; sourceTree = "<group>"; };
 		DD2F2263302F29FD0025FC97 /* View+NoInternet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+NoInternet.swift"; sourceTree = "<group>"; };
 		DD2F2265302F29FD0025FC97 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
+		DD2F22A0302F6D010025FC97 /* HomeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeModels.swift; sourceTree = "<group>"; };
+		DD2F22A1302F6D010025FC97 /* ProductCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductCard.swift; sourceTree = "<group>"; };
+		DD2F22A2302F6D010025FC97 /* HomeWidgetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWidgetViews.swift; sourceTree = "<group>"; };
+		DD2F22A3302F6D010025FC97 /* HomeChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeChrome.swift; sourceTree = "<group>"; };
+		DD2F22A9302F7E010025FC97 /* AddressModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressModels.swift; sourceTree = "<group>"; };
+		DD2F22AA302F7E010025FC97 /* AddressServiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressServiceManager.swift; sourceTree = "<group>"; };
+		DD2F22AB302F7E010025FC97 /* AddressViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressViewModel.swift; sourceTree = "<group>"; };
+		DD2F22AC302F7E010025FC97 /* AddressPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressPickerSheet.swift; sourceTree = "<group>"; };
+		DD2F22B1302F8F010025FC97 /* AddressFormViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressFormViewModel.swift; sourceTree = "<group>"; };
+		DD2F22B2302F8F010025FC97 /* AddressFormScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressFormScreen.swift; sourceTree = "<group>"; };
 		DD2F2266302F29FD0025FC97 /* HomeServiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeServiceManager.swift; sourceTree = "<group>"; };
 		DD2F2267302F29FD0025FC97 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		DD2F2269302F29FD0025FC97 /* LoginScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginScreen.swift; sourceTree = "<group>"; };
@@ -79,6 +100,7 @@
 		DD2F2298302F4B010025FC97 /* SpiceIllustrations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpiceIllustrations.swift; sourceTree = "<group>"; };
 		DD2F2299302F4B010025FC97 /* AnimatedBrandBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedBrandBackground.swift; sourceTree = "<group>"; };
 		DD2F229A302F4B010025FC97 /* SpiceBackdrops.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpiceBackdrops.swift; sourceTree = "<group>"; };
+		DD2F22C0302FA0010025FC97 /* RemoteImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteImage.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -176,6 +198,10 @@
 				DD2F2265302F29FD0025FC97 /* HomeScreen.swift */,
 				DD2F2266302F29FD0025FC97 /* HomeServiceManager.swift */,
 				DD2F2267302F29FD0025FC97 /* HomeViewModel.swift */,
+				DD2F22A0302F6D010025FC97 /* HomeModels.swift */,
+				DD2F22A1302F6D010025FC97 /* ProductCard.swift */,
+				DD2F22A2302F6D010025FC97 /* HomeWidgetViews.swift */,
+				DD2F22A3302F6D010025FC97 /* HomeChrome.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -200,9 +226,23 @@
 			path = Splash;
 			sourceTree = "<group>";
 		};
+		DD2F22A8302F7E010025FC97 /* Address */ = {
+			isa = PBXGroup;
+			children = (
+				DD2F22A9302F7E010025FC97 /* AddressModels.swift */,
+				DD2F22AA302F7E010025FC97 /* AddressServiceManager.swift */,
+				DD2F22AB302F7E010025FC97 /* AddressViewModel.swift */,
+				DD2F22AC302F7E010025FC97 /* AddressPickerSheet.swift */,
+				DD2F22B1302F8F010025FC97 /* AddressFormViewModel.swift */,
+				DD2F22B2302F8F010025FC97 /* AddressFormScreen.swift */,
+			);
+			path = Address;
+			sourceTree = "<group>";
+		};
 		DD2F226F302F29FD0025FC97 /* Screens */ = {
 			isa = PBXGroup;
 			children = (
+				DD2F22A8302F7E010025FC97 /* Address */,
 				DD2F2268302F29FD0025FC97 /* Home */,
 				DD2F226C302F29FD0025FC97 /* Login */,
 				DD2F226E302F29FD0025FC97 /* Splash */,
@@ -220,6 +260,7 @@
 				DD2F2298302F4B010025FC97 /* SpiceIllustrations.swift */,
 				DD2F2299302F4B010025FC97 /* AnimatedBrandBackground.swift */,
 				DD2F229A302F4B010025FC97 /* SpiceBackdrops.swift */,
+				DD2F22C0302FA0010025FC97 /* RemoteImage.swift */,
 			);
 			path = Utility;
 			sourceTree = "<group>";
@@ -371,6 +412,16 @@
 				DD2F2283302F29FD0025FC97 /* String+Extension.swift in Sources */,
 				DD2F2284302F29FD0025FC97 /* View+NoInternet.swift in Sources */,
 				DD2F2285302F29FD0025FC97 /* HomeScreen.swift in Sources */,
+				DD2F22A4302F6D010025FC97 /* HomeModels.swift in Sources */,
+				DD2F22A5302F6D010025FC97 /* ProductCard.swift in Sources */,
+				DD2F22A6302F6D010025FC97 /* HomeWidgetViews.swift in Sources */,
+				DD2F22A7302F6D010025FC97 /* HomeChrome.swift in Sources */,
+				DD2F22AD302F7E010025FC97 /* AddressModels.swift in Sources */,
+				DD2F22AE302F7E010025FC97 /* AddressServiceManager.swift in Sources */,
+				DD2F22AF302F7E010025FC97 /* AddressViewModel.swift in Sources */,
+				DD2F22B0302F7E010025FC97 /* AddressPickerSheet.swift in Sources */,
+				DD2F22B3302F8F010025FC97 /* AddressFormViewModel.swift in Sources */,
+				DD2F22B4302F8F010025FC97 /* AddressFormScreen.swift in Sources */,
 				DD2F2286302F29FD0025FC97 /* HomeServiceManager.swift in Sources */,
 				DD2F2287302F29FD0025FC97 /* HomeViewModel.swift in Sources */,
 				DD2F2288302F29FD0025FC97 /* LoginScreen.swift in Sources */,
@@ -388,6 +439,7 @@
 				DD2F229B302F4B010025FC97 /* SpiceIllustrations.swift in Sources */,
 				DD2F229C302F4B010025FC97 /* AnimatedBrandBackground.swift in Sources */,
 				DD2F229D302F4B010025FC97 /* SpiceBackdrops.swift in Sources */,
+				DD2F22C1302FA0010025FC97 /* RemoteImage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -37,4 +37,19 @@ enum AppTheme {
 
     static let badgeSuccess = Color(hex: "2E9E6E")
     static let badgePrivate = Color(hex: "E8562A")
+
+    // MARK: - Home
+
+    static let homeCanvas = Color.white
+    static let homeHeaderTop = Color(hex: "6E2440")
+    static let homeHeaderBottom = Color(hex: "4A182C")
+    static let homeHeaderSurface = Color(hex: "F3E1E8")
+
+    static let accentSoft = Color(hex: "FFEBEE")
+    static let discountBadge = Color(hex: "E5202E")
+    static let newBadgeBackground = Color(hex: "E0F2FE")
+    static let newBadgeText = Color(hex: "0369A1")
+
+    static let cardBorder = Color.black.opacity(0.06)
+    static let imageTile = Color(hex: "F4F4F5")
 }

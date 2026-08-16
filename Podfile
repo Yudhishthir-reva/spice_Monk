@@ -6,10 +6,5 @@ target 'SpiceMonk' do
   use_frameworks!
 
   # Pods for SpiceMonk
-  pod 'Firebase/Core'
-  pod 'Firebase/Auth'
-  pod 'Firebase/Messaging'
-  pod 'Firebase/Analytics'
-  pod 'Firebase/Crashlytics'
-
+  
 end

@@ -13,7 +13,7 @@ let kDateFormatterHHMMA: DateFormatter = {
     return dateFormatter
 }()
 
-let kDateFormatterDDMMYYYY: DateF   ormatter = {
+let kDateFormatterDDMMYYYY: DateFormatter = {
     let dateFormatter = DateFormatter()
     dateFormatter.dateFormat = "dd-MM-yyyy"
     return dateFormatter
