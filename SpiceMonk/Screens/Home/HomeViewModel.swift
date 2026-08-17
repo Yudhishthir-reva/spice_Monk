@@ -22,6 +22,27 @@ class HomeViewModel: ObservableObject {
 
     var hasContent: Bool { !widgets.isEmpty }
 
+    /// Flat, de-duped categories for the Categories tab — same derivation Android uses from home.
+    var allCategories: [CategoryItem] {
+        var seen = Set<Int>()
+        var result: [CategoryItem] = []
+        for widget in widgets {
+            let items: [CategoryItem]
+            switch widget {
+            case .categories(_, _, _, let categories):
+                items = categories
+            case .categoryGroups(_, _, _, let groups):
+                items = groups.flatMap(\.categories)
+            default:
+                continue
+            }
+            for item in items where item.id > 0 && seen.insert(item.id).inserted {
+                result.append(item)
+            }
+        }
+        return result
+    }
+
     func loadHome() {
         guard !isLoading else { return }
         isLoading = true

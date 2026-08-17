@@ -10,7 +10,7 @@ struct HomeScreen: View {
     @StateObject var viewModel = HomeViewModel()
     @StateObject private var addressViewModel = AddressViewModel()
     @StateObject private var searchViewModel = SearchViewModel()
-    @State private var selectedTab: HomeTab = .home
+    @State private var tabDestination: HomeTabDestination?
     @State private var searchBarOffset: CGFloat = 0
     @State private var isConfirmingLogout = false
     @State private var isPickingAddress = false
@@ -46,12 +46,21 @@ struct HomeScreen: View {
             .ignoresSafeArea(edges: .top)
 
             if !isSearchActive {
-                HomeBottomBar(selection: $selectedTab)
+                HomeBottomBar(onSelect: openTab)
             }
         }
         .background(AppTheme.homeCanvas, ignoresSafeAreaEdges: .bottom)
-        .ignoresSafeArea(.container, edges: .bottom)
         .toolbar(.hidden, for: .navigationBar)
+        .navigationDestination(item: $tabDestination) { destination in
+            switch destination {
+            case .categories:
+                CategoriesTabScreen(categories: viewModel.allCategories)
+            case .cart:
+                CartScreen()
+            case .account:
+                AccountPlaceholderScreen(addressViewModel: addressViewModel)
+            }
+        }
         .navigationDestination(item: $searchViewModel.resultsDestination) { destination in
             WidgetProductsScreen(
                 searchQuery: destination.query,
@@ -168,6 +177,19 @@ struct HomeScreen: View {
     private func exitSearch() {
         isSearchActive = false
         searchViewModel.clear()
+    }
+
+    private func openTab(_ tab: HomeTab) {
+        switch tab {
+        case .home:
+            break
+        case .categories:
+            tabDestination = .categories
+        case .cart:
+            tabDestination = .cart
+        case .account:
+            tabDestination = .account
+        }
     }
 
     /// Rubber-band: while the user pulls the feed down, slide the header back by the same amount

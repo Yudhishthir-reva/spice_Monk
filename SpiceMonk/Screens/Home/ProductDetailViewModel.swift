@@ -21,6 +21,7 @@ class ProductDetailViewModel: ObservableObject {
     @Published var isShowToastView = false
     @Published var related: [ProductItem] = []
     @Published var isLoadingMoreRelated = false
+    @Published var isAddingToCart = false
 
     private var relatedPage = 1
     private var relatedHasMore = true
@@ -28,6 +29,7 @@ class ProductDetailViewModel: ObservableObject {
     private let relatedPerPage = 10
     private var cancellables = Set<AnyCancellable>()
     var serviceManagable = HomeServiceManager()
+    var cartService = CartServiceManager()
 
     var selectedVariant: ProductDetailVariant? {
         product?.variants[safe: selectedVariantIndex]
@@ -95,8 +97,38 @@ class ProductDetailViewModel: ObservableObject {
     }
 
     func addToCart() {
-        toastMessage = "Cart is coming soon"
-        isShowToastView = true
+        guard !isAddingToCart else { return }
+        guard let variant = selectedVariant, variant.id > 0 else {
+            toastMessage = "Unable to add this product."
+            isShowToastView = true
+            return
+        }
+        guard variant.inStock else {
+            toastMessage = "Product is out of stock."
+            isShowToastView = true
+            return
+        }
+
+        isAddingToCart = true
+        cartService.addToCart(productId: productId, variantId: variant.id, qty: 1)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] completion in
+                guard let self else { return }
+                self.isAddingToCart = false
+                guard case .failure(let error) = completion else { return }
+                self.toastMessage = (error as? RequestError)?.errorString ?? error.localizedDescription
+                self.isShowToastView = true
+            } receiveValue: { [weak self] response in
+                guard let self else { return }
+                self.isAddingToCart = false
+                if response.status == true {
+                    self.toastMessage = response.message ?? "Added to cart."
+                } else {
+                    self.toastMessage = response.message ?? "Unable to add this product."
+                }
+                self.isShowToastView = true
+            }
+            .store(in: &cancellables)
     }
 
     func loadMoreRelated() {

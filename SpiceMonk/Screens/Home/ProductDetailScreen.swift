@@ -414,10 +414,15 @@ struct ProductDetailScreen: View {
 
             Button(action: viewModel.addToCart) {
                 HStack(spacing: 8) {
-                    Text("Add to cart")
-                        .font(.system(size: 16, weight: .semibold))
-                    Image(systemName: "cart.fill")
-                        .font(.system(size: 14, weight: .semibold))
+                    if viewModel.isAddingToCart {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text("Add to cart")
+                            .font(.system(size: 16, weight: .semibold))
+                        Image(systemName: "cart.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
@@ -426,7 +431,7 @@ struct ProductDetailScreen: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .buttonStyle(.plain)
-            .disabled(!variant.inStock)
+            .disabled(!variant.inStock || viewModel.isAddingToCart)
             .opacity(variant.inStock ? 1 : 0.45)
         }
         .padding(.horizontal, 18)

@@ -23,6 +23,10 @@ enum APIRouter: RouterManagable {
     case relatedProducts
     case productSuggestions
     case productSearch
+    case cart
+    case cartAdd
+    case cartRemove
+    case cartClear
 
     var endPointUrl: String {
         switch self {
@@ -60,13 +64,23 @@ enum APIRouter: RouterManagable {
             return "customer/product/suggestions"
         case .productSearch:
             return "customer/product/search"
+        case .cart:
+            return "customer/cart"
+        case .cartAdd:
+            return "customer/cart/add"
+        case .cartRemove:
+            return "customer/cart/remove"
+        case .cartClear:
+            return "customer/cart/clear"
         }
     }
 
     var requestType: RequestMethodType {
         switch self {
-        case .addressList, .addressDetail:
+        case .addressList, .addressDetail, .cart:
             return .get
+        case .cartClear:
+            return .delete
         default:
             return .post
         }

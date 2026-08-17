@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 // MARK: - Top bar
 
@@ -254,30 +255,33 @@ enum HomeTab: Int, CaseIterable, Identifiable {
 
 struct HomeBottomBar: View {
 
-    @Binding var selection: HomeTab
+    var selected: HomeTab = .home
+    var onSelect: (HomeTab) -> Void
 
     var body: some View {
         HStack(spacing: 0) {
             ForEach(HomeTab.allCases) { tab in
-                let isSelected = tab == selection
+                let isSelected = tab == selected
 
                 Button {
-                    selection = tab
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onSelect(tab)
                 } label: {
-                    VStack(spacing: 3) {
-                        Image(systemName: tab.icon)
-                            .font(.system(size: 17))
-                            .scaleEffect(isSelected ? 1.1 : 1)
-                            .frame(width: 52, height: 30)
-                            .background {
-                                if isSelected {
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(AppTheme.accentSoft)
-                                }
-                            }
+                    VStack(spacing: 4) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(AppTheme.accentSoft)
+                                .opacity(isSelected ? 1 : 0)
+                                .scaleEffect(isSelected ? 1 : 0.6)
+
+                            Image(systemName: tab.icon)
+                                .font(.system(size: 17))
+                                .scaleEffect(isSelected ? 1.1 : 1)
+                        }
+                        .frame(width: 52, height: 30)
 
                         Text(tab.title)
-                            .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                            .font(.system(size: 11, weight: isSelected ? .bold : .medium))
                     }
                     .foregroundStyle(isSelected ? AppTheme.accentRed : AppTheme.textPrimary.opacity(0.55))
                     .frame(maxWidth: .infinity)
@@ -285,10 +289,19 @@ struct HomeBottomBar: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.top, 8)
-        .background(Color.white)
-        .clipShape(.rect(topLeadingRadius: 26, topTrailingRadius: 26))
-        .shadow(color: .black.opacity(0.08), radius: 10, y: -2)
+        .padding(.horizontal, 6)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+        .background {
+            UnevenRoundedRectangle(
+                topLeadingRadius: 26,
+                topTrailingRadius: 26,
+                style: .continuous
+            )
+            .fill(Color.white)
+            .shadow(color: .black.opacity(0.08), radius: 10, y: -2)
+            .ignoresSafeArea(edges: .bottom)
+        }
     }
 }
 
