@@ -5,9 +5,12 @@
 
 import Foundation
 
-/// The `state` and `city` objects nested in an address — both are just an id and a display name.
-struct NamedReference: Decodable, Identifiable {
-    let id: Int
+/// A place on an address. The backend has sent these two ways — nested as `{"id":2,"name":"Mumbai"}`
+/// from the write endpoints, and as a bare `"Mumbai"` from the list — so both are accepted rather
+/// than pinning the model to whichever shape was seen last.
+struct PlaceReference: Decodable {
+    /// Absent when the backend sent only a name, so callers that need the id must look it up.
+    let id: Int?
     let name: String
 
     enum CodingKeys: String, CodingKey {
@@ -15,8 +18,15 @@ struct NamedReference: Decodable, Identifiable {
     }
 
     init(from decoder: Decoder) throws {
+        if let single = try? decoder.singleValueContainer(),
+           let name = try? single.decode(String.self) {
+            self.id = nil
+            self.name = name
+            return
+        }
+
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = container.decodeIntLeniently(forKey: .id) ?? 0
+        id = container.decodeIntLeniently(forKey: .id)
         name = container.decodeStringLeniently(forKey: .name) ?? ""
     }
 }
@@ -32,11 +42,12 @@ struct Address: Decodable, Identifiable {
     let landmark: String?
     /// Mutable so the picker can reflect a tap immediately, before the server confirms the change.
     var isDefault: Bool
-    let state: NamedReference?
-    let city: NamedReference?
+    let state: PlaceReference?
+    /// The list calls this `district` while the write endpoints nest it under `city`; both land here.
+    let city: PlaceReference?
 
     enum CodingKeys: String, CodingKey {
-        case id, area, landmark, state, city, mobile
+        case id, area, landmark, state, city, district, mobile
         case fullName = "full_name"
         case alternateMobile = "alternate_mobile"
         case pinCode = "pin_code"
@@ -55,8 +66,17 @@ struct Address: Decodable, Identifiable {
         houseFlatNo = container.decodeStringLeniently(forKey: .houseFlatNo) ?? ""
         landmark = container.decodeStringLeniently(forKey: .landmark)
         isDefault = container.decodeBoolLeniently(forKey: .isDefault) ?? false
-        state = try? container.decodeIfPresent(NamedReference.self, forKey: .state)
-        city = try? container.decodeIfPresent(NamedReference.self, forKey: .city)
+        state = try? container.decodeIfPresent(PlaceReference.self, forKey: .state)
+        city = (try? container.decodeIfPresent(PlaceReference.self, forKey: .district))
+            ?? (try? container.decodeIfPresent(PlaceReference.self, forKey: .city))
+    }
+
+    var cityName: String? {
+        city?.name.isEmptyString == false ? city?.name : nil
+    }
+
+    var stateName: String? {
+        state?.name.isEmptyString == false ? state?.name : nil
     }
 
     /// One-line form for the home header, where only a truncated glance fits. Any component the
@@ -69,12 +89,12 @@ struct Address: Decodable, Identifiable {
 
     /// The full postal form, for lists where the user is picking between saved addresses.
     var fullLine: String {
-        let cityAndPin = [city?.name, pinCode.isEmptyString ? nil : pinCode]
+        let cityAndPin = [cityName, pinCode.isEmptyString ? nil : pinCode]
             .compactMap { $0 }
             .filter { !$0.isEmpty }
             .joined(separator: " - ")
 
-        return [houseFlatNo, area, landmark, cityAndPin, state?.name]
+        return [houseFlatNo, area, landmark, cityAndPin, stateName]
             .compactMap { $0 }
             .filter { !$0.isEmptyString }
             .joined(separator: ", ")
@@ -116,27 +136,34 @@ struct AddressDetailResponse: Decodable {
     }
 }
 
-/// `by-pincode` is the only way to obtain the `state_id` and `city_id` that saving an address
-/// requires — there is no endpoint listing states or cities — so the form is built around it.
+/// Fills in the state and district for a PIN so the customer does not have to type them. Saving takes
+/// these as plain names, so no ids are needed. The backend has spelled the pair several ways while the
+/// address API changed, and each spelling is accepted rather than betting on one.
 struct PincodeLocation: Decodable {
-    let cityId: Int
-    let cityName: String
-    let stateId: Int
-    let stateName: String
+    let state: String
+    let district: String
 
     enum CodingKeys: String, CodingKey {
-        case cityId = "city_id"
-        case cityName = "city_name"
-        case stateId = "state_id"
+        case state, district, city
         case stateName = "state_name"
+        case districtName = "district_name"
+        case cityName = "city_name"
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        cityId = container.decodeIntLeniently(forKey: .cityId) ?? 0
-        cityName = container.decodeStringLeniently(forKey: .cityName) ?? ""
-        stateId = container.decodeIntLeniently(forKey: .stateId) ?? 0
-        stateName = container.decodeStringLeniently(forKey: .stateName) ?? ""
+        state = container.decodeStringLeniently(forKey: .state)
+            ?? container.decodeStringLeniently(forKey: .stateName)
+            ?? ""
+        district = container.decodeStringLeniently(forKey: .district)
+            ?? container.decodeStringLeniently(forKey: .districtName)
+            ?? container.decodeStringLeniently(forKey: .cityName)
+            ?? container.decodeStringLeniently(forKey: .city)
+            ?? ""
+    }
+
+    var isUsable: Bool {
+        !state.isEmptyString && !district.isEmptyString
     }
 }
 
@@ -157,7 +184,7 @@ struct PincodeLookupResponse: Decodable {
     }
 }
 
-/// Shape shared by the write endpoints (`set-default`, `delete`), whose `data` is an empty object.
+/// Shape shared by the write endpoints (`/{id}/default`, `delete`), whose `data` is an empty object.
 struct StatusResponse: Decodable {
     let status: Bool?
     let message: String?

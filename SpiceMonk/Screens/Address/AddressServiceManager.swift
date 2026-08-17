@@ -22,10 +22,18 @@ class AddressServiceManager {
         )
     }
 
+    func fetchAddress(id: Int) -> AnyPublisher<AddressDetailResponse, Error> {
+        networkService.request(
+            APIRouter.addressDetail(id: id),
+            params: [String: Any](),
+            headers: UserDefaultManager.shared.authHeader
+        )
+    }
+
     func setDefaultAddress(id: Int) -> AnyPublisher<StatusResponse, Error> {
         networkService.request(
-            APIRouter.setDefaultAddress,
-            params: ["id": id],
+            APIRouter.setDefaultAddress(id: id),
+            params: [String: Any](),
             headers: UserDefaultManager.shared.authHeader
         )
     }

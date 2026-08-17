@@ -29,38 +29,112 @@ struct HomeWidgetBlock: View {
             BannerCarousel(items: items)
 
         case .categories(_, let title, let layout, let items):
-            section(title ?? "Categories") {
-                if layout == .verticalGrid {
-                    ChipGrid(items: items)
-                } else {
-                    ChipRow(items: items)
+            CategorySectionPanel {
+                section(title) {
+                    if layout == .verticalGrid {
+                        ChipGrid(items: items, destination: .categoryProducts)
+                    } else {
+                        ChipRow(items: items, destination: .categoryProducts)
+                    }
                 }
             }
 
-        case .brands(_, let title, let items):
-            section(title ?? "Shop by Brand") {
-                ChipRow(items: items)
+        case .categoryGroups(_, let title, let layout, let groups):
+            CategorySectionPanel {
+                section(title) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        ForEach(groups) { group in
+                            BrandCategoryBlock(group: group, layout: layout)
+                        }
+                    }
+                }
             }
 
-        case .products(_, let title, let layout, let hasMore, let items):
-            section(title ?? "Products", showsViewAll: hasMore) {
+        case .brands(_, let title, let layout, let items):
+            section(title) {
                 if layout == .verticalGrid {
-                    ProductGrid(products: items)
+                    ChipGrid(items: items, destination: .brandProducts)
                 } else {
+                    ChipRow(items: items, destination: .brandProducts)
+                }
+            }
+
+        case .products(let id, let title, let layout, let hasMore, let items):
+            section(title, showsViewAll: hasMore, widgetId: id) {
+                switch layout {
+                case .verticalGrid:
+                    ProductGrid(products: items)
+                case .blackLazyRow:
+                    BlackProductRow(products: items)
+                case .lazyRow:
                     ProductRow(products: items)
                 }
             }
         }
     }
 
+    /// A null title means the backend wants no heading, so nothing is invented in its place. The
+    /// "View all" affordance goes with the heading and disappears along with it.
     private func section<Content: View>(
-        _ title: String,
+        _ title: String?,
         showsViewAll: Bool = false,
+        widgetId: Int = 0,
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: title, showsViewAll: showsViewAll)
+            if let title, !title.isEmptyString {
+                SectionHeader(title: title, showsViewAll: showsViewAll, widgetId: widgetId)
+            }
             content()
+        }
+    }
+}
+
+// MARK: - Category panel
+
+/// Groups a category section off the cream canvas. Same tint and inset as Android's
+/// `CategorySectionPanel`.
+struct CategorySectionPanel<Content: View>: View {
+
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        content()
+            .padding(.top, 14)
+            .padding(.bottom, 16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(AppTheme.categoryPanel)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .padding(.horizontal, 8)
+    }
+}
+
+// MARK: - Brand-grouped categories
+
+/// One brand's heading followed by its categories. `category_list` repeats this per brand.
+struct BrandCategoryBlock: View {
+
+    let group: BrandCategoryGroup
+    let layout: WidgetLayout
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                RemoteImage(url: group.brandImageUrl)
+                    .frame(width: 30, height: 30)
+                    .clipShape(Circle())
+
+                Text(group.title)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+            }
+            .padding(.horizontal, HomeMetrics.gutter)
+
+            if layout == .verticalGrid {
+                ChipGrid(items: group.categories, destination: .categoryProducts)
+            } else {
+                ChipRow(items: group.categories, destination: .categoryProducts)
+            }
         }
     }
 }
@@ -71,6 +145,7 @@ struct SectionHeader: View {
 
     let title: String
     var showsViewAll: Bool = false
+    var widgetId: Int = 0
 
     var body: some View {
         HStack {
@@ -81,18 +156,23 @@ struct SectionHeader: View {
             Spacer()
 
             if showsViewAll {
-                HStack(spacing: 2) {
-                    Text("View all")
-                        .font(.system(size: 12, weight: .semibold))
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .bold))
+                NavigationLink {
+                    WidgetProductsScreen(widgetId: widgetId, title: title)
+                } label: {
+                    HStack(spacing: 2) {
+                        Text("View all")
+                            .font(.system(size: 12, weight: .semibold))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .bold))
+                    }
+                    .foregroundStyle(AppTheme.accentRed)
+                    .padding(.leading, 10)
+                    .padding(.trailing, 6)
+                    .padding(.vertical, 4)
+                    .background(AppTheme.accentSoft)
+                    .clipShape(Capsule())
                 }
-                .foregroundStyle(AppTheme.accentRed)
-                .padding(.leading, 10)
-                .padding(.trailing, 6)
-                .padding(.vertical, 4)
-                .background(AppTheme.accentSoft)
-                .clipShape(Capsule())
+                .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, HomeMetrics.gutter)
@@ -115,12 +195,17 @@ struct BannerCarousel: View {
     var body: some View {
         TabView(selection: $selection) {
             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                RemoteImage(url: item.imageUrl)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 172)
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .padding(.horizontal, HomeMetrics.gutter)
-                    .tag(index)
+                NavigationLink {
+                    WidgetProductsScreen(bannerId: item.id)
+                } label: {
+                    RemoteImage(url: item.imageUrl)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 172)
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .padding(.horizontal, HomeMetrics.gutter)
+                }
+                .buttonStyle(.plain)
+                .tag(index)
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
@@ -182,14 +267,49 @@ struct CategoryChip: View {
     }
 }
 
+@ViewBuilder
+private func categoryChip(
+    _ item: CategoryItem,
+    siblings: [CategoryItem],
+    destination: ChipDestination
+) -> some View {
+    switch destination {
+    case .none:
+        CategoryChip(item: item)
+    case .categoryProducts:
+        NavigationLink {
+            CategoryProductsScreen(categoryId: item.id, title: item.name, siblings: siblings)
+        } label: {
+            CategoryChip(item: item)
+        }
+        .buttonStyle(.plain)
+    case .brandProducts:
+        NavigationLink {
+            WidgetProductsScreen(brandId: item.id, title: item.name)
+        } label: {
+            CategoryChip(item: item)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+enum ChipDestination {
+    case none
+    case categoryProducts
+    case brandProducts
+}
+
 struct ChipRow: View {
 
     let items: [CategoryItem]
+    var destination: ChipDestination = .none
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .top, spacing: HomeMetrics.chipSpacing) {
-                ForEach(items) { CategoryChip(item: $0) }
+                ForEach(items) { item in
+                    categoryChip(item, siblings: items, destination: destination)
+                }
             }
             .padding(.horizontal, HomeMetrics.gutter)
         }
@@ -201,13 +321,14 @@ struct ChipRow: View {
 struct ChipGrid: View {
 
     let items: [CategoryItem]
+    var destination: ChipDestination = .none
 
     var body: some View {
         VStack(spacing: 16) {
             ForEach(Array(items.chunked(into: HomeMetrics.categoryColumns).enumerated()), id: \.offset) { _, row in
                 HStack(alignment: .top, spacing: 8) {
                     ForEach(row) { item in
-                        CategoryChip(item: item)
+                        categoryChip(item, siblings: items, destination: destination)
                             .frame(maxWidth: .infinity)
                     }
                     ForEach(0..<(HomeMetrics.categoryColumns - row.count), id: \.self) { _ in
@@ -232,6 +353,7 @@ struct ProductRow: View {
                 ForEach(products) { product in
                     ProductCard(product: product)
                         .frame(width: HomeMetrics.cardWidth)
+                        .productDetailDestination(product)
                 }
             }
             .padding(.horizontal, HomeMetrics.gutter)
@@ -251,6 +373,7 @@ struct ProductGrid: View {
                     ForEach(row) { product in
                         ProductCard(product: product)
                             .frame(maxWidth: .infinity)
+                            .productDetailDestination(product)
                     }
                     ForEach(0..<(HomeMetrics.productColumns - row.count), id: \.self) { _ in
                         Color.clear.frame(maxWidth: .infinity)
@@ -259,6 +382,100 @@ struct ProductGrid: View {
             }
         }
         .padding(.horizontal, HomeMetrics.gutter)
+    }
+}
+
+/// `black_lazy_row`: the same products on a dark slab, used to make a section read as featured.
+struct BlackProductRow: View {
+
+    let products: [ProductItem]
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .top, spacing: HomeMetrics.railSpacing) {
+                ForEach(products) { product in
+                    BlackProductCard(product: product)
+                        .frame(width: HomeMetrics.cardWidth)
+                        .productDetailDestination(product)
+                }
+            }
+            .padding(16)
+        }
+        .background(AppTheme.blackCard)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .padding(.horizontal, HomeMetrics.gutter)
+    }
+}
+
+private struct BlackProductCard: View {
+
+    let product: ProductItem
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            RemoteImage(url: product.imageUrl, contentMode: .fit)
+                .padding(6)
+                .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: .infinity)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(alignment: .center) {
+                    if !product.inStock {
+                        outOfStockOverlay
+                    }
+                }
+
+            Text(product.name)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+
+            if !product.weight.isEmpty {
+                Text(product.weight)
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppTheme.blackCardMuted)
+                    .lineLimit(1)
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("₹\(product.displayPrice)")
+                    .font(.system(size: 15, weight: .heavy))
+                    .foregroundStyle(.white)
+
+                if product.hasDiscount {
+                    Text("₹\(product.mrp)")
+                        .font(.system(size: 11))
+                        .strikethrough()
+                        .foregroundStyle(AppTheme.blackCardMuted)
+                }
+            }
+            .lineLimit(1)
+
+            if product.effectiveSaveAmount > 0 {
+                Text("Save ₹\(product.effectiveSaveAmount)")
+                    .font(.system(size: 11, weight: .heavy))
+                    .foregroundStyle(AppTheme.badgeSuccess)
+                    .lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(8)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var outOfStockOverlay: some View {
+        ZStack {
+            Color.white.opacity(0.6)
+            Text("Out of stock")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(AppTheme.textSecondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
     }
 }
 

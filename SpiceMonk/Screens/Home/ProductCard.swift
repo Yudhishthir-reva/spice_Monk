@@ -21,6 +21,7 @@ struct ProductCard: View {
                 .stroke(AppTheme.cardBorder, lineWidth: 1)
         }
         .shadow(color: .black.opacity(0.05), radius: 3, y: 1)
+        .frame(maxWidth: .infinity, alignment: .top)
     }
 
     private var imageArea: some View {
@@ -35,15 +36,16 @@ struct ProductCard: View {
                     outOfStockOverlay
                 }
             }
-            .overlay(alignment: .topLeading) {
-                leadingBadge
-                    .padding(6)
-            }
-            .overlay(alignment: .topTrailing) {
-                if product.variantsCount > 1 {
-                    badge("\(product.variantsCount) sizes", fill: .white, text: AppTheme.textSecondary)
-                        .padding(6)
+            .overlay(alignment: .top) {
+                HStack(alignment: .top, spacing: 4) {
+                    leadingBadge
+                        .layoutPriority(1)
+                    Spacer(minLength: 0)
+                    if product.variantsCount > 1 {
+                        badge("\(product.variantsCount) sizes", fill: .white, text: AppTheme.textSecondary)
+                    }
                 }
+                .padding(6)
             }
             .padding(8)
     }
@@ -52,8 +54,8 @@ struct ProductCard: View {
     /// of the listing, and stacking both badges crowds a 140pt card.
     @ViewBuilder
     private var leadingBadge: some View {
-        if product.hasDiscount && product.discountPercent > 0 {
-            badge("\(product.discountPercent)% OFF", fill: AppTheme.discountBadge, text: .white)
+        if product.hasDiscount && product.effectiveDiscountPercent > 0 {
+            badge("\(product.effectiveDiscountPercent)% OFF", fill: AppTheme.discountBadge, text: .white)
         } else if product.isNew {
             badge("NEW", fill: AppTheme.newBadgeBackground, text: AppTheme.newBadgeText)
         }
@@ -91,6 +93,13 @@ struct ProductCard: View {
 
             Spacer(minLength: 2)
 
+            if product.effectiveSaveAmount > 0 {
+                Text("Save ₹\(product.effectiveSaveAmount)")
+                    .font(.system(size: 11, weight: .heavy))
+                    .foregroundStyle(AppTheme.badgeSuccess)
+                    .lineLimit(1)
+            }
+
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 Text("₹\(product.displayPrice)")
                     .font(.system(size: 15, weight: .heavy))
@@ -106,7 +115,7 @@ struct ProductCard: View {
             .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 78, alignment: .top)
+        .frame(height: 94, alignment: .top)
         .padding(.horizontal, 10)
         .padding(.bottom, 10)
     }
@@ -115,6 +124,8 @@ struct ProductCard: View {
         Text(text)
             .font(.system(size: 10, weight: .heavy))
             .foregroundStyle(textColor)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
             .background(fill)
@@ -156,5 +167,21 @@ extension ProductItem {
         }
         """
         return try! JSONDecoder().decode(ProductItem.self, from: Data(json.utf8))
+    }
+}
+
+extension View {
+
+    func productDetailDestination(_ product: ProductItem) -> some View {
+        NavigationLink {
+            ProductDetailScreen(
+                productId: product.id,
+                seedName: product.name,
+                seedImageUrl: product.imageUrl
+            )
+        } label: {
+            self
+        }
+        .buttonStyle(.plain)
     }
 }

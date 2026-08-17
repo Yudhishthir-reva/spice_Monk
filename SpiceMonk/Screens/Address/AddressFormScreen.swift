@@ -42,8 +42,11 @@ struct AddressFormScreen: View {
 
                     pinCodeField
 
+                    field("City / district", text: $viewModel.district, placeholder: "Mumbai")
+                    field("State", text: $viewModel.state, placeholder: "Maharashtra")
+
                     field("House / flat no.", text: $viewModel.houseFlatNo, placeholder: "Flat 101, Sunrise Apts")
-                    field("Area", text: $viewModel.area, placeholder: "Andheri West")
+                    field("Area", text: $viewModel.area, placeholder: "Fort")
                     field("Landmark (optional)", text: $viewModel.landmark, placeholder: "Near Metro Station")
 
                     defaultToggle
@@ -58,8 +61,7 @@ struct AddressFormScreen: View {
                             dismiss()
                         }
                     }
-                    .opacity(viewModel.canSave ? 1 : 0.5)
-                    .disabled(!viewModel.canSave)
+                    .disabled(viewModel.isSaving)
                     .padding(.top, 4)
                 }
                 .padding(20)
@@ -120,7 +122,7 @@ struct AddressFormScreen: View {
 
                 if viewModel.isLookingUpPincode {
                     ProgressView()
-                } else if viewModel.resolvedLocation != nil {
+                } else if viewModel.didResolvePincode {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(AppTheme.badgeSuccess)
                 }
@@ -137,8 +139,8 @@ struct AddressFormScreen: View {
                     )
             }
 
-            if let location = viewModel.resolvedLocation {
-                Label("\(location.cityName), \(location.stateName)", systemImage: "mappin.circle.fill")
+            if viewModel.didResolvePincode {
+                Label("\(viewModel.district), \(viewModel.state)", systemImage: "mappin.circle.fill")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(AppTheme.badgeSuccess)
             } else if let error = viewModel.pincodeError {
@@ -146,7 +148,7 @@ struct AddressFormScreen: View {
                     .font(.system(size: 13))
                     .foregroundStyle(AppTheme.brandRed)
             } else {
-                Text("Your city and state are filled in from the PIN code.")
+                Text("We'll fill in your city and state from the PIN code.")
                     .font(.system(size: 12))
                     .foregroundStyle(AppTheme.textMuted)
             }

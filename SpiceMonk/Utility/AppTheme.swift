@@ -52,4 +52,15 @@ enum AppTheme {
 
     static let cardBorder = Color.black.opacity(0.06)
     static let imageTile = Color(hex: "F4F4F5")
+
+    /// Backdrop for the `black_lazy_row` product rail, matching Android's featured carousel.
+    static let blackCard = Color(hex: "1C1C1E")
+    static let blackCardMuted = Color(hex: "9CA3AF")
+
+    /// Light red wash behind category sections — Android's Blinkit-style panel.
+    static let categoryPanel = Color(hex: "FDECEC")
+    static let categoryRail = Color(hex: "F7F7F8")
+    static let heroTile = Color(hex: "F6F5F3")
+    static let cardSoft = Color(hex: "F7F4EE")
+    static let saveBadgeFill = Color(hex: "DCFCE7")
 }

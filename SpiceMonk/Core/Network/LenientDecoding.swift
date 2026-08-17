@@ -47,4 +47,17 @@ extension KeyedDecodingContainer {
         }
         return nil
     }
+
+    func decodeDoubleLeniently(forKey key: Key) -> Double? {
+        if let number = try? decodeIfPresent(Double.self, forKey: key) {
+            return number
+        }
+        if let integer = try? decodeIfPresent(Int.self, forKey: key) {
+            return Double(integer)
+        }
+        if let string = try? decodeIfPresent(String.self, forKey: key) {
+            return Double(string)
+        }
+        return nil
+    }
 }

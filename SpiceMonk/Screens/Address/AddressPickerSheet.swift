@@ -6,7 +6,8 @@
 import SwiftUI
 
 /// Lets the customer switch which saved address orders go to. Picking one writes through to
-/// `set-default`, so the choice survives a relaunch rather than living only in this sheet.
+/// `POST customer/address/{id}/default`, so the choice survives a relaunch rather than living
+/// only in this sheet.
 struct AddressPickerSheet: View {
 
     @ObservedObject var viewModel: AddressViewModel

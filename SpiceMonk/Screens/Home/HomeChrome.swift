@@ -7,51 +7,54 @@ import SwiftUI
 
 // MARK: - Top bar
 
-/// Plum hero that collapses as the feed scrolls: the address block fades out and the bar settles
-/// into a compact surface, leaving the search field always reachable.
+/// Plum chrome that lives *inside* the home `ScrollView`. Address fades as the first safe-area's
+/// worth of content scrolls away; the search row is then held on screen by `visualEffect`, the same
+/// trick E-RSPL uses so the bar never leaves with the feed.
 struct HomeTopBar: View {
 
-    /// 0 when the feed is at rest, 1 once it has scrolled past the collapse distance.
-    let collapseProgress: Double
-    /// Nil until the address list loads, or when the customer has not saved one yet.
     let address: Address?
+    /// 1 at rest, 0 once the address has scrolled through the status-bar height.
+    let addressOpacity: CGFloat
+    let safeAreaTop: CGFloat
+    var searchActive: Bool = false
+    var searchQuery: Binding<String>? = nil
     let onAddressTap: () -> Void
     let onProfileTap: () -> Void
+    var onSearchTap: (() -> Void)?
+    var onSearchBack: (() -> Void)?
+    var onSearchClear: (() -> Void)?
+    var onSearchSubmit: (() -> Void)?
+    var onSearchMic: (() -> Void)?
 
     var body: some View {
-        VStack(spacing: 0) {
-            if collapseProgress < 1 {
-                addressRow
-                    .opacity(1 - collapseProgress)
-                    .frame(height: 46 * (1 - collapseProgress))
-                    .clipped()
-            }
+        VStack(spacing: searchActive ? 0 : 16) {
+            addressRow
+                .opacity(addressOpacity)
+                .frame(height: 52 * addressOpacity, alignment: .bottom)
+                .clipped()
+                .allowsHitTesting(addressOpacity > 0.4)
 
-            searchBar
-                .padding(.top, 12 * (1 - collapseProgress))
+            SpiceSearchBar(
+                query: searchQuery,
+                isActive: searchActive,
+                onTap: onSearchTap,
+                onBack: onSearchBack,
+                onClear: onSearchClear,
+                onSubmit: onSearchSubmit,
+                onMic: onSearchMic
+            )
         }
         .padding(.horizontal, 16)
-        .padding(.bottom, 14)
-        .background(background)
-        .clipShape(
-            .rect(
-                bottomLeadingRadius: 26 * collapseProgress,
-                bottomTrailingRadius: 26 * collapseProgress
-            )
-        )
-        .shadow(color: .black.opacity(0.12 * collapseProgress), radius: 8, y: 2)
-    }
-
-    private var background: some View {
-        ZStack {
+        .padding(.bottom, 8)
+        .padding(.top, safeAreaTop + 8)
+        .background {
             LinearGradient(
                 colors: [AppTheme.homeHeaderTop, AppTheme.homeHeaderBottom],
                 startPoint: .top,
                 endPoint: .bottom
             )
-            AppTheme.homeHeaderSurface.opacity(collapseProgress)
+            .ignoresSafeArea(edges: .top)
         }
-        .ignoresSafeArea(edges: .top)
     }
 
     private var addressRow: some View {
@@ -66,7 +69,7 @@ struct HomeTopBar: View {
 
                         // The API carries no "home"/"work" label, so the chip shows the city —
                         // real data rather than an invented tag.
-                        if let city = address?.city?.name, !city.isEmpty {
+                        if let city = address?.cityName {
                             Text(city.uppercased())
                                 .font(.system(size: 10, weight: .bold))
                                 .padding(.horizontal, 7)
@@ -104,32 +107,119 @@ struct HomeTopBar: View {
             }
         }
     }
+}
 
-    private var searchBar: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(AppTheme.accentRed)
+/// Shared search field: read-only on home (tap to enter), editable with a back chevron in search mode.
+struct SpiceSearchBar: View {
 
-            Text("Search spices, masala, oils…")
-                .font(.system(size: 14))
-                .foregroundStyle(AppTheme.textMuted)
+    var query: Binding<String>?
+    var isActive: Bool = false
+    var onTap: (() -> Void)?
+    var onBack: (() -> Void)?
+    var onClear: (() -> Void)?
+    var onSubmit: (() -> Void)?
+    var onMic: (() -> Void)?
 
-            Spacer()
+    @FocusState private var isFocused: Bool
 
-            Rectangle()
-                .fill(AppTheme.fieldDivider)
-                .frame(width: 1, height: 22)
+    private let placeholder = "Search spices, masala, oils…"
 
-            Image(systemName: "mic.fill")
-                .font(.system(size: 16))
-                .foregroundStyle(AppTheme.accentRed)
+    private var hasQuery: Bool {
+        !(query?.wrappedValue.isEmpty ?? true)
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            leading
+            field
+            trailing
         }
-        .padding(.horizontal, 14)
+        .padding(.leading, 8)
+        .padding(.trailing, 6)
         .frame(height: 52)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
+        .onChange(of: isActive) { _, active in
+            isFocused = active
+        }
+        .onAppear {
+            if isActive { isFocused = true }
+        }
+    }
+
+    @ViewBuilder
+    private var leading: some View {
+        if isActive {
+            Button {
+                onBack?()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .frame(width: 40, height: 40)
+            }
+            .buttonStyle(.plain)
+        } else {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(AppTheme.accentRed)
+                .frame(width: 40, height: 40)
+                .contentShape(Rectangle())
+                .onTapGesture { onTap?() }
+        }
+    }
+
+    @ViewBuilder
+    private var field: some View {
+        if isActive, let query {
+            TextField(placeholder, text: query)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(AppTheme.textPrimary)
+                .focused($isFocused)
+                .submitLabel(.search)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .onSubmit { onSubmit?() }
+        } else {
+            Text(placeholder)
+                .font(.system(size: 14))
+                .foregroundStyle(AppTheme.textMuted)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { onTap?() }
+        }
+    }
+
+    @ViewBuilder
+    private var trailing: some View {
+        if isActive && hasQuery {
+            Button {
+                onClear?()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(AppTheme.textMuted)
+                    .frame(width: 40, height: 40)
+            }
+            .buttonStyle(.plain)
+        } else {
+            HStack(spacing: 0) {
+                Rectangle()
+                    .fill(AppTheme.fieldDivider)
+                    .frame(width: 1, height: 22)
+
+                Button {
+                    onMic?()
+                } label: {
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(AppTheme.accentRed)
+                        .frame(width: 40, height: 40)
+                }
+                .buttonStyle(.plain)
+            }
+        }
     }
 }
 

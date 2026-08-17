@@ -12,15 +12,17 @@ class AddressFormViewModel: ObservableObject {
     @Published var mobile = ""
     @Published var alternateMobile = ""
     @Published var pinCode = ""
+    /// Saving takes the state and district as plain names, so the PIN lookup is a convenience that
+    /// fills these rather than a gate. They stay editable for PINs the backend cannot resolve.
+    @Published var state = ""
+    @Published var district = ""
     @Published var area = ""
     @Published var houseFlatNo = ""
     @Published var landmark = ""
     @Published var isDefault = false
 
-    /// Resolved from the PIN rather than typed, because saving needs the ids behind these names and
-    /// only `by-pincode` can supply them.
-    @Published private(set) var resolvedLocation: PincodeLocation?
     @Published private(set) var isLookingUpPincode = false
+    @Published private(set) var didResolvePincode = false
     @Published private(set) var pincodeError: String?
 
     @Published private(set) var isSaving = false
@@ -33,13 +35,8 @@ class AddressFormViewModel: ObservableObject {
 
     private static let pinCodeLength = 6
 
-    var canSave: Bool {
-        resolvedLocation != nil && !isSaving
-    }
-
-    /// Called as the PIN field changes. A lookup only fires on a complete PIN, and any previously
-    /// resolved city is cleared the moment the PIN stops matching it — otherwise an edited PIN
-    /// could be saved against the old city's ids.
+    /// A complete PIN is enough to try; anything still missing is reported by name on submit, which
+    /// beats a dead button that does not say what it wants.
     func pinCodeChanged() {
         let digits = String(pinCode.filter(\.isNumber).prefix(Self.pinCodeLength))
         if digits != pinCode {
@@ -47,7 +44,7 @@ class AddressFormViewModel: ObservableObject {
         }
 
         lookupCancellable?.cancel()
-        resolvedLocation = nil
+        didResolvePincode = false
         pincodeError = nil
 
         guard digits.count == Self.pinCodeLength else {
@@ -67,24 +64,24 @@ class AddressFormViewModel: ObservableObject {
             } receiveValue: { [weak self] response in
                 guard let self else { return }
                 self.isLookingUpPincode = false
-                if let location = response.location, location.cityId > 0 {
-                    self.resolvedLocation = location
+
+                if let location = response.location, location.isUsable {
+                    // The PIN is authoritative, so a fresh result replaces anything typed before.
+                    self.state = location.state
+                    self.district = location.district
+                    self.didResolvePincode = true
                 } else {
-                    self.pincodeError = response.message ?? "We don't deliver to this PIN code yet."
+                    self.pincodeError = response.message ?? "Couldn't find this PIN code — please fill in the city and state."
                 }
             }
     }
 
     func save(onSuccess: @escaping (Address?) -> Void) {
-        guard let location = resolvedLocation else {
-            show("Enter a PIN code so we can confirm your city.")
+        if let validationError = firstValidationError {
+            show(validationError)
             return
         }
-        guard let validationError = firstValidationError else {
-            submit(location: location, onSuccess: onSuccess)
-            return
-        }
-        show(validationError)
+        submit(onSuccess: onSuccess)
     }
 
     private var firstValidationError: String? {
@@ -97,16 +94,25 @@ class AddressFormViewModel: ObservableObject {
         if !alternateMobile.trim.isEmptyString, !alternateMobile.trim.isValidIndianMobileNumber() {
             return "The alternate number is not a valid 10-digit mobile number."
         }
+        if pinCode.count != Self.pinCodeLength {
+            return "Please enter a 6-digit PIN code."
+        }
         if houseFlatNo.trim.isEmptyString {
             return "Please enter your house or flat number."
         }
         if area.trim.isEmptyString {
             return "Please enter your area."
         }
+        if district.trim.isEmptyString {
+            return "Please enter your city or district."
+        }
+        if state.trim.isEmptyString {
+            return "Please enter your state."
+        }
         return nil
     }
 
-    private func submit(location: PincodeLocation, onSuccess: @escaping (Address?) -> Void) {
+    private func submit(onSuccess: @escaping (Address?) -> Void) {
         isSaving = true
 
         let params: [String: Any] = [
@@ -115,8 +121,8 @@ class AddressFormViewModel: ObservableObject {
             // Sent even when blank, matching the form the API is documented against.
             "alternate_mobile": alternateMobile.trim,
             "pin_code": pinCode,
-            "state_id": location.stateId,
-            "city_id": location.cityId,
+            "state": state.trim,
+            "district": district.trim,
             "area": area.trim,
             "house_flat_no": houseFlatNo.trim,
             "landmark": landmark.trim,
