@@ -84,6 +84,7 @@ class HomeViewModel: ObservableObject {
     }
 
     func logout() {
+        CartStore.shared.reset()
         UserDefaultManager.shared.resetUserData()
         AppRootManager.shared.setRootView(view: LoginScreen())
     }

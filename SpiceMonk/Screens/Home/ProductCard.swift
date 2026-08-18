@@ -5,6 +5,8 @@
 
 import SwiftUI
 
+/// Catalog cell: image, then weight + ADD, then price, then name — Blinkit-style stacking,
+/// SpiceMonk red for the add control.
 struct ProductCard: View {
 
     let product: ProductItem
@@ -12,46 +14,108 @@ struct ProductCard: View {
     var body: some View {
         VStack(spacing: 0) {
             imageArea
-            textBlock
+
+            Rectangle()
+                .fill(Color.black.opacity(0.08))
+                .frame(height: 1)
+
+            weightAndAddRow
+
+            NavigationLink {
+                ProductDetailScreen(
+                    productId: product.id,
+                    seedName: product.name,
+                    seedImageUrl: product.imageUrl
+                )
+            } label: {
+                priceAndTitle
+            }
+            .buttonStyle(.plain)
         }
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(AppTheme.cardBorder, lineWidth: 1)
         }
-        .shadow(color: .black.opacity(0.05), radius: 3, y: 1)
         .frame(maxWidth: .infinity, alignment: .top)
     }
 
     private var imageArea: some View {
-        RemoteImage(url: product.imageUrl, contentMode: .fit)
-            .padding(6)
-            .aspectRatio(1, contentMode: .fit)
-            .frame(maxWidth: .infinity)
-            .background(AppTheme.imageTile)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(alignment: .center) {
-                if !product.inStock {
-                    outOfStockOverlay
-                }
-            }
-            .overlay(alignment: .top) {
-                HStack(alignment: .top, spacing: 4) {
-                    leadingBadge
-                        .layoutPriority(1)
-                    Spacer(minLength: 0)
-                    if product.variantsCount > 1 {
-                        badge("\(product.variantsCount) sizes", fill: .white, text: AppTheme.textSecondary)
+        NavigationLink {
+            ProductDetailScreen(
+                productId: product.id,
+                seedName: product.name,
+                seedImageUrl: product.imageUrl
+            )
+        } label: {
+            RemoteImage(url: product.imageUrl, contentMode: .fit)
+                .padding(8)
+                .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: .infinity)
+                .background(AppTheme.imageTile)
+                .overlay(alignment: .center) {
+                    if !product.inStock {
+                        outOfStockOverlay
                     }
                 }
-                .padding(6)
-            }
-            .padding(8)
+                .overlay(alignment: .topLeading) {
+                    leadingBadge
+                        .padding(8)
+                }
+                .overlay(alignment: .topTrailing) {
+                    if product.variantsCount > 1 {
+                        badge("\(product.variantsCount) sizes", fill: .white, text: AppTheme.textSecondary)
+                            .padding(8)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
     }
 
-    /// Discount wins over NEW: a shopper scanning a rail cares more about the saving than the age
-    /// of the listing, and stacking both badges crowds a 140pt card.
+    private var weightAndAddRow: some View {
+        HStack(alignment: .center, spacing: 6) {
+            Text(product.weight.isEmptyString ? " " : product.weight)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+
+            Spacer(minLength: 4)
+
+            ProductCartControl(product: product)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 8)
+    }
+
+    private var priceAndTitle: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 5) {
+                Text("₹\(product.displayPrice)")
+                    .font(.system(size: 16, weight: .heavy))
+                    .foregroundStyle(AppTheme.textPrimary)
+
+                if product.hasDiscount {
+                    Text("₹\(product.mrp)")
+                        .font(.system(size: 12))
+                        .strikethrough()
+                        .foregroundStyle(AppTheme.textMuted)
+                }
+            }
+            .lineLimit(1)
+
+            Text(product.name)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(AppTheme.textPrimary)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, minHeight: 34, alignment: .topLeading)
+        }
+        .padding(.horizontal, 8)
+        .padding(.bottom, 10)
+    }
+
     @ViewBuilder
     private var leadingBadge: some View {
         if product.hasDiscount && product.effectiveDiscountPercent > 0 {
@@ -74,52 +138,6 @@ struct ProductCard: View {
         }
     }
 
-    /// A fixed height here is what lets cards in a rail or grid line their prices up, regardless of
-    /// whether a name wraps to one line or two.
-    private var textBlock: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(product.name)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(AppTheme.textPrimary)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-
-            if !product.weight.isEmpty {
-                Text(product.weight)
-                    .font(.system(size: 11))
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .lineLimit(1)
-            }
-
-            Spacer(minLength: 2)
-
-            if product.effectiveSaveAmount > 0 {
-                Text("Save ₹\(product.effectiveSaveAmount)")
-                    .font(.system(size: 11, weight: .heavy))
-                    .foregroundStyle(AppTheme.badgeSuccess)
-                    .lineLimit(1)
-            }
-
-            HStack(alignment: .firstTextBaseline, spacing: 5) {
-                Text("₹\(product.displayPrice)")
-                    .font(.system(size: 15, weight: .heavy))
-                    .foregroundStyle(AppTheme.textPrimary)
-
-                if product.hasDiscount {
-                    Text("₹\(product.mrp)")
-                        .font(.system(size: 11))
-                        .strikethrough()
-                        .foregroundStyle(AppTheme.textMuted)
-                }
-            }
-            .lineLimit(1)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 94, alignment: .top)
-        .padding(.horizontal, 10)
-        .padding(.bottom, 10)
-    }
-
     private func badge(_ text: String, fill: Color, text textColor: Color) -> some View {
         Text(text)
             .font(.system(size: 10, weight: .heavy))
@@ -133,10 +151,6 @@ struct ProductCard: View {
     }
 }
 
-// MARK: - Remote image
-
-/// `AsyncImage` with the states the feed actually needs: a tinted placeholder while loading and a
-/// neutral glyph when a URL is missing or fails, so a broken image never collapses a card's layout.
 #Preview {
     HStack(spacing: 12) {
         ProductCard(product: .preview)
@@ -183,5 +197,36 @@ extension View {
             self
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// ADD / qty stepper on listing cards. Lives outside the image `NavigationLink` so taps do not
+/// open product detail. Hidden when the payload has no `variant_id` to send.
+struct ProductCartControl: View {
+
+    let product: ProductItem
+    @ObservedObject private var cart = CartStore.shared
+
+    var body: some View {
+        if let variant = product.defaultCartVariant, variant.id > 0 {
+            let qty = cart.quantity(productId: product.id, variantId: variant.id)
+            let busy = cart.isBusy(productId: product.id, variantId: variant.id)
+            let stock = variant.availableQty > 0 ? variant.availableQty : product.availableQty
+            if qty > 0 || product.inStock {
+                CartQtyStepper(
+                    qty: qty,
+                    inStock: true,
+                    canIncrement: stock <= 0 || qty < stock,
+                    isBusy: busy,
+                    listing: true,
+                    onIncrement: {
+                        cart.addOrIncrement(productId: product.id, variantId: variant.id, availableQty: stock)
+                    },
+                    onDecrement: {
+                        cart.decrement(productId: product.id, variantId: variant.id)
+                    }
+                )
+            }
+        }
     }
 }

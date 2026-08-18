@@ -6,10 +6,11 @@
 import SwiftUI
 
 /// Blinkit-style product page: hero gallery, live price from the selected variant, and a sticky
-/// "Add to cart" bar. Cart is still a coming-soon toast, matching Android.
+/// add-to-cart bar that becomes a stepper once the line is in the cart.
 struct ProductDetailScreen: View {
 
     @StateObject var viewModel: ProductDetailViewModel
+    @ObservedObject private var cart = CartStore.shared
     @Environment(\.dismiss) private var dismiss
 
     init(productId: Int, seedName: String, seedImageUrl: String?) {
@@ -44,6 +45,7 @@ struct ProductDetailScreen: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
+            CartStore.shared.loadIfNeeded()
             if viewModel.product == nil, !viewModel.notFound {
                 viewModel.load()
             }
@@ -51,6 +53,7 @@ struct ProductDetailScreen: View {
         .toast(isPresenting: $viewModel.isShowToastView, duration: 1.8, offsetY: 10, alert: {
             AlertToast(displayMode: .banner(.pop), type: .regular, title: viewModel.toastMessage)
         }, onTap: nil, completion: nil)
+        .cartStoreToast()
     }
 
     private var backButton: some View {
@@ -224,7 +227,6 @@ struct ProductDetailScreen: View {
                         ForEach(viewModel.related) { product in
                             ProductCard(product: product)
                                 .frame(width: 140)
-                                .productDetailDestination(product)
                                 .onAppear {
                                     if product.id == viewModel.related.last?.id {
                                         viewModel.loadMoreRelated()
@@ -393,7 +395,10 @@ struct ProductDetailScreen: View {
     }
 
     private func stickyBar(_ variant: ProductDetailVariant) -> some View {
-        HStack(spacing: 16) {
+        let qty = cart.quantity(productId: viewModel.productId, variantId: variant.id)
+        let busy = cart.isBusy(productId: viewModel.productId, variantId: variant.id)
+
+        return HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text("₹\(variant.displayPrice)")
@@ -412,33 +417,66 @@ struct ProductDetailScreen: View {
             }
             .frame(minWidth: 90, alignment: .leading)
 
-            Button(action: viewModel.addToCart) {
-                HStack(spacing: 8) {
-                    if viewModel.isAddingToCart {
-                        ProgressView()
-                            .tint(.white)
-                    } else {
-                        Text("Add to cart")
-                            .font(.system(size: 16, weight: .semibold))
-                        Image(systemName: "cart.fill")
-                            .font(.system(size: 14, weight: .semibold))
+            if qty > 0 {
+                detailQtyStepper(qty: qty, variant: variant, isBusy: busy)
+            } else {
+                Button(action: viewModel.addToCart) {
+                    HStack(spacing: 8) {
+                        if busy {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Text("Add to cart")
+                                .font(.system(size: 16, weight: .semibold))
+                            Image(systemName: "cart.fill")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
                     }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(AppTheme.ctaGradient)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(AppTheme.ctaGradient)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .buttonStyle(.plain)
+                .disabled(!variant.inStock || busy)
+                .opacity(variant.inStock ? 1 : 0.45)
             }
-            .buttonStyle(.plain)
-            .disabled(!variant.inStock || viewModel.isAddingToCart)
-            .opacity(variant.inStock ? 1 : 0.45)
         }
         .padding(.horizontal, 18)
         .padding(.top, 12)
         .padding(.bottom, 12)
         .background(Color.white)
         .shadow(color: .black.opacity(0.08), radius: 16, y: -4)
+    }
+
+    private func detailQtyStepper(qty: Int, variant: ProductDetailVariant, isBusy: Bool) -> some View {
+        HStack(spacing: 0) {
+            Button(action: viewModel.decrementCart) {
+                Image(systemName: qty <= 1 ? "trash" : "minus")
+                    .font(.system(size: 15, weight: .bold))
+                    .frame(width: 52, height: 52)
+            }
+            .disabled(isBusy)
+
+            Text("\(qty)")
+                .font(.system(size: 18, weight: .heavy))
+                .frame(maxWidth: .infinity)
+
+            Button(action: viewModel.addToCart) {
+                Image(systemName: "plus")
+                    .font(.system(size: 15, weight: .bold))
+                    .frame(width: 52, height: 52)
+            }
+            .disabled(isBusy || (variant.availableQty > 0 && qty >= variant.availableQty))
+        }
+        .foregroundStyle(.white)
+        .frame(maxWidth: .infinity)
+        .frame(height: 52)
+        .background(AppTheme.ctaGradient)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .buttonStyle(.plain)
+        .opacity(isBusy ? 0.7 : 1)
     }
 
     private func heroBadge(_ title: String, fill: Color, foreground: Color) -> some View {

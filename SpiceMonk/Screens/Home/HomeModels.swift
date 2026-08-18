@@ -222,6 +222,11 @@ struct ProductItem: Decodable, Identifiable {
         availableQty > 0
     }
 
+    /// Listing cards add this variant. Prefer an in-stock option so ADD is not a dead tap.
+    var defaultCartVariant: ProductVariant? {
+        variants.first(where: { $0.availableQty > 0 }) ?? variants.first
+    }
+
     static func parsePrice(_ raw: String) -> Double {
         Double(raw.trim.filter { $0.isNumber || $0 == "." }) ?? 0
     }

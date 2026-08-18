@@ -5,22 +5,31 @@
 
 import SwiftUI
 
-/// Cart from `GET customer/cart`. Qty is display-only until the update endpoint is wired.
+/// Cart UI matches Android `CartScreen` (commit `f3c7b42`): address, SLA, grouped items,
+/// bill details, cancellation note, and a sticky proceed bar.
 struct CartScreen: View {
 
-    @StateObject var viewModel = CartViewModel()
+    @ObservedObject var cart = CartStore.shared
+    @ObservedObject var addressViewModel: AddressViewModel
+    @Environment(\.dismiss) private var dismiss
     @State private var isConfirmingClear = false
+    @State private var isPickingAddress = false
+    @State private var isAddingAddress = false
+
+    private var itemCount: Int {
+        cart.summary.totalItems > 0 ? cart.summary.totalItems : cart.items.reduce(0) { $0 + $1.qty }
+    }
 
     var body: some View {
         Group {
-            if viewModel.isLoading && viewModel.isEmpty {
+            if cart.isLoading && cart.isEmpty {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let error = viewModel.loadError, viewModel.isEmpty {
+            } else if let error = cart.loadError, cart.isEmpty {
                 HomeErrorState(message: error) {
-                    viewModel.load()
+                    cart.load()
                 }
-            } else if viewModel.isEmpty {
+            } else if cart.isEmpty {
                 emptyState
             } else {
                 cartBody
@@ -28,132 +37,412 @@ struct CartScreen: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.white)
-        .navigationTitle("Cart")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .toolbarBackground(Color.white, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbar {
-            if !viewModel.isEmpty {
+            ToolbarItem(placement: .principal) {
+                VStack(spacing: 1) {
+                    Text("Shopping Cart")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                    if !cart.isEmpty, itemCount > 0 {
+                        Text(itemCount == 1 ? "1 item" : "\(itemCount) items")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(AppTheme.textSecondary)
+                    }
+                }
+            }
+            if !cart.isEmpty {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Clear") { isConfirmingClear = true }
-                        .disabled(viewModel.isClearing)
+                    Button {
+                        isConfirmingClear = true
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(AppTheme.accentRed)
+                    }
+                    .disabled(cart.isClearing)
                 }
             }
         }
-        .confirmationDialog("Remove all items from your cart?", isPresented: $isConfirmingClear, titleVisibility: .visible) {
-            Button("Clear cart", role: .destructive) { viewModel.clear() }
+        .alert("Clear Cart?", isPresented: $isConfirmingClear) {
+            Button("Clear", role: .destructive) { cart.clear() }
             Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Are you sure you want to remove all items from your cart?")
         }
         .tint(AppTheme.accentRed)
         .onAppear {
-            viewModel.load()
+            cart.load()
+            addressViewModel.load()
         }
-        .toast(isPresenting: $viewModel.isShowToastView, duration: 1.8, offsetY: 10, alert: {
-            AlertToast(displayMode: .banner(.pop), type: .regular, title: viewModel.toastMessage)
-        }, onTap: nil, completion: nil)
+        .sheet(isPresented: $isPickingAddress) {
+            AddressPickerSheet(viewModel: addressViewModel)
+        }
+        .sheet(isPresented: $isAddingAddress) {
+            AddressFormScreen { _ in
+                addressViewModel.load()
+            }
+        }
+        .cartStoreToast()
     }
 
     private var cartBody: some View {
         VStack(spacing: 0) {
-            List {
-                ForEach(viewModel.items) { item in
-                    NavigationLink {
-                        ProductDetailScreen(
-                            productId: item.productId,
-                            seedName: item.productName,
-                            seedImageUrl: item.productImage
-                        )
-                    } label: {
-                        CartItemRow(item: item)
-                    }
-                    .buttonStyle(.plain)
-                    .navigationLinkIndicatorVisibility(.hidden)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                    .listRowBackground(Color.clear)
-                    .opacity(viewModel.isRemoving(item) ? 0.45 : 1)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) {
-                            viewModel.remove(item)
-                        } label: {
-                            Label("Remove", systemImage: "trash")
-                        }
-                    }
+            ScrollView {
+                LazyVStack(spacing: 14) {
+                    deliveryAddressCard
+                    deliverySlaBanner
+                    itemsCard
+                    billDetailsCard
+                    cancellationNote
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 24)
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
             .refreshable { await waitForRefresh() }
 
-            summaryBar
+            stickyCheckoutBar
         }
     }
 
-    private var summaryBar: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text(viewModel.summary.itemCountLabel)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(AppTheme.textSecondary)
-                Spacer()
-                if viewModel.summary.totalSavings > 0 {
-                    Text("Saved \(viewModel.summary.savingsLabel)")
-                        .font(.system(size: 13, weight: .heavy))
-                        .foregroundStyle(AppTheme.badgeSuccess)
-                }
-            }
+    // MARK: - Address
 
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(viewModel.summary.payLabel)
-                        .font(.system(size: 20, weight: .heavy))
-                        .foregroundStyle(AppTheme.textPrimary)
-                    if viewModel.summary.totalMrp > viewModel.summary.totalCustomerPrice {
-                        Text(viewModel.summary.mrpLabel)
-                            .font(.system(size: 12))
-                            .strikethrough()
-                            .foregroundStyle(AppTheme.textMuted)
-                    }
-                }
-
-                Spacer()
-
-                Button(action: viewModel.checkout) {
-                    Text("Checkout")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 28)
-                        .frame(height: 48)
-                        .background(AppTheme.ctaGradient)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                }
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 8)
-        .background(Color.white)
-        .shadow(color: .black.opacity(0.08), radius: 10, y: -2)
-    }
-
-    private var emptyState: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "cart.fill")
-                .font(.system(size: 28))
+    private var deliveryAddressCard: some View {
+        let address = addressViewModel.defaultAddress
+        return HStack(spacing: 12) {
+            Image(systemName: address == nil ? "mappin.and.ellipse" : "house.fill")
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(AppTheme.accentRed)
-                .frame(width: 72, height: 72)
+                .frame(width: 40, height: 40)
                 .background(AppTheme.accentSoft)
                 .clipShape(Circle())
 
-            Text("Your cart is empty")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(AppTheme.textPrimary)
+            VStack(alignment: .leading, spacing: 2) {
+                if let address {
+                    HStack(spacing: 6) {
+                        Text("Delivering to")
+                            .font(.system(size: 11))
+                            .foregroundStyle(AppTheme.textSecondary)
+                        Text(address.fullName.isEmptyString ? "Home" : address.fullName)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                            .lineLimit(1)
+                    }
+                    Text(address.cartDeliveryLine)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .lineLimit(1)
+                } else {
+                    Text("No delivery address selected")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                    Text("Add an address to proceed to checkout")
+                        .font(.system(size: 11))
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text("Add items from the shop to see them here.")
-                .font(.system(size: 14))
+            Button(address == nil ? "Add" : "Change") {
+                if address == nil {
+                    isAddingAddress = true
+                } else {
+                    isPickingAddress = true
+                }
+            }
+            .font(.system(size: 15, weight: .bold))
+            .foregroundStyle(AppTheme.accentRed)
+        }
+        .padding(14)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.black.opacity(0.055), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
+    }
+
+    private var deliverySlaBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "bolt.fill")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(AppTheme.badgeSuccess)
+                .frame(width: 28, height: 28)
+                .background(AppTheme.badgeSuccess.opacity(0.18))
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Delivery in 10 - 15 minutes")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(AppTheme.badgeSuccess)
+                Text("Shipment packed & dispatched from your nearest SpiceMonk hub")
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppTheme.textSecondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(AppTheme.badgeSuccess.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(AppTheme.badgeSuccess.opacity(0.2), lineWidth: 1)
+        }
+    }
+
+    // MARK: - Items
+
+    private var itemsCard: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(cart.items.enumerated()), id: \.element.id) { index, item in
+                CartItemRow(
+                    item: item,
+                    isBusy: cart.isUpdating(item) || cart.isRemoving(item),
+                    onIncrement: { cart.changeQty(item, by: 1) },
+                    onDecrement: { cart.changeQty(item, by: -1) }
+                )
+                .opacity(cart.isRemoving(item) ? 0.45 : 1)
+
+                if index < cart.items.count - 1 {
+                    Divider()
+                        .padding(.horizontal, 16)
+                }
+            }
+        }
+        .padding(.vertical, 6)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.black.opacity(0.055), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
+    }
+
+    // MARK: - Bill
+
+    private var billDetailsCard: some View {
+        let summary = cart.summary
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "doc.text")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(AppTheme.accentRed)
+                Text("Bill Details")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+            }
+
+            Divider()
+
+            billRow(label: "Items Total (MRP)", value: CartItem.rupees(summary.totalMrp), color: AppTheme.textSecondary)
+
+            if summary.totalSavings > 0 {
+                billRow(
+                    label: "Product Discount",
+                    value: "-\(CartItem.rupees(summary.totalSavings))",
+                    color: AppTheme.badgeSuccess
+                )
+            }
+
+            billRow(label: "Delivery Partner Fee", value: "FREE", strike: "₹25", color: AppTheme.badgeSuccess)
+            billRow(label: "Handling & Packing", value: "FREE", strike: "₹10", color: AppTheme.badgeSuccess)
+
+            Divider()
+
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Grand Total")
+                        .font(.system(size: 15, weight: .heavy))
+                        .foregroundStyle(AppTheme.textPrimary)
+                    Text("Inclusive of all taxes")
+                        .font(.system(size: 10))
+                        .foregroundStyle(AppTheme.textMuted)
+                }
+                Spacer()
+                Text(CartItem.rupees(summary.totalCustomerPrice))
+                    .font(.system(size: 18, weight: .heavy))
+                    .foregroundStyle(AppTheme.textPrimary)
+            }
+
+            if summary.totalSavings > 0 {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(AppTheme.badgeSuccess)
+                    Text("Yay! You're saving \(CartItem.rupees(summary.totalSavings)) on this order")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(AppTheme.badgeSuccess)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(AppTheme.badgeSuccess.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+        }
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.black.opacity(0.055), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
+    }
+
+    private func billRow(label: String, value: String, strike: String? = nil, color: Color) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 13))
+                .foregroundStyle(AppTheme.textSecondary)
+            Spacer()
+            if let strike {
+                Text(strike)
+                    .font(.system(size: 11))
+                    .strikethrough()
+                    .foregroundStyle(AppTheme.textMuted)
+            }
+            Text(value)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(color)
+        }
+    }
+
+    private var cancellationNote: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "info.circle")
+                .font(.system(size: 15))
+                .foregroundStyle(AppTheme.textMuted)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Cancellation Policy")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(AppTheme.textSecondary)
+                Text("Orders cannot be cancelled once packed. Please ensure your delivery address is accurate before placing order.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppTheme.textMuted)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.black.opacity(0.03))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    // MARK: - Sticky bar
+
+    private var stickyCheckoutBar: some View {
+        VStack(spacing: 0) {
+            Button {
+                if addressViewModel.defaultAddress == nil {
+                    isAddingAddress = true
+                } else {
+                    isPickingAddress = true
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppTheme.accentRed)
+                    Text(stickyAddressLabel)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .lineLimit(1)
+                    Spacer(minLength: 8)
+                    Text("Change")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(AppTheme.accentRed)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(AppTheme.accentSoft.opacity(0.4))
+            }
+            .buttonStyle(.plain)
+
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("TOTAL")
+                        .font(.system(size: 10, weight: .heavy))
+                        .foregroundStyle(AppTheme.textMuted)
+                    Text(CartItem.rupees(cart.summary.totalCustomerPrice))
+                        .font(.system(size: 20, weight: .heavy))
+                        .foregroundStyle(AppTheme.textPrimary)
+                }
+
+                Button(action: cart.checkout) {
+                    HStack(spacing: 8) {
+                        Text("Proceed to Pay")
+                            .font(.system(size: 16, weight: .bold))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 14, weight: .bold))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(AppTheme.ctaGradient)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .disabled(cart.isClearing)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .background(Color.white)
+        .shadow(color: .black.opacity(0.12), radius: 14, y: -4)
+    }
+
+    private var stickyAddressLabel: String {
+        if let address = addressViewModel.defaultAddress {
+            let line = address.cartStickyLine
+            return line.isEmpty ? "Delivering to: \(address.fullName)" : "Delivering to: \(line)"
+        }
+        return "Select delivery address"
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "cart.badge.minus")
+                .font(.system(size: 44, weight: .medium))
+                .foregroundStyle(AppTheme.accentRed)
+                .frame(width: 110, height: 110)
+                .background(AppTheme.accentSoft.opacity(0.5))
+                .clipShape(Circle())
+
+            Text("Your Cart is Empty")
+                .font(.system(size: 22, weight: .heavy))
+                .foregroundStyle(AppTheme.textPrimary)
+                .padding(.top, 16)
+
+            Text("Explore our premium spices, powders, and seasonings to start cooking healthy!")
+                .font(.system(size: 15))
                 .foregroundStyle(AppTheme.textSecondary)
                 .multilineTextAlignment(.center)
+
+            Button {
+                dismiss()
+            } label: {
+                HStack(spacing: 8) {
+                    Text("Start Shopping")
+                        .font(.system(size: 16, weight: .bold))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 14, weight: .bold))
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(AppTheme.ctaGradient)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .padding(.top, 20)
+            .padding(.horizontal, 12)
         }
         .padding(.horizontal, 32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -161,8 +450,8 @@ struct CartScreen: View {
     }
 
     private func waitForRefresh() async {
-        viewModel.refresh()
-        while viewModel.isRefreshing {
+        cart.refresh()
+        while cart.isRefreshing {
             try? await Task.sleep(for: .milliseconds(80))
         }
     }
@@ -171,83 +460,192 @@ struct CartScreen: View {
 private struct CartItemRow: View {
 
     let item: CartItem
+    var isBusy: Bool = false
+    var onIncrement: () -> Void = {}
+    var onDecrement: () -> Void = {}
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            RemoteImage(url: item.productImage, contentMode: .fit)
-                .padding(6)
-                .frame(width: 72, height: 72)
-                .background(AppTheme.imageTile)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay {
-                    if !item.inStock {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(Color.white.opacity(0.55))
-                    }
+        HStack(alignment: .center, spacing: 12) {
+            NavigationLink {
+                ProductDetailScreen(
+                    productId: item.productId,
+                    seedName: item.productName,
+                    seedImageUrl: item.productImage
+                )
+            } label: {
+                HStack(alignment: .center, spacing: 12) {
+                    image
+                    details
                 }
+            }
+            .buttonStyle(.plain)
+            .navigationLinkIndicatorVisibility(.hidden)
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .top, spacing: 8) {
-                    Text(item.productName)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .lineLimit(2)
+            CartQtyStepper(
+                qty: item.qty,
+                inStock: item.inStock,
+                canIncrement: item.inStock && item.qty < item.availableQty,
+                isBusy: isBusy,
+                compact: true,
+                onIncrement: onIncrement,
+                onDecrement: onDecrement
+            )
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+    }
 
-                    Spacer(minLength: 0)
-
-                    if item.hasDiscount, item.discountPercentTruncated > 0 {
-                        Text("\(item.discountPercentTruncated)% OFF")
-                            .font(.system(size: 10, weight: .heavy))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(AppTheme.discountBadge)
-                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                    }
-                }
-
-                if !item.variantName.isEmptyString {
-                    Text(item.variantName)
-                        .font(.system(size: 12))
-                        .foregroundStyle(AppTheme.textSecondary)
-                }
-
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text("Qty \(item.qty)")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(AppTheme.cardSoft)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                    Spacer(minLength: 0)
-
-                    Text(item.subtotalLabel)
-                        .font(.system(size: 15, weight: .heavy))
-                        .foregroundStyle(AppTheme.textPrimary)
-
-                    if item.hasDiscount {
-                        Text(CartItem.money(item.mrp * Double(max(item.qty, 1))))
-                            .font(.system(size: 11))
-                            .strikethrough()
-                            .foregroundStyle(AppTheme.textMuted)
-                    }
-                }
-
+    private var image: some View {
+        RemoteImage(url: item.productImage, contentMode: .fit)
+            .padding(4)
+            .frame(width: 60, height: 60)
+            .background(AppTheme.imageTile)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay {
                 if !item.inStock {
-                    Text("Out of stock")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(AppTheme.accentRed)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.white.opacity(0.55))
+                }
+            }
+    }
+
+    private var details: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(item.productName)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary)
+                .lineLimit(2)
+
+            if !item.variantName.isEmptyString {
+                Text(item.variantName)
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .lineLimit(1)
+            }
+
+            HStack(spacing: 6) {
+                Text(item.unitPriceLabel)
+                    .font(.system(size: 15, weight: .heavy))
+                    .foregroundStyle(AppTheme.textPrimary)
+
+                if item.hasDiscount {
+                    Text(item.mrpLabel)
+                        .font(.system(size: 11))
+                        .strikethrough()
+                        .foregroundStyle(AppTheme.textMuted)
+                }
+
+                if item.savingsPerUnit > 0 {
+                    Text("Save \(CartItem.rupees(item.savingsPerUnit))")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(AppTheme.badgeSuccess)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(AppTheme.badgeSuccess.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                 }
             }
         }
-        .padding(12)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(AppTheme.cardBorder, lineWidth: 1)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct CartQtyStepper: View {
+
+    let qty: Int
+    var inStock: Bool = true
+    var canIncrement: Bool = true
+    var isBusy: Bool = false
+    var compact: Bool = false
+    var listing: Bool = false
+    var onIncrement: () -> Void
+    var onDecrement: () -> Void
+
+    private var height: CGFloat { listing ? 28 : (compact ? 32 : 38) }
+    private var width: CGFloat { listing ? 64 : (compact ? 88 : 104) }
+    private var iconSize: CGFloat { listing ? 12 : (compact ? 14 : 16) }
+    private var hitSize: CGFloat { listing ? 22 : (compact ? 24 : 30) }
+    private var corner: CGFloat { listing ? 8 : 10 }
+    private var addFont: CGFloat { listing ? 11 : (compact ? 12 : 13) }
+
+    var body: some View {
+        Group {
+            if !inStock {
+                Text("Sold out")
+                    .font(.system(size: compact ? 11 : 12, weight: .bold))
+                    .foregroundStyle(Color(hex: "71717A"))
+                    .frame(height: compact ? 30 : 36)
+                    .padding(.horizontal, 10)
+                    .background(Color(hex: "E4E4E7"))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            } else if qty == 0 {
+                Button(action: onIncrement) {
+                    HStack(spacing: 3) {
+                        if isBusy {
+                            ProgressView()
+                                .tint(AppTheme.accentRed)
+                                .scaleEffect(0.75)
+                        } else {
+                            Text("ADD")
+                                .font(.system(size: addFont, weight: .heavy))
+                                .tracking(0.4)
+                            if !listing {
+                                Image(systemName: "plus")
+                                    .font(.system(size: iconSize, weight: .bold))
+                            }
+                        }
+                    }
+                    .foregroundStyle(AppTheme.accentRed)
+                    .frame(width: width, height: height)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: corner, style: .continuous)
+                            .stroke(AppTheme.accentRed, lineWidth: listing ? 1.4 : 1.5)
+                    }
+                    .shadow(color: .black.opacity(0.08), radius: 1, y: 1)
+                }
+                .buttonStyle(.borderless)
+                .disabled(isBusy)
+            } else {
+                HStack(spacing: 0) {
+                    Button(action: onDecrement) {
+                        Image(systemName: "minus")
+                            .font(.system(size: iconSize, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: hitSize, height: hitSize)
+                    }
+                    .disabled(isBusy)
+
+                    Group {
+                        if isBusy {
+                            ProgressView()
+                                .tint(.white)
+                                .scaleEffect(0.7)
+                        } else {
+                            Text("\(qty)")
+                                .font(.system(size: listing ? 12 : (compact ? 13 : 14), weight: .heavy))
+                                .foregroundStyle(.white)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    Button(action: onIncrement) {
+                        Image(systemName: "plus")
+                            .font(.system(size: iconSize, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: hitSize, height: hitSize)
+                    }
+                    .disabled(isBusy || !canIncrement)
+                }
+                .padding(.horizontal, 4)
+                .frame(width: width, height: height)
+                .background(AppTheme.accentRed)
+                .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+                .shadow(color: .black.opacity(0.16), radius: 2, y: 1)
+                .buttonStyle(.borderless)
+                .opacity(isBusy ? 0.85 : 1)
+            }
         }
     }
 }

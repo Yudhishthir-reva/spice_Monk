@@ -87,6 +87,25 @@ struct Address: Decodable, Identifiable {
             .joined(separator: ", ")
     }
 
+    /// Cart address card: `house, area, district - pin`, matching Android.
+    var cartDeliveryLine: String {
+        var parts = [houseFlatNo, area]
+        if let city = cityName, !city.isEmptyString {
+            parts.append(city)
+        }
+        let place = parts.filter { !$0.isEmptyString }.joined(separator: ", ")
+        if pinCode.isEmptyString { return place }
+        return place.isEmpty ? pinCode : "\(place) - \(pinCode)"
+    }
+
+    var cartStickyLine: String {
+        var parts = [area]
+        if let city = cityName, !city.isEmptyString {
+            parts.append(city)
+        }
+        return parts.filter { !$0.isEmptyString }.joined(separator: ", ")
+    }
+
     /// The full postal form, for lists where the user is picking between saved addresses.
     var fullLine: String {
         let cityAndPin = [cityName, pinCode.isEmptyString ? nil : pinCode]

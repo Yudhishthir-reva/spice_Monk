@@ -353,7 +353,6 @@ struct ProductRow: View {
                 ForEach(products) { product in
                     ProductCard(product: product)
                         .frame(width: HomeMetrics.cardWidth)
-                        .productDetailDestination(product)
                 }
             }
             .padding(.horizontal, HomeMetrics.gutter)
@@ -373,7 +372,6 @@ struct ProductGrid: View {
                     ForEach(row) { product in
                         ProductCard(product: product)
                             .frame(maxWidth: .infinity)
-                            .productDetailDestination(product)
                     }
                     ForEach(0..<(HomeMetrics.productColumns - row.count), id: \.self) { _ in
                         Color.clear.frame(maxWidth: .infinity)
@@ -396,7 +394,6 @@ struct BlackProductRow: View {
                 ForEach(products) { product in
                     BlackProductCard(product: product)
                         .frame(width: HomeMetrics.cardWidth)
-                        .productDetailDestination(product)
                 }
             }
             .padding(16)
@@ -412,57 +409,80 @@ private struct BlackProductCard: View {
     let product: ProductItem
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            RemoteImage(url: product.imageUrl, contentMode: .fit)
-                .padding(6)
-                .aspectRatio(1, contentMode: .fit)
-                .frame(maxWidth: .infinity)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(alignment: .center) {
-                    if !product.inStock {
-                        outOfStockOverlay
+        VStack(alignment: .leading, spacing: 0) {
+            NavigationLink {
+                ProductDetailScreen(
+                    productId: product.id,
+                    seedName: product.name,
+                    seedImageUrl: product.imageUrl
+                )
+            } label: {
+                RemoteImage(url: product.imageUrl, contentMode: .fit)
+                    .padding(6)
+                    .aspectRatio(1, contentMode: .fit)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.white)
+                    .overlay(alignment: .center) {
+                        if !product.inStock {
+                            outOfStockOverlay
+                        }
                     }
-                }
-
-            Text(product.name)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-
-            if !product.weight.isEmpty {
-                Text(product.weight)
-                    .font(.system(size: 11))
-                    .foregroundStyle(AppTheme.blackCardMuted)
-                    .lineLimit(1)
             }
+            .buttonStyle(.plain)
 
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("₹\(product.displayPrice)")
-                    .font(.system(size: 15, weight: .heavy))
+            Rectangle()
+                .fill(Color.white.opacity(0.14))
+                .frame(height: 1)
+
+            HStack(alignment: .center, spacing: 6) {
+                Text(product.weight.isEmptyString ? " " : product.weight)
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(.white)
-
-                if product.hasDiscount {
-                    Text("₹\(product.mrp)")
-                        .font(.system(size: 11))
-                        .strikethrough()
-                        .foregroundStyle(AppTheme.blackCardMuted)
-                }
-            }
-            .lineLimit(1)
-
-            if product.effectiveSaveAmount > 0 {
-                Text("Save ₹\(product.effectiveSaveAmount)")
-                    .font(.system(size: 11, weight: .heavy))
-                    .foregroundStyle(AppTheme.badgeSuccess)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Spacer(minLength: 4)
+                ProductCartControl(product: product)
             }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
+
+            NavigationLink {
+                ProductDetailScreen(
+                    productId: product.id,
+                    seedName: product.name,
+                    seedImageUrl: product.imageUrl
+                )
+            } label: {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        Text("₹\(product.displayPrice)")
+                            .font(.system(size: 16, weight: .heavy))
+                            .foregroundStyle(.white)
+
+                        if product.hasDiscount {
+                            Text("₹\(product.mrp)")
+                                .font(.system(size: 12))
+                                .strikethrough()
+                                .foregroundStyle(AppTheme.blackCardMuted)
+                        }
+                    }
+                    .lineLimit(1)
+
+                    Text(product.name)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, minHeight: 34, alignment: .topLeading)
+                }
+                .padding(.horizontal, 8)
+                .padding(.bottom, 10)
+            }
+            .buttonStyle(.plain)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(8)
         .background(Color.white.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private var outOfStockOverlay: some View {

@@ -83,10 +83,10 @@ struct RemoteImage: View {
     var contentMode: ContentMode = .fill
 
     @State private var image: UIImage?
-    @State private var didFail = false
 
     private var resolvedURL: URL? {
-        url.flatMap(URL.init(string:))
+        guard let url, !url.isEmptyString else { return nil }
+        return URL(string: url.trim)
     }
 
     var body: some View {
@@ -102,40 +102,46 @@ struct RemoteImage: View {
             Image(uiImage: image)
                 .resizable()
                 .aspectRatio(contentMode: contentMode)
-        } else if didFail {
-            ZStack {
-                AppTheme.imageTile
-                Image(systemName: "photo")
-                    .font(.system(size: 18))
-                    .foregroundStyle(AppTheme.textMuted)
-            }
         } else {
+            imagePlaceholder
+        }
+    }
+
+    /// Shown while loading, when the URL is missing, and when the download fails — so list tiles
+    /// never sit empty.
+    private var imagePlaceholder: some View {
+        ZStack {
             AppTheme.imageTile
+            GeometryReader { geo in
+                let side = min(geo.size.width, geo.size.height)
+                Image("AppLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: side * 0.62, height: side * 0.62)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
     }
 
     private func load() async {
         guard let resolvedURL else {
             image = nil
-            didFail = url?.isEmpty == false
             return
         }
 
         // A cache hit is shown without a placeholder frame in between, so recycled rows don't flash.
         if let hit = ImageLoader.shared.cached(resolvedURL) {
             image = hit
-            didFail = false
             return
         }
 
-        didFail = false
         do {
             image = try await ImageLoader.shared.image(for: resolvedURL)
         } catch {
             // Being recycled is not a failed image; leave the placeholder so the retry on reappear
             // can still succeed.
             if !Task.isCancelled {
-                didFail = true
+                image = nil
             }
         }
     }

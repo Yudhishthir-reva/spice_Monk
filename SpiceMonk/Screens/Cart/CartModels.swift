@@ -13,13 +13,13 @@ struct CartItem: Decodable, Identifiable {
     let productImage: String?
     let variantId: Int
     let variantName: String
-    let qty: Int
-    let mrp: Double
-    let customerPrice: Double
-    let saveAmount: Double
+    var qty: Int
+    var mrp: Double
+    var customerPrice: Double
+    var saveAmount: Double
     let discountPercent: Double
-    let subtotal: Double
-    let availableQty: Int
+    var subtotal: Double
+    var availableQty: Int
 
     var id: Int { cartId > 0 ? cartId : productId * 10_000 + variantId }
 
@@ -30,9 +30,13 @@ struct CartItem: Decodable, Identifiable {
     /// Same truncation as home cards.
     var discountPercentTruncated: Int { Int(discountPercent) }
 
-    var unitPriceLabel: String { Self.money(customerPrice) }
-    var mrpLabel: String { Self.money(mrp) }
-    var subtotalLabel: String { Self.money(subtotal) }
+    var displayPrice: Double { customerPrice > 0 ? customerPrice : mrp }
+
+    var savingsPerUnit: Double { saveAmount > 0 ? saveAmount : max(mrp - displayPrice, 0) }
+
+    var unitPriceLabel: String { Self.rupees(displayPrice) }
+    var mrpLabel: String { Self.rupees(mrp) }
+    var subtotalLabel: String { Self.rupees(subtotal) }
 
     enum CodingKeys: String, CodingKey {
         case qty, mrp, subtotal
@@ -46,6 +50,54 @@ struct CartItem: Decodable, Identifiable {
         case saveAmount = "save_amount"
         case discountPercent = "discount_percent"
         case availableQty = "avl_qty"
+    }
+
+    init(
+        cartId: Int,
+        productId: Int,
+        productName: String,
+        productImage: String?,
+        variantId: Int,
+        variantName: String,
+        qty: Int,
+        mrp: Double,
+        customerPrice: Double,
+        saveAmount: Double,
+        discountPercent: Double,
+        subtotal: Double,
+        availableQty: Int
+    ) {
+        self.cartId = cartId
+        self.productId = productId
+        self.productName = productName
+        self.productImage = productImage
+        self.variantId = variantId
+        self.variantName = variantName
+        self.qty = qty
+        self.mrp = mrp
+        self.customerPrice = customerPrice
+        self.saveAmount = saveAmount
+        self.discountPercent = discountPercent
+        self.subtotal = subtotal
+        self.availableQty = availableQty
+    }
+
+    init(from added: CartAddItem, productName: String = "", productImage: String? = nil, variantName: String = "") {
+        self.init(
+            cartId: added.cartId,
+            productId: added.productId,
+            productName: productName,
+            productImage: productImage,
+            variantId: added.variantId,
+            variantName: variantName,
+            qty: added.qty,
+            mrp: added.mrp,
+            customerPrice: added.customerPrice,
+            saveAmount: max(added.mrp - added.customerPrice, 0),
+            discountPercent: 0,
+            subtotal: added.customerPrice * Double(max(added.qty, 0)),
+            availableQty: added.availableQty
+        )
     }
 
     init(from decoder: Decoder) throws {
@@ -67,7 +119,26 @@ struct CartItem: Decodable, Identifiable {
     }
 
     static func money(_ value: Double) -> String {
-        String(value).priceLabel
+        rupees(value)
+    }
+
+    /// Android cart UI prints whole rupees (`%.0f`).
+    static func rupees(_ value: Double) -> String {
+        "₹\(Int(value.rounded()))"
+    }
+
+    mutating func apply(_ update: CartAddItem) {
+        qty = update.qty
+        mrp = update.mrp
+        customerPrice = update.customerPrice
+        availableQty = update.availableQty
+        saveAmount = max(mrp - customerPrice, 0)
+        subtotal = customerPrice * Double(max(qty, 0))
+    }
+
+    mutating func setQty(_ newQty: Int) {
+        qty = max(newQty, 0)
+        subtotal = customerPrice * Double(qty)
     }
 }
 
@@ -84,8 +155,8 @@ struct CartSummary: Decodable {
     }
 
     var mrpLabel: String { CartItem.money(totalMrp) }
-    var payLabel: String { CartItem.money(totalCustomerPrice) }
-    var savingsLabel: String { CartItem.money(totalSavings) }
+    var payLabel: String { CartItem.rupees(totalCustomerPrice) }
+    var savingsLabel: String { CartItem.rupees(totalSavings) }
 
     enum CodingKeys: String, CodingKey {
         case totalItems = "total_items"

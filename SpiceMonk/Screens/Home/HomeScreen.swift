@@ -56,7 +56,7 @@ struct HomeScreen: View {
             case .categories:
                 CategoriesTabScreen(categories: viewModel.allCategories)
             case .cart:
-                CartScreen()
+                CartScreen(addressViewModel: addressViewModel)
             case .account:
                 AccountPlaceholderScreen(addressViewModel: addressViewModel)
             }
@@ -85,6 +85,7 @@ struct HomeScreen: View {
                 viewModel.loadHome()
             }
             addressViewModel.load()
+            CartStore.shared.loadIfNeeded()
         }
         .sheet(isPresented: $isPickingAddress) {
             AddressPickerSheet(viewModel: addressViewModel)
@@ -104,6 +105,7 @@ struct HomeScreen: View {
         .toast(isPresenting: $searchViewModel.isShowToastView, duration: 1.8, offsetY: 10, alert: {
             AlertToast(displayMode: .banner(.pop), type: .regular, title: searchViewModel.toastMessage)
         }, onTap: nil, completion: nil)
+        .cartStoreToast()
     }
 
     /// Address + search live in the scroll view so they can share its geometry. `visualEffect`

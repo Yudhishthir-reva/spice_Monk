@@ -49,4 +49,15 @@ class CartServiceManager {
             headers: UserDefaultManager.shared.authHeader
         )
     }
+
+    func updateCart(cartId: Int, qty: Int) -> AnyPublisher<CartAddResponse, Error> {
+        networkService.request(
+            APIRouter.cartUpdate,
+            params: [
+                "cart_id": cartId,
+                "qty": qty
+            ],
+            headers: UserDefaultManager.shared.authHeader
+        )
+    }
 }

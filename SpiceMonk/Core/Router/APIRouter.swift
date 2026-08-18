@@ -27,6 +27,7 @@ enum APIRouter: RouterManagable {
     case cartAdd
     case cartRemove
     case cartClear
+    case cartUpdate
 
     var endPointUrl: String {
         switch self {
@@ -72,6 +73,8 @@ enum APIRouter: RouterManagable {
             return "customer/cart/remove"
         case .cartClear:
             return "customer/cart/clear"
+        case .cartUpdate:
+            return "customer/cart/update"
         }
     }
 

@@ -57,6 +57,7 @@ struct CategoryProductsScreen: View {
         .toast(isPresenting: $viewModel.isShowToastView, duration: 1.8, offsetY: 10, alert: {
             AlertToast(displayMode: .banner(.pop), type: .regular, title: viewModel.toastMessage)
         }, onTap: nil, completion: nil)
+        .cartStoreToast()
     }
 
     @ViewBuilder
@@ -82,7 +83,6 @@ struct CategoryProductsScreen: View {
                 ForEach(viewModel.products) { product in
                     ProductCard(product: product)
                         .frame(maxWidth: .infinity, alignment: .topLeading)
-                        .productDetailDestination(product)
                         .onAppear {
                             if product.id == viewModel.products.last?.id {
                                 viewModel.loadMore()
