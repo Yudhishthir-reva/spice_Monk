@@ -60,4 +60,12 @@ class CartServiceManager {
             headers: UserDefaultManager.shared.authHeader
         )
     }
+
+    func fetchCoupons() -> AnyPublisher<CouponsResponse, Error> {
+        networkService.request(
+            APIRouter.coupons,
+            params: [String: Any](),
+            headers: UserDefaultManager.shared.authHeader
+        )
+    }
 }

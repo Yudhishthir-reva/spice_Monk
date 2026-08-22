@@ -28,6 +28,13 @@ enum APIRouter: RouterManagable {
     case cartRemove
     case cartClear
     case cartUpdate
+    case coupons
+    case orders
+    case orderDetail(id: Int)
+    case orderCancel
+    case orderPlace
+    case paymentInitiate
+    case paymentVerify
 
     var endPointUrl: String {
         switch self {
@@ -75,12 +82,26 @@ enum APIRouter: RouterManagable {
             return "customer/cart/clear"
         case .cartUpdate:
             return "customer/cart/update"
+        case .coupons:
+            return "customer/coupons"
+        case .orders:
+            return "customer/orders"
+        case .orderDetail(let id):
+            return "customer/orders/\(id)"
+        case .orderCancel:
+            return "customer/order/cancel"
+        case .orderPlace:
+            return "customer/order/place"
+        case .paymentInitiate:
+            return "customer/payment/initiate"
+        case .paymentVerify:
+            return "customer/payment/verify"
         }
     }
 
     var requestType: RequestMethodType {
         switch self {
-        case .addressList, .addressDetail, .cart:
+        case .addressList, .addressDetail, .cart, .coupons, .orders, .orderDetail:
             return .get
         case .cartClear:
             return .delete

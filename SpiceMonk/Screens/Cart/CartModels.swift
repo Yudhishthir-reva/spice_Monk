@@ -249,3 +249,93 @@ struct CartAddItem: Decodable {
         availableQty = container.decodeIntLeniently(forKey: .availableQty) ?? 0
     }
 }
+
+// MARK: - Coupon Models
+
+struct Coupon: Decodable, Identifiable {
+    let id: Int
+    let code: String
+    let name: String
+    let description: String
+    let type: String
+    let discountValue: Double
+    let maxDiscount: Double?
+    let minOrderValue: Double
+    let isFirstOrderOnly: Bool
+    let endDate: String
+    let isEligible: Bool
+    let ineligibleReason: String?
+    let discountText: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, code, name, description, type
+        case discountValue = "discount_value"
+        case maxDiscount = "max_discount"
+        case minOrderValue = "min_order_value"
+        case isFirstOrderOnly = "is_first_order_only"
+        case endDate = "end_date"
+        case isEligible = "is_eligible"
+        case ineligibleReason = "ineligible_reason"
+        case discountText = "discount_text"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = container.decodeIntLeniently(forKey: .id) ?? 0
+        code = container.decodeStringLeniently(forKey: .code) ?? ""
+        name = container.decodeStringLeniently(forKey: .name) ?? ""
+        description = container.decodeStringLeniently(forKey: .description) ?? ""
+        type = container.decodeStringLeniently(forKey: .type) ?? ""
+        discountValue = container.decodeDoubleLeniently(forKey: .discountValue) ?? 0
+        maxDiscount = container.decodeDoubleLeniently(forKey: .maxDiscount)
+        minOrderValue = container.decodeDoubleLeniently(forKey: .minOrderValue) ?? 0
+        isFirstOrderOnly = container.decodeBoolLeniently(forKey: .isFirstOrderOnly) ?? false
+        endDate = container.decodeStringLeniently(forKey: .endDate) ?? ""
+        isEligible = container.decodeBoolLeniently(forKey: .isEligible) ?? false
+        ineligibleReason = container.decodeStringLeniently(forKey: .ineligibleReason)
+        discountText = container.decodeStringLeniently(forKey: .discountText) ?? ""
+    }
+}
+
+struct CouponsResponse: Decodable {
+    let status: Bool?
+    let message: String?
+    let cartTotal: Double
+    let coupons: [Coupon]
+
+    enum CodingKeys: String, CodingKey {
+        case status, message, data
+        case cartTotal = "cart_total"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        status = container.decodeBoolLeniently(forKey: .status)
+        message = container.decodeStringLeniently(forKey: .message)
+        cartTotal = container.decodeDoubleLeniently(forKey: .cartTotal) ?? 0
+        coupons = (try? container.decode([Coupon].self, forKey: .data)) ?? []
+    }
+}
+
+// MARK: - Payment Method
+
+enum PaymentMethod: String, CaseIterable, Identifiable {
+    case online = "Pay Online"
+    case cod = "Cash on Delivery"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .online: return "creditcard.fill"
+        case .cod: return "banknote.fill"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .online: return "UPI, cards, net banking and wallets"
+        case .cod: return "Pay the delivery partner when your order arrives"
+        }
+    }
+}

@@ -9,6 +9,7 @@ import Combine
 class HomeViewModel: ObservableObject {
 
     @Published var widgets: [HomeWidget] = []
+    @Published var searchPlaceholders: [String] = []
     @Published var isLoading = false
     @Published var isRefreshing = false
     /// Only set when there is nothing to show. A failed refresh over existing content surfaces as a
@@ -78,6 +79,9 @@ class HomeViewModel: ObservableObject {
                 self.isLoading = false
                 self.isRefreshing = false
                 self.widgets = response.widgets
+                if !response.searchPlaceholders.isEmpty {
+                    self.searchPlaceholders = response.searchPlaceholders
+                }
                 self.loadError = self.hasContent ? nil : (response.message ?? "Nothing to show right now.")
             }
             .store(in: &cancellables)

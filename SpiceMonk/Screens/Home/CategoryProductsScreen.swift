@@ -43,12 +43,7 @@ struct CategoryProductsScreen: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.white)
-        .tint(AppTheme.accentRed)
-        .navigationTitle(viewModel.title)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.visible, for: .navigationBar)
-        .toolbarBackground(Color.white, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
+        .spiceNavigationBar(title: viewModel.title)
         .onAppear {
             if viewModel.products.isEmpty && viewModel.loadError == nil {
                 viewModel.loadFirstPage()

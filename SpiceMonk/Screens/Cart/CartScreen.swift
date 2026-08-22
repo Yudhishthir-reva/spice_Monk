@@ -5,8 +5,8 @@
 
 import SwiftUI
 
-/// Cart UI matches Android `CartScreen` (commit `f3c7b42`): address, SLA, grouped items,
-/// bill details, cancellation note, and a sticky proceed bar.
+/// Cart UI matches Android reference: green header, address card, SLA banner, grouped items,
+/// payment method, coupon, bill details, cancellation note, and a sticky proceed bar.
 struct CartScreen: View {
 
     @ObservedObject var cart = CartStore.shared
@@ -15,9 +15,36 @@ struct CartScreen: View {
     @State private var isConfirmingClear = false
     @State private var isPickingAddress = false
     @State private var isAddingAddress = false
+    @State private var isApplyingCoupon = false
+    @State private var isPickingPaymentMethod = false
+    @State private var navigateToOrderId: Int? = nil
+    @State private var placedOrderData: OrderPlaceData? = nil
+    @State private var prepaidInitiateData: PaymentInitiateData? = nil
+    @State private var pendingOrderPlaceData: OrderPlaceData? = nil
 
     private var itemCount: Int {
         cart.summary.totalItems > 0 ? cart.summary.totalItems : cart.items.reduce(0) { $0 + $1.qty }
+    }
+
+    private var couponDiscount: Double {
+        guard let coupon = cart.appliedCoupon else { return 0 }
+        let itemsCustomerPrice = max(cart.summary.totalMrp - cart.summary.totalSavings, 0)
+        if coupon.type == "flat" {
+            return coupon.discountValue
+        } else if coupon.type == "percentage" {
+            let computed = itemsCustomerPrice * coupon.discountValue / 100.0
+            if let maxD = coupon.maxDiscount {
+                return min(computed, maxD)
+            }
+            return computed
+        }
+        return 0
+    }
+
+    private var grandTotalAmount: Double {
+        let itemsCustomerPrice = max(cart.summary.totalMrp - cart.summary.totalSavings, 0)
+        let discount = couponDiscount
+        return max(itemsCustomerPrice - discount + 70 + 10 + 20, 0)
     }
 
     var body: some View {
@@ -36,21 +63,79 @@ struct CartScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white)
+        .background(
+            Group {
+                Color(hex: "F5F5F5")
+                if let orderId = navigateToOrderId {
+                    NavigationLink(
+                        destination: OrderDetailScreen(orderId: orderId),
+                        isActive: Binding(
+                            get: { navigateToOrderId != nil },
+                            set: { active in if !active { navigateToOrderId = nil } }
+                        ),
+                        label: { EmptyView() }
+                    )
+                }
+            }
+        )
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OrderPlacedSuccessfully"))) { notification in
+            if let placedData = notification.object as? OrderPlaceData {
+                placedOrderData = placedData
+            }
+        }
+        .fullScreenCover(item: $placedOrderData) { data in
+            OrderSuccessScreen(
+                orderData: data,
+                onTrack: {
+                    placedOrderData = nil
+                    // Wait briefly or trigger navigate to detail screen
+                    navigateToOrderId = data.orderId
+                },
+                onDismiss: {
+                    placedOrderData = nil
+                    dismiss()
+                }
+            )
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OrderInitiatedPrepaidPayment"))) { notification in
+            if let initiateData = notification.object as? PaymentInitiateData,
+               let placeData = notification.userInfo?["orderPlaceData"] as? OrderPlaceData {
+                pendingOrderPlaceData = placeData
+                prepaidInitiateData = initiateData
+            }
+        }
+        .sheet(item: $prepaidInitiateData) { initiateData in
+            PaymentSimulationSheet(
+                initiateData: initiateData,
+                onSuccess: {
+                    cart.clearCartAfterPrepaidSuccess()
+                    if let placeData = pendingOrderPlaceData {
+                        placedOrderData = placeData
+                    }
+                    pendingOrderPlaceData = nil
+                },
+                onFailure: { error in
+                    cart.toastMessage = error
+                    cart.isShowToastView = true
+                    pendingOrderPlaceData = nil
+                }
+            )
+        }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
-        .toolbarBackground(Color.white, for: .navigationBar)
+        .toolbarBackground(AppTheme.brandGreen, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 VStack(spacing: 1) {
                     Text("Shopping Cart")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(AppTheme.textPrimary)
+                        .foregroundStyle(.white)
                     if !cart.isEmpty, itemCount > 0 {
                         Text(itemCount == 1 ? "1 item" : "\(itemCount) items")
                             .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(AppTheme.textSecondary)
+                            .foregroundStyle(.white.opacity(0.8))
                     }
                 }
             }
@@ -61,7 +146,7 @@ struct CartScreen: View {
                     } label: {
                         Image(systemName: "trash")
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(AppTheme.accentRed)
+                            .foregroundStyle(.white)
                     }
                     .disabled(cart.isClearing)
                 }
@@ -73,7 +158,7 @@ struct CartScreen: View {
         } message: {
             Text("Are you sure you want to remove all items from your cart?")
         }
-        .tint(AppTheme.accentRed)
+        .tint(.white)
         .onAppear {
             cart.load()
             addressViewModel.load()
@@ -86,20 +171,28 @@ struct CartScreen: View {
                 addressViewModel.load()
             }
         }
+        .sheet(isPresented: $isApplyingCoupon) {
+            ApplyCouponSheet()
+        }
+        .sheet(isPresented: $isPickingPaymentMethod) {
+            PaymentMethodPickerSheet()
+        }
         .cartStoreToast()
     }
 
     private var cartBody: some View {
         VStack(spacing: 0) {
             ScrollView {
-                LazyVStack(spacing: 14) {
+                LazyVStack(spacing: 12) {
                     deliveryAddressCard
                     deliverySlaBanner
                     itemsCard
+                    paymentMethodCard
+                    couponCard
                     billDetailsCard
                     cancellationNote
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 14)
                 .padding(.top, 12)
                 .padding(.bottom, 24)
             }
@@ -116,8 +209,8 @@ struct CartScreen: View {
         return HStack(spacing: 12) {
             Image(systemName: address == nil ? "mappin.and.ellipse" : "house.fill")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(AppTheme.accentRed)
-                .frame(width: 40, height: 40)
+                .foregroundStyle(AppTheme.brandGreen)
+                .frame(width: 38, height: 38)
                 .background(AppTheme.accentSoft)
                 .clipShape(Circle())
 
@@ -154,32 +247,31 @@ struct CartScreen: View {
                     isPickingAddress = true
                 }
             }
-            .font(.system(size: 15, weight: .bold))
-            .foregroundStyle(AppTheme.accentRed)
+            .font(.system(size: 14, weight: .bold))
+            .foregroundStyle(AppTheme.brandGreen)
         }
         .padding(14)
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.black.opacity(0.055), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
         }
-        .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
     }
 
     private var deliverySlaBanner: some View {
         HStack(spacing: 10) {
             Image(systemName: "bolt.fill")
                 .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(AppTheme.badgeSuccess)
+                .foregroundStyle(AppTheme.brandGreen)
                 .frame(width: 28, height: 28)
-                .background(AppTheme.badgeSuccess.opacity(0.18))
+                .background(AppTheme.brandGreen.opacity(0.18))
                 .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 1) {
-                Text("Delivery in 10 - 15 minutes")
+                Text("Delivery in 7 - 10 Days")
                     .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(AppTheme.badgeSuccess)
+                    .foregroundStyle(AppTheme.brandGreen)
                 Text("Shipment packed & dispatched from your nearest SpiceMonk hub")
                     .font(.system(size: 11))
                     .foregroundStyle(AppTheme.textSecondary)
@@ -188,11 +280,11 @@ struct CartScreen: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(AppTheme.badgeSuccess.opacity(0.08))
+        .background(AppTheme.accentSoft)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(AppTheme.badgeSuccess.opacity(0.2), lineWidth: 1)
+                .stroke(AppTheme.brandGreen.opacity(0.2), lineWidth: 1)
         }
     }
 
@@ -217,12 +309,108 @@ struct CartScreen: View {
         }
         .padding(.vertical, 6)
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.black.opacity(0.055), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
         }
-        .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
+    }
+
+    // MARK: - Payment Method
+
+    private var paymentMethodCard: some View {
+        Button {
+            isPickingPaymentMethod = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: cart.paymentMethod.icon)
+                    .font(.system(size: 16))
+                    .foregroundStyle(AppTheme.brandGreen)
+                    .frame(width: 38, height: 38)
+                    .background(AppTheme.accentSoft)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Paying by")
+                        .font(.system(size: 11))
+                        .foregroundStyle(AppTheme.textSecondary)
+                    Text(cart.paymentMethod.rawValue)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                }
+
+                Spacer(minLength: 0)
+
+                Text("Change")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(AppTheme.brandGreen)
+            }
+            .padding(14)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.black.opacity(0.06), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Coupon
+
+    private var couponCard: some View {
+        Button {
+            if cart.appliedCoupon != nil {
+                cart.appliedCoupon = nil
+                cart.toastMessage = "Coupon removed successfully."
+                cart.isShowToastView = true
+            } else {
+                isApplyingCoupon = true
+            }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "tag.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(AppTheme.brandGreen)
+                    .frame(width: 38, height: 38)
+                    .background(AppTheme.accentSoft)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                if let coupon = cart.appliedCoupon {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("\(coupon.code) applied")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                        Text("Saving of \(CartItem.rupees(couponDiscount)) applied successfully")
+                            .font(.system(size: 11))
+                            .foregroundStyle(AppTheme.brandGreen)
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Apply Coupon")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                        Text("Select or enter coupon code")
+                            .font(.system(size: 11))
+                            .foregroundStyle(AppTheme.textSecondary)
+                    }
+                }
+
+                Spacer(minLength: 0)
+
+                Text(cart.appliedCoupon != nil ? "Remove" : "Apply")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(cart.appliedCoupon != nil ? .red : AppTheme.brandGreen)
+            }
+            .padding(14)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.black.opacity(0.06), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Bill
@@ -231,9 +419,9 @@ struct CartScreen: View {
         let summary = cart.summary
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                Image(systemName: "doc.text")
+                Image(systemName: "doc.text.fill")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(AppTheme.accentRed)
+                    .foregroundStyle(AppTheme.brandGreen)
                 Text("Bill Details")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
@@ -247,12 +435,21 @@ struct CartScreen: View {
                 billRow(
                     label: "Product Discount",
                     value: "-\(CartItem.rupees(summary.totalSavings))",
-                    color: AppTheme.badgeSuccess
+                    color: AppTheme.brandGreen
                 )
             }
 
-            billRow(label: "Delivery Partner Fee", value: "FREE", strike: "₹25", color: AppTheme.badgeSuccess)
-            billRow(label: "Handling & Packing", value: "FREE", strike: "₹10", color: AppTheme.badgeSuccess)
+            if couponDiscount > 0 {
+                billRow(
+                    label: "Coupon Discount",
+                    value: "-\(CartItem.rupees(couponDiscount))",
+                    color: AppTheme.brandGreen
+                )
+            }
+
+            billRow(label: "Delivery Charges", value: "₹70", color: AppTheme.textSecondary)
+            billRow(label: "Handling Charges", value: "₹10", color: AppTheme.textSecondary)
+            billRow(label: "Packing Charges", value: "₹20", color: AppTheme.textSecondary)
 
             Divider()
 
@@ -266,35 +463,35 @@ struct CartScreen: View {
                         .foregroundStyle(AppTheme.textMuted)
                 }
                 Spacer()
-                Text(CartItem.rupees(summary.totalCustomerPrice))
+                Text(CartItem.rupees(grandTotalAmount))
                     .font(.system(size: 18, weight: .heavy))
                     .foregroundStyle(AppTheme.textPrimary)
             }
 
-            if summary.totalSavings > 0 {
+            let totalSavedAmount = summary.totalSavings + couponDiscount
+            if totalSavedAmount > 0 {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 14))
-                        .foregroundStyle(AppTheme.badgeSuccess)
-                    Text("Yay! You're saving \(CartItem.rupees(summary.totalSavings)) on this order")
+                        .foregroundStyle(AppTheme.brandGreen)
+                    Text("Yay! You're saving \(CartItem.rupees(totalSavedAmount)) on this order")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(AppTheme.badgeSuccess)
+                        .foregroundStyle(AppTheme.brandGreen)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(AppTheme.badgeSuccess.opacity(0.1))
+                .background(AppTheme.accentSoft)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
         }
         .padding(16)
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.black.opacity(0.055), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
         }
-        .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
     }
 
     private func billRow(label: String, value: String, strike: String? = nil, color: Color) -> some View {
@@ -317,29 +514,34 @@ struct CartScreen: View {
 
     private var cancellationNote: some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "info.circle")
+            Image(systemName: "info.circle.fill")
                 .font(.system(size: 15))
-                .foregroundStyle(AppTheme.textMuted)
+                .foregroundStyle(AppTheme.brandGreen)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Cancellation Policy")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(AppTheme.textSecondary)
+                    .foregroundStyle(AppTheme.textPrimary)
                 Text("Orders cannot be cancelled once packed. Please ensure your delivery address is accurate before placing order.")
                     .font(.system(size: 11))
-                    .foregroundStyle(AppTheme.textMuted)
+                    .foregroundStyle(AppTheme.textSecondary)
             }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.black.opacity(0.03))
+        .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+        }
     }
 
     // MARK: - Sticky bar
 
     private var stickyCheckoutBar: some View {
         VStack(spacing: 0) {
+            // Address strip
             Button {
                 if addressViewModel.defaultAddress == nil {
                     isAddingAddress = true
@@ -348,9 +550,9 @@ struct CartScreen: View {
                 }
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "mappin.and.ellipse")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(AppTheme.accentRed)
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(AppTheme.brandGreen)
                     Text(stickyAddressLabel)
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(AppTheme.textPrimary)
@@ -358,27 +560,39 @@ struct CartScreen: View {
                     Spacer(minLength: 8)
                     Text("Change")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(AppTheme.accentRed)
+                        .foregroundStyle(AppTheme.brandGreen)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(AppTheme.accentSoft.opacity(0.4))
+                .background(AppTheme.accentSoft)
             }
             .buttonStyle(.plain)
 
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("TOTAL")
+                    Text("TO PAY")
                         .font(.system(size: 10, weight: .heavy))
                         .foregroundStyle(AppTheme.textMuted)
-                    Text(CartItem.rupees(cart.summary.totalCustomerPrice))
-                        .font(.system(size: 20, weight: .heavy))
-                        .foregroundStyle(AppTheme.textPrimary)
+                    HStack(alignment: .firstTextBaseline, spacing: 0) {
+                        Text(CartItem.rupees(grandTotalAmount))
+                            .font(.system(size: 20, weight: .heavy))
+                            .foregroundStyle(AppTheme.textPrimary)
+                    }
+                    Text(cart.paymentMethod.rawValue)
+                        .font(.system(size: 10))
+                        .foregroundStyle(AppTheme.textSecondary)
                 }
 
-                Button(action: cart.checkout) {
+                Button {
+                    if let address = addressViewModel.defaultAddress {
+                        cart.placeOrder(addressId: address.id)
+                    } else {
+                        cart.toastMessage = "Please select a delivery address."
+                        cart.isShowToastView = true
+                    }
+                } label: {
                     HStack(spacing: 8) {
-                        Text("Proceed to Pay")
+                        Text("Place Order")
                             .font(.system(size: 16, weight: .bold))
                         Image(systemName: "arrow.right")
                             .font(.system(size: 14, weight: .bold))
@@ -390,7 +604,7 @@ struct CartScreen: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .disabled(cart.isClearing)
+                .disabled(cart.isClearing || cart.isLoading)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -411,9 +625,9 @@ struct CartScreen: View {
         VStack(spacing: 8) {
             Image(systemName: "cart.badge.minus")
                 .font(.system(size: 44, weight: .medium))
-                .foregroundStyle(AppTheme.accentRed)
+                .foregroundStyle(AppTheme.brandGreen)
                 .frame(width: 110, height: 110)
-                .background(AppTheme.accentSoft.opacity(0.5))
+                .background(AppTheme.accentSoft)
                 .clipShape(Circle())
 
             Text("Your Cart is Empty")
@@ -446,6 +660,7 @@ struct CartScreen: View {
         }
         .padding(.horizontal, 32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(hex: "F5F5F5"))
         .refreshable { await waitForRefresh() }
     }
 
@@ -458,12 +673,12 @@ struct CartScreen: View {
 }
 
 private struct CartItemRow: View {
-
+    
     let item: CartItem
     var isBusy: Bool = false
     var onIncrement: () -> Void = {}
     var onDecrement: () -> Void = {}
-
+    
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             NavigationLink {
@@ -480,7 +695,7 @@ private struct CartItemRow: View {
             }
             .buttonStyle(.plain)
             .navigationLinkIndicatorVisibility(.hidden)
-
+            
             CartQtyStepper(
                 qty: item.qty,
                 inStock: item.inStock,
@@ -494,7 +709,7 @@ private struct CartItemRow: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
     }
-
+    
     private var image: some View {
         RemoteImage(url: item.productImage, contentMode: .fit)
             .padding(4)
@@ -508,40 +723,44 @@ private struct CartItemRow: View {
                 }
             }
     }
+    
+    private func formatPrice(_ val: Double) -> String {
+        String(format: "₹%.1f", val)
+    }
 
     private var details: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(item.productName)
+            Text(item.productName.uppercased())
                 .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
                 .lineLimit(2)
-
+            
             if !item.variantName.isEmptyString {
                 Text(item.variantName)
                     .font(.system(size: 11))
                     .foregroundStyle(AppTheme.textSecondary)
                     .lineLimit(1)
             }
-
+            
             HStack(spacing: 6) {
-                Text(item.unitPriceLabel)
+                Text(formatPrice(item.displayPrice))
                     .font(.system(size: 15, weight: .heavy))
                     .foregroundStyle(AppTheme.textPrimary)
-
+                
                 if item.hasDiscount {
-                    Text(item.mrpLabel)
+                    Text(formatPrice(item.mrp))
                         .font(.system(size: 11))
                         .strikethrough()
                         .foregroundStyle(AppTheme.textMuted)
                 }
-
+                
                 if item.savingsPerUnit > 0 {
                     Text("Save \(CartItem.rupees(item.savingsPerUnit))")
                         .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(AppTheme.badgeSuccess)
+                        .foregroundStyle(AppTheme.brandGreen)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 1)
-                        .background(AppTheme.badgeSuccess.opacity(0.1))
+                        .background(AppTheme.accentSoft)
                         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                 }
             }
@@ -558,15 +777,16 @@ struct CartQtyStepper: View {
     var isBusy: Bool = false
     var compact: Bool = false
     var listing: Bool = false
+    var fullWidth: Bool = false
     var onIncrement: () -> Void
     var onDecrement: () -> Void
 
-    private var height: CGFloat { listing ? 28 : (compact ? 32 : 38) }
-    private var width: CGFloat { listing ? 64 : (compact ? 88 : 104) }
+    private var height: CGFloat { listing ? 30 : (compact ? 32 : 38) }
+    private var width: CGFloat { listing ? 76 : (compact ? 88 : 104) }
     private var iconSize: CGFloat { listing ? 12 : (compact ? 14 : 16) }
-    private var hitSize: CGFloat { listing ? 22 : (compact ? 24 : 30) }
+    private var hitSize: CGFloat { listing ? 24 : (compact ? 24 : 30) }
     private var corner: CGFloat { listing ? 8 : 10 }
-    private var addFont: CGFloat { listing ? 11 : (compact ? 12 : 13) }
+    private var addFont: CGFloat { listing ? 12 : (compact ? 12 : 13) }
 
     var body: some View {
         Group {
@@ -583,25 +803,22 @@ struct CartQtyStepper: View {
                     HStack(spacing: 3) {
                         if isBusy {
                             ProgressView()
-                                .tint(AppTheme.accentRed)
+                                .tint(AppTheme.brandGreen)
                                 .scaleEffect(0.75)
                         } else {
-                            Text("ADD")
+                            Text("ADD +")
                                 .font(.system(size: addFont, weight: .heavy))
                                 .tracking(0.4)
-                            if !listing {
-                                Image(systemName: "plus")
-                                    .font(.system(size: iconSize, weight: .bold))
-                            }
                         }
                     }
-                    .foregroundStyle(AppTheme.accentRed)
-                    .frame(width: width, height: height)
+                    .foregroundStyle(AppTheme.brandGreen)
+                    .frame(maxWidth: fullWidth ? .infinity : nil)
+                    .frame(width: fullWidth ? nil : width, height: height)
                     .background(Color.white)
                     .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: corner, style: .continuous)
-                            .stroke(AppTheme.accentRed, lineWidth: listing ? 1.4 : 1.5)
+                            .stroke(AppTheme.brandGreen, lineWidth: listing ? 1.4 : 1.5)
                     }
                     .shadow(color: .black.opacity(0.08), radius: 1, y: 1)
                 }
@@ -638,11 +855,11 @@ struct CartQtyStepper: View {
                     }
                     .disabled(isBusy || !canIncrement)
                 }
-                .padding(.horizontal, 4)
-                .frame(width: width, height: height)
-                .background(AppTheme.accentRed)
+                .frame(maxWidth: fullWidth ? .infinity : nil)
+                .frame(width: fullWidth ? nil : width, height: height)
+                .background(AppTheme.brandGreen)
                 .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
-                .shadow(color: .black.opacity(0.16), radius: 2, y: 1)
+                .shadow(color: .black.opacity(0.12), radius: 2, y: 1)
                 .buttonStyle(.borderless)
                 .opacity(isBusy ? 0.85 : 1)
             }

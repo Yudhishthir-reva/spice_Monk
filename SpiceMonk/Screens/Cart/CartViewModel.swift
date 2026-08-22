@@ -14,6 +14,8 @@ final class CartStore: ObservableObject {
 
     @Published var items: [CartItem] = []
     @Published var summary: CartSummary = .empty
+    @Published var appliedCoupon: Coupon? = nil
+    @Published var paymentMethod: PaymentMethod = .cod
     @Published var isLoading = false
     @Published var isRefreshing = false
     @Published var loadError: String?
@@ -86,6 +88,8 @@ final class CartStore: ObservableObject {
         pendingAfterLoad.removeAll()
         items = []
         summary = .empty
+        appliedCoupon = nil
+        paymentMethod = .cod
         isLoading = false
         isRefreshing = false
         loadError = nil
@@ -97,9 +101,83 @@ final class CartStore: ObservableObject {
         bump()
     }
 
-    func checkout() {
-        toastMessage = "Checkout is coming soon"
-        isShowToastView = true
+    func placeOrder(addressId: Int, notes: String = "Please call before delivery") {
+        guard !isClearing && !isLoading else { return }
+        isLoading = true
+
+        let apiPaymentType = paymentMethod == .cod ? "cod" : "prepaid"
+        OrderServiceManager().placeOrder(addressId: addressId, paymentType: apiPaymentType, notes: notes)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] completion in
+                guard let self else { return }
+                self.isLoading = false
+                if case .failure(let error) = completion {
+                    self.toastMessage = (error as? RequestError)?.errorString ?? error.localizedDescription
+                    self.isShowToastView = true
+                }
+            } receiveValue: { [weak self] response in
+                guard let self else { return }
+                self.isLoading = false
+                if response.status == true, let placedData = response.data {
+                    if apiPaymentType == "cod" {
+                        self.toastMessage = response.message ?? "Order placed successfully!"
+                        self.isShowToastView = true
+                        
+                        // Clear cart
+                        self.items = []
+                        self.summary = .empty
+                        self.appliedCoupon = nil
+                        self.paymentMethod = .cod
+                        
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("OrderPlacedSuccessfully"),
+                            object: placedData
+                        )
+                    } else {
+                        // Prepaid flow: initiate payment!
+                        self.initiatePaymentFlow(placedData: placedData)
+                    }
+                } else {
+                    self.toastMessage = response.message ?? "Could not place order."
+                    self.isShowToastView = true
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    private func initiatePaymentFlow(placedData: OrderPlaceData) {
+        isLoading = true
+        OrderServiceManager().initiatePayment(orderId: placedData.orderId)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] completion in
+                guard let self else { return }
+                self.isLoading = false
+                if case .failure(let error) = completion {
+                    self.toastMessage = (error as? RequestError)?.errorString ?? error.localizedDescription
+                    self.isShowToastView = true
+                }
+            } receiveValue: { [weak self] response in
+                guard let self else { return }
+                self.isLoading = false
+                if response.status == true, let initiateData = response.data {
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("OrderInitiatedPrepaidPayment"),
+                        object: initiateData,
+                        userInfo: ["orderPlaceData": placedData]
+                    )
+                } else {
+                    self.toastMessage = response.message ?? "Payment initiation failed."
+                    self.isShowToastView = true
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    func clearCartAfterPrepaidSuccess() {
+        self.items = []
+        self.summary = .empty
+        self.appliedCoupon = nil
+        self.paymentMethod = .cod
     }
 
     /// First add sends `qty: 1`. Later taps send the new total (`2`, `3`, …) via update when we
@@ -195,6 +273,8 @@ final class CartStore: ObservableObject {
                 if response.status == true {
                     self.items = []
                     self.summary = .empty
+                    self.appliedCoupon = nil
+                    self.paymentMethod = .cod
                     self.toastMessage = response.message ?? "Cart cleared successfully."
                 } else {
                     self.items = snapshot

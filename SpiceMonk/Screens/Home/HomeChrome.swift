@@ -5,6 +5,7 @@
 
 import SwiftUI
 import UIKit
+import Combine
 
 // MARK: - Top bar
 
@@ -19,6 +20,7 @@ struct HomeTopBar: View {
     let safeAreaTop: CGFloat
     var searchActive: Bool = false
     var searchQuery: Binding<String>? = nil
+    var searchPlaceholders: [String] = []
     let onAddressTap: () -> Void
     let onProfileTap: () -> Void
     var onSearchTap: (() -> Void)?
@@ -38,6 +40,7 @@ struct HomeTopBar: View {
             SpiceSearchBar(
                 query: searchQuery,
                 isActive: searchActive,
+                placeholders: searchPlaceholders,
                 onTap: onSearchTap,
                 onBack: onSearchBack,
                 onClear: onSearchClear,
@@ -65,32 +68,34 @@ struct HomeTopBar: View {
                     HStack(spacing: 5) {
                         Image(systemName: "location.fill")
                             .font(.system(size: 11))
+                            .foregroundStyle(.white)
                         Text("Delivering to")
                             .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.85))
 
-                        // The API carries no "home"/"work" label, so the chip shows the city —
-                        // real data rather than an invented tag.
+                        // Pincode/city chip
                         if let city = address?.cityName {
                             Text(city.uppercased())
                                 .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(.white)
                                 .padding(.horizontal, 7)
                                 .padding(.vertical, 2)
-                                .background(Color.white.opacity(0.18))
+                                .background(Color.white.opacity(0.2))
                                 .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                         }
                     }
-                    .foregroundStyle(.white.opacity(0.85))
 
                     HStack(spacing: 4) {
                         Text(address?.shortLine.isEmptyString == false
                              ? address!.shortLine
                              : "Set your delivery address")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
                             .lineLimit(1)
                         Image(systemName: "chevron.down")
                             .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white)
                     }
-                    .foregroundStyle(.white)
                 }
             }
             .buttonStyle(.plain)
@@ -98,13 +103,21 @@ struct HomeTopBar: View {
             Spacer()
 
             Button(action: onProfileTap) {
-                Image(systemName: "person.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(AppTheme.accentRed)
-                    .frame(width: 44, height: 44)
-                    .background(Color.white)
-                    .clipShape(Circle())
-                    .shadow(color: .black.opacity(0.15), radius: 3, y: 1)
+                ZStack(alignment: .topTrailing) {
+                    Circle()
+                        .fill(Color.white.opacity(0.2))
+                        .frame(width: 40, height: 40)
+
+                    Image(systemName: "bell.fill")
+                        .font(.system(size: 17))
+                        .foregroundStyle(.white)
+                        .frame(width: 40, height: 40)
+
+                    Circle()
+                        .fill(Color(hex: "FFC53D"))
+                        .frame(width: 9, height: 9)
+                        .offset(x: -2, y: 2)
+                }
             }
         }
     }
@@ -115,6 +128,7 @@ struct SpiceSearchBar: View {
 
     var query: Binding<String>?
     var isActive: Bool = false
+    var placeholders: [String] = []
     var onTap: (() -> Void)?
     var onBack: (() -> Void)?
     var onClear: (() -> Void)?
@@ -122,8 +136,14 @@ struct SpiceSearchBar: View {
     var onMic: (() -> Void)?
 
     @FocusState private var isFocused: Bool
+    @State private var placeholderIndex: Int = 0
 
-    private let placeholder = "Search spices, masala, oils…"
+    private let fallback = "Search spices, masala, oils…"
+
+    private var currentPlaceholder: String {
+        if placeholders.isEmpty { return fallback }
+        return placeholders[placeholderIndex % placeholders.count]
+    }
 
     private var hasQuery: Bool {
         !(query?.wrappedValue.isEmpty ?? true)
@@ -146,6 +166,14 @@ struct SpiceSearchBar: View {
         }
         .onAppear {
             if isActive { isFocused = true }
+        }
+        .onReceive(
+            Timer.publish(every: 3, on: .main, in: .common).autoconnect()
+        ) { _ in
+            guard !isActive, placeholders.count > 1 else { return }
+            withAnimation(.easeInOut(duration: 0.4)) {
+                placeholderIndex += 1
+            }
         }
     }
 
@@ -174,7 +202,7 @@ struct SpiceSearchBar: View {
     @ViewBuilder
     private var field: some View {
         if isActive, let query {
-            TextField(placeholder, text: query)
+            TextField(currentPlaceholder, text: query)
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(AppTheme.textPrimary)
                 .focused($isFocused)
@@ -183,12 +211,17 @@ struct SpiceSearchBar: View {
                 .autocorrectionDisabled()
                 .onSubmit { onSubmit?() }
         } else {
-            Text(placeholder)
+            Text(currentPlaceholder)
                 .font(.system(size: 14))
                 .foregroundStyle(AppTheme.textMuted)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
                 .onTapGesture { onTap?() }
+                .id(placeholderIndex)
+                .transition(.asymmetric(
+                    insertion: .move(edge: .bottom).combined(with: .opacity),
+                    removal: .move(edge: .top).combined(with: .opacity)
+                ))
         }
     }
 
@@ -224,12 +257,98 @@ struct SpiceSearchBar: View {
     }
 }
 
+// MARK: - Floating WhatsApp Button
+
+struct FloatingWhatsAppButton: View {
+    var body: some View {
+        Button {
+            if let url = URL(string: "https://wa.me/") {
+                UIApplication.shared.open(url)
+            }
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(Color(hex: "25D366"))
+                    .frame(width: 48, height: 48)
+                    .shadow(color: Color(hex: "25D366").opacity(0.4), radius: 6, y: 3)
+
+                Image(systemName: "message.fill")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Floating Cart Bar
+
+struct FloatingCartBar: View {
+
+    @ObservedObject private var cart = CartStore.shared
+    let onTap: () -> Void
+
+    var body: some View {
+        let itemsCount = cart.summary.totalItems
+        let totalPay = cart.summary.totalCustomerPrice
+        let savings = cart.summary.totalSavings
+
+        if itemsCount > 0 {
+            Button(action: onTap) {
+                HStack(spacing: 12) {
+                    HStack(spacing: 10) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(Color.white.opacity(0.2))
+                                .frame(width: 36, height: 36)
+
+                            Image(systemName: "bag.fill")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(.white)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(itemsCount) ITEM\(itemsCount == 1 ? "" : "S") • ₹\(Int(totalPay.rounded()))")
+                                .font(.system(size: 13, weight: .heavy))
+                                .foregroundStyle(.white)
+
+                            if savings > 0 {
+                                Text("Saved ₹\(Int(savings.rounded())) on MRP")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundStyle(.white.opacity(0.85))
+                            }
+                        }
+                    }
+
+                    Spacer()
+
+                    HStack(spacing: 4) {
+                        Text("View Cart")
+                            .font(.system(size: 13, weight: .heavy))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 13, weight: .bold))
+                    }
+                    .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(AppTheme.brandRed)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(color: AppTheme.brandRed.opacity(0.35), radius: 8, y: 3)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 6)
+            }
+            .buttonStyle(.plain)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+}
+
 // MARK: - Bottom navigation
 
 enum HomeTab: Int, CaseIterable, Identifiable {
     case home
     case categories
-    case cart
     case account
 
     var id: Int { rawValue }
@@ -238,7 +357,6 @@ enum HomeTab: Int, CaseIterable, Identifiable {
         switch self {
         case .home: return "Home"
         case .categories: return "Categories"
-        case .cart: return "Cart"
         case .account: return "Account"
         }
     }
@@ -247,7 +365,6 @@ enum HomeTab: Int, CaseIterable, Identifiable {
         switch self {
         case .home: return "house.fill"
         case .categories: return "square.grid.2x2.fill"
-        case .cart: return "cart.fill"
         case .account: return "person.fill"
         }
     }
@@ -269,21 +386,21 @@ struct HomeBottomBar: View {
                 } label: {
                     VStack(spacing: 4) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(AppTheme.accentSoft)
+                            Capsule()
+                                .fill(AppTheme.brandGreen)
                                 .opacity(isSelected ? 1 : 0)
                                 .scaleEffect(isSelected ? 1 : 0.6)
 
                             Image(systemName: tab.icon)
-                                .font(.system(size: 17))
-                                .scaleEffect(isSelected ? 1.1 : 1)
+                                .font(.system(size: 16, weight: isSelected ? .bold : .regular))
+                                .foregroundStyle(isSelected ? .white : AppTheme.textMuted)
                         }
-                        .frame(width: 52, height: 30)
+                        .frame(width: 46, height: 28)
 
                         Text(tab.title)
                             .font(.system(size: 11, weight: isSelected ? .bold : .medium))
+                            .foregroundStyle(isSelected ? AppTheme.brandGreen : AppTheme.textMuted)
                     }
-                    .foregroundStyle(isSelected ? AppTheme.accentRed : AppTheme.textPrimary.opacity(0.55))
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.plain)

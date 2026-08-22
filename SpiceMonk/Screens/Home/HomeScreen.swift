@@ -10,55 +10,54 @@ struct HomeScreen: View {
     @StateObject var viewModel = HomeViewModel()
     @StateObject private var addressViewModel = AddressViewModel()
     @StateObject private var searchViewModel = SearchViewModel()
-    @State private var tabDestination: HomeTabDestination?
+    @State private var selectedTab: HomeTab = .home
+    @State private var cartDestination: HomeTabDestination?
     @State private var searchBarOffset: CGFloat = 0
     @State private var isConfirmingLogout = false
     @State private var isPickingAddress = false
     @State private var isSearchActive = false
+    @State private var selectedVariantProduct: ProductItem? = nil
 
     var body: some View {
         NavigationStack {
-            homeRoot
+            mainContent
+                .environment(\EnvironmentValues.onSelectVariantSheet) { product in
+                    selectedVariantProduct = product
+                }
         }
     }
 
-    private var homeRoot: some View {
+    private var mainContent: some View {
         VStack(spacing: 0) {
-            GeometryReader { geometry in
-                let topInset = resolvedTopInset(geometry.safeAreaInsets.top)
-
-                if isSearchActive {
-                    searchMode(safeAreaTop: topInset)
-                } else {
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(spacing: 0) {
-                            header(safeAreaTop: topInset)
-                                .zIndex(2)
-
-                            feedBody
-                                .zIndex(1)
-                        }
-                    }
-                    .ignoresSafeArea(edges: .top)
-                    .refreshable { await refreshFeed() }
+            ZStack {
+                switch selectedTab {
+                case .home:
+                    homeContent
+                case .categories:
+                    categoriesContent
+                case .account:
+                    accountContent
                 }
             }
-            .ignoresSafeArea(edges: .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             if !isSearchActive {
-                HomeBottomBar(onSelect: openTab)
+                FloatingCartBar {
+                    cartDestination = .cart
+                }
+                HomeBottomBar(selected: selectedTab, onSelect: { tab in
+                    selectedTab = tab
+                })
             }
         }
         .background(AppTheme.homeCanvas, ignoresSafeAreaEdges: .bottom)
         .toolbar(.hidden, for: .navigationBar)
-        .navigationDestination(item: $tabDestination) { destination in
+        .navigationDestination(item: $cartDestination) { destination in
             switch destination {
-            case .categories:
-                CategoriesTabScreen(categories: viewModel.allCategories)
             case .cart:
                 CartScreen(addressViewModel: addressViewModel)
-            case .account:
-                AccountPlaceholderScreen(addressViewModel: addressViewModel)
+            default:
+                EmptyView()
             }
         }
         .navigationDestination(item: $searchViewModel.resultsDestination) { destination in
@@ -70,15 +69,21 @@ struct HomeScreen: View {
                 productId: destination.productId
             )
         }
-        // A 0-height view at the top of the layout, with a background that is allowed to paint
-        // into the status bar. The in-scroll header can move; this strip cannot, so the clock
-        // never sits on a hole.
+        .overlay(alignment: .bottomTrailing) {
+            if !isSearchActive {
+                FloatingWhatsAppButton()
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 68)
+            }
+        }
         .overlay(alignment: .top) {
-            Color.clear
-                .frame(height: 0)
-                .frame(maxWidth: .infinity)
-                .background(AppTheme.homeHeaderTop.ignoresSafeArea(edges: .top))
-                .allowsHitTesting(false)
+            if selectedTab == .home {
+                Color.clear
+                    .frame(height: 0)
+                    .frame(maxWidth: .infinity)
+                    .background(AppTheme.homeHeaderTop.ignoresSafeArea(edges: .top))
+                    .allowsHitTesting(false)
+            }
         }
         .onAppear {
             if !viewModel.hasContent {
@@ -89,6 +94,9 @@ struct HomeScreen: View {
         }
         .sheet(isPresented: $isPickingAddress) {
             AddressPickerSheet(viewModel: addressViewModel)
+        }
+        .sheet(item: $selectedVariantProduct) { product in
+            VariantSelectorSheet(product: product)
         }
         .confirmationDialog("Log out of SpiceMonk?", isPresented: $isConfirmingLogout) {
             Button("Log out", role: .destructive) {
@@ -108,13 +116,51 @@ struct HomeScreen: View {
         .cartStoreToast()
     }
 
-    /// Address + search live in the scroll view so they can share its geometry. `visualEffect`
-    /// then pins the search row once the address has scrolled through the status bar.
+    // MARK: - Home Tab
+
+    private var homeContent: some View {
+        GeometryReader { geometry in
+            let topInset = resolvedTopInset(geometry.safeAreaInsets.top)
+
+            if isSearchActive {
+                searchMode(safeAreaTop: topInset)
+            } else {
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        header(safeAreaTop: topInset)
+                            .zIndex(2)
+
+                        feedBody
+                            .zIndex(1)
+                    }
+                }
+                .ignoresSafeArea(edges: .top)
+                .refreshable { await refreshFeed() }
+            }
+        }
+        .ignoresSafeArea(edges: .top)
+    }
+
+    // MARK: - Categories Tab
+
+    private var categoriesContent: some View {
+        CategoriesTabScreen(categories: viewModel.allCategories)
+    }
+
+    // MARK: - Account Tab
+
+    private var accountContent: some View {
+        AccountPlaceholderScreen(addressViewModel: addressViewModel)
+    }
+
+    // MARK: - Header & Feed
+
     private func header(safeAreaTop: CGFloat) -> some View {
         HomeTopBar(
             address: addressViewModel.defaultAddress,
             addressOpacity: addressOpacity(safeAreaTop: safeAreaTop),
             safeAreaTop: safeAreaTop,
+            searchPlaceholders: viewModel.searchPlaceholders,
             onAddressTap: { isPickingAddress = true },
             onProfileTap: { isConfirmingLogout = true },
             onSearchTap: enterSearch,
@@ -159,6 +205,7 @@ struct HomeScreen: View {
                     get: { searchViewModel.query },
                     set: { searchViewModel.updateQuery($0) }
                 ),
+                searchPlaceholders: viewModel.searchPlaceholders,
                 onAddressTap: {},
                 onProfileTap: {},
                 onSearchBack: exitSearch,
@@ -181,30 +228,13 @@ struct HomeScreen: View {
         searchViewModel.clear()
     }
 
-    private func openTab(_ tab: HomeTab) {
-        switch tab {
-        case .home:
-            break
-        case .categories:
-            tabDestination = .categories
-        case .cart:
-            tabDestination = .cart
-        case .account:
-            tabDestination = .account
-        }
-    }
+    // MARK: - Scroll helpers
 
-    /// Rubber-band: while the user pulls the feed down, slide the header back by the same amount
-    /// so it stays parked under the status bar instead of stretching away from the top.
     nonisolated private func offsetYFullHeader(_ proxy: GeometryProxy) -> CGFloat {
         let minY = proxy.frame(in: .scrollView(axis: .vertical)).minY
         return minY > 0 ? -minY : 0
     }
 
-    /// Once the header starts scrolling up, push it back by `-minY` so the plum fill stays in the
-    /// status bar and search stays below the notch. E-RSPL used `-(minY + safeAreaTop)` because
-    /// their address row kept its height; we collapse that row, so pinning at `-safeAreaTop` would
-    /// sit the search on top of the clock.
     nonisolated private func offsetYSearchBar(_ proxy: GeometryProxy, safeAreaTop: CGFloat) -> CGFloat {
         let minY = proxy.frame(in: .scrollView(axis: .vertical)).minY
         Task { @MainActor in
@@ -214,16 +244,12 @@ struct HomeScreen: View {
         return minY > 0 ? 0 : -minY
     }
 
-    /// Address is fully visible at rest and gone once `searchBarOffset` has travelled one status-bar
-    /// height — the same window the search bar uses to pin.
     private func addressOpacity(safeAreaTop: CGFloat) -> CGFloat {
         let inset = max(safeAreaTop, 1)
         let clamped = min(max(searchBarOffset, -inset), 0)
         return min(max(1 - (clamped / -inset), 0), 1)
     }
 
-    /// GeometryReader reports 0 for the top inset when it is itself laid out below the status bar.
-    /// Fall back to the window so the header still pads by a real notch height.
     private func resolvedTopInset(_ fromGeometry: CGFloat) -> CGFloat {
         if fromGeometry > 0 { return fromGeometry }
         return UIApplication.shared.keyWindow?.safeAreaInsets.top ?? 59

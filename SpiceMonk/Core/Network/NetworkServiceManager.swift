@@ -27,15 +27,33 @@ class NetworkServiceManager: NetworkServiceManagable {
                 .eraseToAnyPublisher()
         }
 
+        var targetURL = url
+        let isGet = endpoint.requestType == .get
+        let rawFields = Self.fields(from: params)
+        let hasParams = !rawFields.isEmpty
+
+        if isGet && hasParams {
+            if var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+                var queryItems = components.queryItems ?? []
+                for field in rawFields {
+                    queryItems.append(URLQueryItem(name: field.key, value: field.value))
+                }
+                components.queryItems = queryItems
+                if let combinedURL = components.url {
+                    targetURL = combinedURL
+                }
+            }
+        }
+
         let boundary = "Boundary-\(UUID().uuidString)"
 
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: targetURL)
         request.httpMethod = endpoint.requestType.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
         // Endpoints like `customer/home` are POSTs that take nothing but the auth header. Sending a
         // Content-Type with an empty form body would describe a payload that is not there.
-        let hasPayload = !Self.fields(from: params).isEmpty
+        let hasPayload = !isGet && hasParams
         if hasPayload {
             request.setValue(
                 endpoint.contentType.headerValue(boundary: boundary),
@@ -45,7 +63,7 @@ class NetworkServiceManager: NetworkServiceManagable {
 
         #if DEBUG
         print("===================================================================")
-        print("API:\n", url)
+        print("API:\n", targetURL)
         print("===================================================================")
         print("Parameter:\n", params)
         print("===================================================================")

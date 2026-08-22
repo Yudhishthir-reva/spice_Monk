@@ -145,6 +145,24 @@ struct ProductVariant: Decodable, Identifiable {
     }
 }
 
+extension ProductVariant {
+    var displayPrice: String {
+        customerPrice.isEmpty ? mrp : customerPrice
+    }
+
+    var saveAmount: Int {
+        ProductItem.priceGap(mrp: mrp, price: displayPrice)
+    }
+
+    var hasDiscount: Bool {
+        !customerPrice.isEmpty && ProductItem.parsePrice(displayPrice) < ProductItem.parsePrice(mrp)
+    }
+
+    var inStock: Bool {
+        availableQty > 0
+    }
+}
+
 struct ProductItem: Decodable, Identifiable {
     let id: Int
     let name: String
@@ -249,15 +267,18 @@ struct HomeResponse: Decodable {
     let status: Bool?
     let message: String?
     let widgets: [HomeWidget]
+    let searchPlaceholders: [String]
 
     enum CodingKeys: String, CodingKey {
         case status, message, data
+        case searchPlaceholders = "search_placeholders"
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         status = container.decodeBoolLeniently(forKey: .status)
         message = container.decodeStringLeniently(forKey: .message)
+        searchPlaceholders = (try? container.decode([String].self, forKey: .searchPlaceholders)) ?? []
 
         let decoded = (try? container.decode([DecodedWidget].self, forKey: .data)) ?? []
         widgets = decoded.compactMap(\.widget)

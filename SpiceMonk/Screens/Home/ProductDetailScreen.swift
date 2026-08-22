@@ -24,9 +24,7 @@ struct ProductDetailScreen: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            Color.white.ignoresSafeArea()
-
+        Group {
             if viewModel.notFound {
                 missingState
             } else if let error = viewModel.loadError, viewModel.product == nil {
@@ -37,13 +35,9 @@ struct ProductDetailScreen: View {
             } else {
                 detailBody
             }
-
-            backButton
-                .padding(.leading, 14)
-                .padding(.top, 10)
         }
-        .navigationBarBackButtonHidden(true)
-        .toolbar(.hidden, for: .navigationBar)
+        .background(Color.white)
+        .spiceNavigationBar(title: viewModel.product?.name ?? viewModel.seedName)
         .onAppear {
             CartStore.shared.loadIfNeeded()
             if viewModel.product == nil, !viewModel.notFound {
@@ -54,21 +48,6 @@ struct ProductDetailScreen: View {
             AlertToast(displayMode: .banner(.pop), type: .regular, title: viewModel.toastMessage)
         }, onTap: nil, completion: nil)
         .cartStoreToast()
-    }
-
-    private var backButton: some View {
-        Button(action: { dismiss() }) {
-            Image(systemName: "chevron.left")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(AppTheme.textPrimary)
-                .frame(width: 40, height: 40)
-                .background(Color.white)
-                .clipShape(Circle())
-                .overlay {
-                    Circle().stroke(AppTheme.cardBorder, lineWidth: 1)
-                }
-        }
-        .buttonStyle(.plain)
     }
 
     private var missingState: some View {
@@ -136,7 +115,7 @@ struct ProductDetailScreen: View {
                     heroBadge("NEW", fill: AppTheme.newBadgeBackground, foreground: AppTheme.newBadgeText)
                 }
             }
-            .padding(.top, 56)
+            .padding(.top, 14)
             .padding(.trailing, 14)
         }
         .frame(maxWidth: .infinity)

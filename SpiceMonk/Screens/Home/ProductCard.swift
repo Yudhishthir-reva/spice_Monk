@@ -12,32 +12,82 @@ struct ProductCard: View {
     let product: ProductItem
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
             imageArea
 
-            Rectangle()
-                .fill(Color.black.opacity(0.08))
-                .frame(height: 1)
+            VStack(alignment: .leading, spacing: 5) {
+                NavigationLink {
+                    ProductDetailScreen(
+                        productId: product.id,
+                        seedName: product.name,
+                        seedImageUrl: product.imageUrl
+                    )
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(product.name)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, minHeight: 34, alignment: .topLeading)
 
-            weightAndAddRow
+                        HStack(spacing: 4) {
+                            if !product.weight.isEmptyString {
+                                Text(product.weight)
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(AppTheme.textSecondary)
+                                    .lineLimit(1)
+                            }
 
-            NavigationLink {
-                ProductDetailScreen(
-                    productId: product.id,
-                    seedName: product.name,
-                    seedImageUrl: product.imageUrl
-                )
-            } label: {
-                priceAndTitle
+                            if product.variantsCount > 1 {
+                                Text("\(product.variantsCount) options")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(AppTheme.accentGreen)
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 1.5)
+                                    .background(AppTheme.accentSoft)
+                                    .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                            }
+                        }
+
+                        HStack(alignment: .firstTextBaseline, spacing: 5) {
+                            Text("₹\(product.displayPrice)")
+                                .font(.system(size: 15, weight: .heavy))
+                                .foregroundStyle(AppTheme.textPrimary)
+
+                            if product.hasDiscount {
+                                Text("₹\(product.mrp)")
+                                    .font(.system(size: 11))
+                                    .strikethrough()
+                                    .foregroundStyle(AppTheme.textMuted)
+                            }
+                        }
+                        .lineLimit(1)
+
+                        if product.effectiveSaveAmount > 0 {
+                            Text("Save ₹\(product.effectiveSaveAmount)")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(AppTheme.accentGreen)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+
+                Spacer(minLength: 4)
+
+                ProductCartControl(product: product)
             }
-            .buttonStyle(.plain)
+            .padding(.horizontal, 8)
+            .padding(.top, 8)
+            .padding(.bottom, 10)
         }
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(AppTheme.cardBorder, lineWidth: 1)
         }
+        .shadow(color: .black.opacity(0.04), radius: 4, y: 2)
         .frame(maxWidth: .infinity, alignment: .top)
     }
 
@@ -54,74 +104,30 @@ struct ProductCard: View {
                 .aspectRatio(1, contentMode: .fit)
                 .frame(maxWidth: .infinity)
                 .background(AppTheme.imageTile)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .overlay(alignment: .center) {
                     if !product.inStock {
                         outOfStockOverlay
                     }
                 }
                 .overlay(alignment: .topLeading) {
-                    leadingBadge
-                        .padding(8)
+                    leadingBadges
+                        .padding(6)
                 }
-                .overlay(alignment: .topTrailing) {
-                    if product.variantsCount > 1 {
-                        badge("\(product.variantsCount) sizes", fill: .white, text: AppTheme.textSecondary)
-                            .padding(8)
-                    }
-                }
+                .padding(6)
         }
         .buttonStyle(.plain)
     }
 
-    private var weightAndAddRow: some View {
-        HStack(alignment: .center, spacing: 6) {
-            Text(product.weight.isEmptyString ? " " : product.weight)
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(AppTheme.textPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-
-            Spacer(minLength: 4)
-
-            ProductCartControl(product: product)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
-    }
-
-    private var priceAndTitle: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 5) {
-                Text("₹\(product.displayPrice)")
-                    .font(.system(size: 16, weight: .heavy))
-                    .foregroundStyle(AppTheme.textPrimary)
-
-                if product.hasDiscount {
-                    Text("₹\(product.mrp)")
-                        .font(.system(size: 12))
-                        .strikethrough()
-                        .foregroundStyle(AppTheme.textMuted)
-                }
-            }
-            .lineLimit(1)
-
-            Text(product.name)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(AppTheme.textPrimary)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, minHeight: 34, alignment: .topLeading)
-        }
-        .padding(.horizontal, 8)
-        .padding(.bottom, 10)
-    }
-
     @ViewBuilder
-    private var leadingBadge: some View {
-        if product.hasDiscount && product.effectiveDiscountPercent > 0 {
-            badge("\(product.effectiveDiscountPercent)% OFF", fill: AppTheme.discountBadge, text: .white)
-        } else if product.isNew {
-            badge("NEW", fill: AppTheme.newBadgeBackground, text: AppTheme.newBadgeText)
+    private var leadingBadges: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            if product.hasDiscount && product.effectiveDiscountPercent > 0 {
+                badge("\(product.effectiveDiscountPercent)% OFF", fill: AppTheme.discountBadge, text: .white)
+            }
+            if product.isNew {
+                badge("NEW", fill: AppTheme.newBadgeBackground, text: AppTheme.newBadgeText)
+            }
         }
     }
 
@@ -140,14 +146,14 @@ struct ProductCard: View {
 
     private func badge(_ text: String, fill: Color, text textColor: Color) -> some View {
         Text(text)
-            .font(.system(size: 10, weight: .heavy))
+            .font(.system(size: 9, weight: .heavy))
             .foregroundStyle(textColor)
             .lineLimit(1)
             .minimumScaleFactor(0.8)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
             .background(fill)
-            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
 }
 
@@ -205,10 +211,33 @@ extension View {
 struct ProductCartControl: View {
 
     let product: ProductItem
+    @Environment(\EnvironmentValues.onSelectVariantSheet) private var onSelectVariantSheet
     @ObservedObject private var cart = CartStore.shared
 
     var body: some View {
-        if let variant = product.defaultCartVariant, variant.id > 0 {
+        if (product.variantsCount > 1 || product.variants.count > 1), let onSelectVariantSheet {
+            let totalQty = product.variants.reduce(0) { $0 + cart.quantity(productId: product.id, variantId: $1.id) }
+            Button {
+                onSelectVariantSheet(product)
+            } label: {
+                HStack(spacing: 3) {
+                    Text(totalQty > 0 ? "\(totalQty) IN CART" : "ADD +")
+                        .font(.system(size: 12, weight: .heavy))
+                        .tracking(0.4)
+                }
+                .foregroundStyle(AppTheme.accentRed)
+                .frame(maxWidth: .infinity)
+                .frame(height: 30)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(AppTheme.accentRed, lineWidth: 1.4)
+                }
+                .shadow(color: .black.opacity(0.08), radius: 1, y: 1)
+            }
+            .buttonStyle(.borderless)
+        } else if let variant = product.defaultCartVariant, variant.id > 0 {
             let qty = cart.quantity(productId: product.id, variantId: variant.id)
             let busy = cart.isBusy(productId: product.id, variantId: variant.id)
             let stock = variant.availableQty > 0 ? variant.availableQty : product.availableQty
@@ -219,6 +248,7 @@ struct ProductCartControl: View {
                     canIncrement: stock <= 0 || qty < stock,
                     isBusy: busy,
                     listing: true,
+                    fullWidth: true,
                     onIncrement: {
                         cart.addOrIncrement(productId: product.id, variantId: variant.id, availableQty: stock)
                     },
