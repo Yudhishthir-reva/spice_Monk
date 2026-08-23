@@ -16,259 +16,67 @@ struct PaymentSimulationSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var isVerifying = false
     @State private var errorMessage: String? = nil
-    @State private var showWebView = false
     @State private var cancellables = Set<AnyCancellable>()
-
-    private var checkoutUrl: String {
-        let isProd = initiateData.environment.lowercased() == "production"
-        let baseUrl = isProd ? "https://payments.cashfree.com" : "https://payments-test.cashfree.com"
-        return "\(baseUrl)/order/#/\(initiateData.paymentSessionId)"
-    }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                if showWebView {
-                    ZStack(alignment: .bottom) {
-                        PaymentWebView(urlString: checkoutUrl) { _ in }
-                            .ignoresSafeArea(edges: .bottom)
-
-                        // Floating action panel inside Web Checkout
-                        VStack(spacing: 12) {
-                            if isVerifying {
-                                ProgressView("Verifying payment status...")
-                                    .font(.system(size: 13, weight: .bold))
-                                    .foregroundStyle(AppTheme.textPrimary)
-                                    .padding(.vertical, 16)
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color.white.opacity(0.95))
-                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                    .shadow(color: .black.opacity(0.1), radius: 10)
-                            } else {
-                                Button {
-                                    verifyPayment()
-                                } label: {
-                                    HStack(spacing: 8) {
-                                        Text("I Completed Payment (Verify)")
-                                            .font(.system(size: 14, weight: .bold))
-                                        Image(systemName: "checkmark.shield.fill")
-                                            .font(.system(size: 15))
-                                    }
-                                    .foregroundStyle(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 48)
-                                    .background(AppTheme.brandGreen)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                    .shadow(color: AppTheme.brandGreen.opacity(0.2), radius: 6)
-                                }
-                                .buttonStyle(.plain)
-                            }
-
-                            if let error = errorMessage {
-                                Text(error)
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(.red)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                            }
+                if let error = errorMessage {
+                    HStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.white)
+                        Text(error)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.white)
+                        Spacer()
+                        Button {
+                            errorMessage = nil
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.white)
                         }
-                        .padding(14)
-                        .background(Color.white.opacity(0.9))
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(Color.black.opacity(0.06), lineWidth: 1)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 16)
                     }
-                } else {
-                    mainMenuBody
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.red)
                 }
+
+                CashfreeCheckoutWebView(
+                    paymentSessionId: initiateData.paymentSessionId,
+                    environment: initiateData.environment,
+                    onPaymentRedirect: { url in
+                        let urlString = url.absoluteString.lowercased()
+                        if urlString.contains("spicemonk.revateam.com") {
+                            verifyPayment()
+                        }
+                    }
+                )
+                .ignoresSafeArea(edges: .bottom)
             }
             .background(Color(hex: "F8FAF8"))
-            .navigationTitle(showWebView ? "Cashfree Checkout" : "Prepaid Payment")
+            .navigationTitle("Secure Payment")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button(showWebView ? "Back" : "Cancel") {
-                        if showWebView {
-                            showWebView = false
-                        } else {
-                            onFailure("Payment cancelled by user.")
-                            dismiss()
-                        }
-                    }
-                    .foregroundStyle(AppTheme.textSecondary)
-                }
-            }
-        }
-    }
-
-    private var mainMenuBody: some View {
-        VStack(spacing: 24) {
-            // Secure header
-            VStack(spacing: 8) {
-                HStack(spacing: 6) {
-                    Image(systemName: "checkmark.shield.fill")
-                        .font(.system(size: 14))
-                        .foregroundStyle(AppTheme.brandGreen)
-                    Text("SECURE TEST GATEWAY")
-                        .font(.system(size: 11, weight: .black))
-                        .foregroundStyle(AppTheme.brandGreen)
-                        .tracking(1.2)
-                }
-
-                Text("Cashfree payments")
-                    .font(.system(size: 20, weight: .heavy))
-                    .foregroundStyle(AppTheme.textPrimary)
-
-                if !initiateData.environment.isEmpty {
-                    Text(initiateData.environment.uppercased())
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(Color(hex: "F59E0B"))
-                        .clipShape(Capsule())
-                }
-            }
-            .padding(.top, 24)
-
-            // Total display
-            VStack(spacing: 4) {
-                Text("Amount to Pay")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(AppTheme.textSecondary)
-
-                Text("₹\(Int(initiateData.orderAmount.rounded()))")
-                    .font(.system(size: 32, weight: .heavy))
-                    .foregroundStyle(AppTheme.textPrimary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 20)
-            .background(Color(hex: "F4F4F5"))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-            // Info Box
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Testing Instructions:")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(AppTheme.textPrimary)
-                Text("Choose 'Pay via Cashfree' to complete actual sandbox transactions, or select 'Bypass & Force Success' to immediately test the success UI path.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .lineSpacing(3)
-            }
-            .padding(14)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(Color.black.opacity(0.06), lineWidth: 1)
-            }
-
-            if let error = errorMessage {
-                Text(error)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.red)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16)
-            }
-
-            Spacer()
-
-            // Actions block
-            VStack(spacing: 12) {
-                if isVerifying {
-                    ProgressView("Verifying payment status...")
-                        .font(.system(size: 13))
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .frame(height: 52)
-                } else {
-                    // Pay via Cashfree Webview
-                    Button {
-                        errorMessage = nil
-                        showWebView = true
-                    } label: {
-                        HStack(spacing: 8) {
-                            Text("Pay via Cashfree (Staging Page)")
-                                .font(.system(size: 15, weight: .bold))
-                            Image(systemName: "creditcard.fill")
-                                .font(.system(size: 15))
-                        }
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(AppTheme.brandGreen)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .shadow(color: AppTheme.brandGreen.opacity(0.18), radius: 8, x: 0, y: 4)
-                    }
-                    .buttonStyle(.plain)
-
-                    // Bypass local success
-                    Button {
-                        onSuccess()
-                        dismiss()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Text("Bypass & Force Success (Local Test)")
-                                .font(.system(size: 14, weight: .bold))
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 15))
-                        }
-                        .foregroundStyle(AppTheme.brandGreen)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(AppTheme.accentSoft)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(AppTheme.brandGreen.opacity(0.2), lineWidth: 1.5)
-                        }
-                    }
-                    .buttonStyle(.plain)
-
-                    // Failure Button
-                    Button {
+                    Button("Cancel") {
                         onFailure("Payment cancelled by user.")
                         dismiss()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Text("Simulate Failed/Cancelled Payment")
-                                .font(.system(size: 14, weight: .bold))
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 15))
-                        }
-                        .foregroundStyle(.red)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(Color.red.opacity(0.4), lineWidth: 1.5)
-                        }
                     }
-                    .buttonStyle(.plain)
+                    .foregroundStyle(AppTheme.textSecondary)
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    if isVerifying {
+                        ProgressView()
+                    } else {
+                        Button("Verify") {
+                            verifyPayment()
+                        }
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(AppTheme.brandGreen)
+                    }
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 16)
-
-            // PCI-DSS footer
-            HStack(spacing: 4) {
-                Image(systemName: "shield.fill")
-                    .font(.system(size: 11))
-                    .foregroundStyle(AppTheme.textMuted)
-                Text("Secured by Cashfree Payments · PCI-DSS Compliant")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(AppTheme.textMuted)
-            }
-            .padding(.bottom, 12)
         }
     }
 
@@ -297,18 +105,105 @@ struct PaymentSimulationSheet: View {
     }
 }
 
-// MARK: - WebView Wrapper
+// MARK: - Cashfree JS SDK WebView
 
-struct PaymentWebView: UIViewRepresentable {
-    let urlString: String
-    let onNavigationStateChange: (URL?) -> Void
+/// Loads a local HTML page that includes the Cashfree JavaScript SDK and
+/// triggers `cashfree.checkout()` with the given `paymentSessionId`.
+/// This is the correct integration path when the native Cashfree iOS SDK
+/// is not available — the JS SDK handles all payment UI rendering.
+struct CashfreeCheckoutWebView: UIViewRepresentable {
+    let paymentSessionId: String
+    let environment: String
+    let onPaymentRedirect: (URL) -> Void
 
     func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
+        let config = WKWebViewConfiguration()
+        config.preferences.javaScriptEnabled = true
+
+        let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
-        if let url = URL(string: urlString) {
-            webView.load(URLRequest(url: url))
-        }
+
+        let isProd = environment.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) == "production"
+        let mode = isProd ? "production" : "sandbox"
+
+        let html = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <title>Payment</title>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                    background: #F8FAF8;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 100vh;
+                    color: #333;
+                }
+                .loader {
+                    text-align: center;
+                    padding: 40px 20px;
+                }
+                .spinner {
+                    width: 36px; height: 36px;
+                    border: 3px solid #e0e0e0;
+                    border-top-color: #2E7D32;
+                    border-radius: 50%;
+                    animation: spin 0.8s linear infinite;
+                    margin: 0 auto 16px;
+                }
+                @keyframes spin { to { transform: rotate(360deg); } }
+                .loader p { font-size: 14px; color: #666; }
+                .error { color: #c62828; font-size: 14px; text-align: center; padding: 40px 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="loader" id="loader">
+                <div class="spinner"></div>
+                <p>Loading payment gateway...</p>
+            </div>
+            <div class="error" id="error" style="display:none;"></div>
+
+            <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+            <script>
+                (function() {
+                    try {
+                        const cashfree = Cashfree({ mode: "\(mode)" });
+                        cashfree.checkout({
+                            paymentSessionId: "\(paymentSessionId)",
+                            redirectTarget: "_self"
+                        }).then(function(result) {
+                            if (result.error) {
+                                document.getElementById("loader").style.display = "none";
+                                document.getElementById("error").style.display = "block";
+                                document.getElementById("error").innerText = result.error.message || "Payment could not be completed.";
+                            }
+                            if (result.paymentDetails) {
+                                document.getElementById("loader").innerHTML = "<p>Payment processing...</p>";
+                            }
+                        });
+                    } catch(e) {
+                        document.getElementById("loader").style.display = "none";
+                        document.getElementById("error").style.display = "block";
+                        document.getElementById("error").innerText = "Failed to initialize payment: " + e.message;
+                    }
+                })();
+            </script>
+        </body>
+        </html>
+        """
+
+        print("--- PAYMENT DEBUG INFO ---")
+        print("Environment from Server: '\(environment)'")
+        print("Cashfree SDK Mode: '\(mode)'")
+        print("Payment Session ID: '\(paymentSessionId)'")
+        print("--------------------------")
+
+        webView.loadHTMLString(html, baseURL: URL(string: "https://sdk.cashfree.com"))
         return webView
     }
 
@@ -319,14 +214,25 @@ struct PaymentWebView: UIViewRepresentable {
     }
 
     class Coordinator: NSObject, WKNavigationDelegate {
-        let parent: PaymentWebView
+        let parent: CashfreeCheckoutWebView
 
-        init(_ parent: PaymentWebView) {
+        init(_ parent: CashfreeCheckoutWebView) {
             self.parent = parent
         }
 
+        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+            if let url = navigationAction.request.url {
+                print("[CashfreeWebView] Navigation to: \(url.absoluteString)")
+                parent.onPaymentRedirect(url)
+            }
+            decisionHandler(.allow)
+        }
+
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            parent.onNavigationStateChange(webView.url)
+            if let url = webView.url {
+                print("[CashfreeWebView] Finished loading: \(url.absoluteString)")
+                parent.onPaymentRedirect(url)
+            }
         }
     }
 }
