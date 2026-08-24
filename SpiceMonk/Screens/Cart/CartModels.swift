@@ -317,6 +317,113 @@ struct CouponsResponse: Decodable {
     }
 }
 
+struct AppliedCouponData: Decodable, Identifiable {
+    var id: Int { couponId }
+    let couponId: Int
+    let code: String
+    let name: String
+    let type: String
+    let discountValue: Double
+    let discountAmount: Double
+    let cartTotal: Double
+    let finalTotal: Double
+    let discountText: String
+
+    enum CodingKeys: String, CodingKey {
+        case couponId = "coupon_id"
+        case code, name, type
+        case discountValue = "discount_value"
+        case discountAmount = "discount_amount"
+        case cartTotal = "cart_total"
+        case finalTotal = "final_total"
+        case discountText = "discount_text"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        couponId = container.decodeIntLeniently(forKey: .couponId) ?? 0
+        code = container.decodeStringLeniently(forKey: .code) ?? ""
+        name = container.decodeStringLeniently(forKey: .name) ?? ""
+        type = container.decodeStringLeniently(forKey: .type) ?? ""
+        discountValue = container.decodeDoubleLeniently(forKey: .discountValue) ?? 0
+        discountAmount = container.decodeDoubleLeniently(forKey: .discountAmount) ?? 0
+        cartTotal = container.decodeDoubleLeniently(forKey: .cartTotal) ?? 0
+        finalTotal = container.decodeDoubleLeniently(forKey: .finalTotal) ?? 0
+        discountText = container.decodeStringLeniently(forKey: .discountText) ?? ""
+    }
+
+    func updating(discountAmount newAmount: Double) -> AppliedCouponData {
+        AppliedCouponData(
+            couponId: self.couponId,
+            code: self.code,
+            name: self.name,
+            type: self.type,
+            discountValue: self.discountValue,
+            discountAmount: newAmount,
+            cartTotal: self.cartTotal,
+            finalTotal: self.cartTotal - newAmount,
+            discountText: self.discountText
+        )
+    }
+
+    init(
+        couponId: Int,
+        code: String,
+        name: String,
+        type: String,
+        discountValue: Double,
+        discountAmount: Double,
+        cartTotal: Double,
+        finalTotal: Double,
+        discountText: String
+    ) {
+        self.couponId = couponId
+        self.code = code
+        self.name = name
+        self.type = type
+        self.discountValue = discountValue
+        self.discountAmount = discountAmount
+        self.cartTotal = cartTotal
+        self.finalTotal = finalTotal
+        self.discountText = discountText
+    }
+}
+
+struct ApplyCouponResponse: Decodable {
+    let status: Bool?
+    let message: String?
+    let data: AppliedCouponData?
+
+    enum CodingKeys: String, CodingKey {
+        case status, message, data
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        status = container.decodeBoolLeniently(forKey: .status)
+        message = container.decodeStringLeniently(forKey: .message)
+        data = try? container.decode(AppliedCouponData.self, forKey: .data)
+    }
+}
+
+struct CouponValidateResponse: Decodable {
+    let status: Bool?
+    let message: String?
+    let discountAmount: Double
+
+    enum CodingKeys: String, CodingKey {
+        case status, message
+        case discountAmount = "discount_amount"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        status = container.decodeBoolLeniently(forKey: .status)
+        message = container.decodeStringLeniently(forKey: .message)
+        discountAmount = container.decodeDoubleLeniently(forKey: .discountAmount) ?? 0
+    }
+}
+
 // MARK: - Payment Method
 
 enum PaymentMethod: String, CaseIterable, Identifiable {

@@ -28,17 +28,16 @@ struct CartScreen: View {
 
     private var couponDiscount: Double {
         guard let coupon = cart.appliedCoupon else { return 0 }
+        if coupon.discountAmount > 0 {
+            return coupon.discountAmount
+        }
         let itemsCustomerPrice = max(cart.summary.totalMrp - cart.summary.totalSavings, 0)
         if coupon.type == "flat" {
             return coupon.discountValue
         } else if coupon.type == "percentage" {
-            let computed = itemsCustomerPrice * coupon.discountValue / 100.0
-            if let maxD = coupon.maxDiscount {
-                return min(computed, maxD)
-            }
-            return computed
+            return itemsCustomerPrice * coupon.discountValue / 100.0
         }
-        return 0
+        return coupon.discountValue
     }
 
     private var grandTotalAmount: Double {

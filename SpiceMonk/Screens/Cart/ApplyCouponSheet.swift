@@ -16,6 +16,7 @@ struct ApplyCouponSheet: View {
     @State private var loadError: String? = nil
     @State private var couponInput = ""
     @State private var applyError: String? = nil
+    @State private var applyingCode: String? = nil
 
     private let service = CartServiceManager()
 
@@ -41,17 +42,28 @@ struct ApplyCouponSheet: View {
                                 .stroke(Color.black.opacity(0.1), lineWidth: 1)
                         }
 
+                    let trimmed = couponInput.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+                    let isApplyingThis = applyingCode == trimmed && !trimmed.isEmpty
+
                     Button {
-                        applyManualCode()
+                        applyCouponCode(trimmed)
                     } label: {
-                        Text("APPLY")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(couponInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color(hex: "A3B8B0") : AppTheme.brandGreen)
-                            .frame(width: 80, height: 48)
-                            .background(couponInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color(hex: "E2E8F0").opacity(0.6) : AppTheme.accentSoft)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        Group {
+                            if isApplyingThis {
+                                ProgressView()
+                                    .tint(AppTheme.brandGreen)
+                                    .scaleEffect(0.85)
+                            } else {
+                                Text("APPLY")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundStyle(trimmed.isEmpty ? Color(hex: "A3B8B0") : AppTheme.brandGreen)
+                            }
+                        }
+                        .frame(width: 80, height: 48)
+                        .background(trimmed.isEmpty ? Color(hex: "E2E8F0").opacity(0.6) : AppTheme.accentSoft)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
-                    .disabled(couponInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(trimmed.isEmpty || applyingCode != nil)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
@@ -141,7 +153,9 @@ struct ApplyCouponSheet: View {
     }
 
     private func couponCard(_ coupon: Coupon) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let isApplyingThis = applyingCode == coupon.code.uppercased()
+
+        return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 0) {
                 // Code badge
                 Text(coupon.code)
@@ -160,13 +174,19 @@ struct ApplyCouponSheet: View {
 
                 // Apply button
                 Button {
-                    applyCoupon(coupon)
+                    applyCouponCode(coupon.code)
                 } label: {
-                    Text("APPLY")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(coupon.isEligible ? AppTheme.brandGreen : Color(hex: "A3B8B0"))
+                    if isApplyingThis {
+                        ProgressView()
+                            .tint(AppTheme.brandGreen)
+                            .scaleEffect(0.75)
+                    } else {
+                        Text("APPLY")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(coupon.isEligible ? AppTheme.brandGreen : Color(hex: "A3B8B0"))
+                    }
                 }
-                .disabled(!coupon.isEligible)
+                .disabled(!coupon.isEligible || applyingCode != nil)
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -211,7 +231,7 @@ struct ApplyCouponSheet: View {
             .sink { completion in
                 isLoading = false
                 if case .failure(let error) = completion {
-                    loadError = error.localizedDescription
+                    loadError = (error as? RequestError)?.errorString ?? error.localizedDescription
                 }
             } receiveValue: { response in
                 coupons = response.coupons
@@ -219,29 +239,32 @@ struct ApplyCouponSheet: View {
             .store(in: &cancellables)
     }
 
-    private func applyManualCode() {
-        let code = couponInput.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+    private func applyCouponCode(_ rawCode: String) {
+        let code = rawCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         guard !code.isEmpty else { return }
-        
-        applyError = nil
-        
-        if let found = coupons.first(where: { $0.code.uppercased() == code }) {
-            if found.isEligible {
-                applyCoupon(found)
-            } else {
-                applyError = found.ineligibleReason ?? "This coupon is not eligible for your order."
-            }
-        } else {
-            // Simulated validation
-            applyError = "Invalid coupon code. Please check and try again."
-        }
-    }
 
-    private func applyCoupon(_ coupon: Coupon) {
-        cart.appliedCoupon = coupon
-        cart.toastMessage = "Coupon \(coupon.code) applied successfully!"
-        cart.isShowToastView = true
-        dismiss()
+        applyingCode = code
+        applyError = nil
+
+        service.applyCoupon(code: code)
+            .receive(on: RunLoop.main)
+            .sink { completion in
+                applyingCode = nil
+                if case .failure(let error) = completion {
+                    applyError = (error as? RequestError)?.errorString ?? error.localizedDescription
+                }
+            } receiveValue: { response in
+                applyingCode = nil
+                if response.status == true, let appliedData = response.data {
+                    cart.appliedCoupon = appliedData
+                    cart.toastMessage = response.message ?? "Coupon \(appliedData.code) applied successfully!"
+                    cart.isShowToastView = true
+                    dismiss()
+                } else {
+                    applyError = response.message ?? "Failed to apply coupon."
+                }
+            }
+            .store(in: &cancellables)
     }
 
     @State private var cancellables = Set<AnyCancellable>()

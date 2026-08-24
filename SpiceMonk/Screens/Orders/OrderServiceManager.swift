@@ -49,13 +49,16 @@ class OrderServiceManager {
         )
     }
 
-    func placeOrder(addressId: Int, paymentType: String, notes: String) -> AnyPublisher<OrderPlaceResponse, Error> {
+    func placeOrder(addressId: Int, paymentType: String, notes: String, couponCode: String? = nil) -> AnyPublisher<OrderPlaceResponse, Error> {
         var params: [String: Any] = [
             "address_id": addressId,
             "payment_type": paymentType
         ]
         if !notes.isEmpty {
             params["notes"] = notes
+        }
+        if let couponCode, !couponCode.isEmpty {
+            params["coupon_code"] = couponCode
         }
         return networkService.request(
             APIRouter.orderPlace,

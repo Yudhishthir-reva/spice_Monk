@@ -29,6 +29,8 @@ enum APIRouter: RouterManagable {
     case cartClear
     case cartUpdate
     case coupons
+    case couponApply
+    case couponValidate
     case orders
     case orderDetail(id: Int)
     case orderCancel
@@ -84,6 +86,10 @@ enum APIRouter: RouterManagable {
             return "customer/cart/update"
         case .coupons:
             return "customer/coupons"
+        case .couponApply:
+            return "customer/coupon/apply"
+        case .couponValidate:
+            return "customer/coupon/validate"
         case .orders:
             return "customer/orders"
         case .orderDetail(let id):

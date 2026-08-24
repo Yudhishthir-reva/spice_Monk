@@ -68,4 +68,20 @@ class CartServiceManager {
             headers: UserDefaultManager.shared.authHeader
         )
     }
+
+    func applyCoupon(code: String) -> AnyPublisher<ApplyCouponResponse, Error> {
+        networkService.request(
+            APIRouter.couponApply,
+            params: ["code": code],
+            headers: UserDefaultManager.shared.authHeader
+        )
+    }
+
+    func validateCoupon(couponId: Int) -> AnyPublisher<CouponValidateResponse, Error> {
+        networkService.request(
+            APIRouter.couponValidate,
+            params: ["coupon_id": couponId],
+            headers: UserDefaultManager.shared.authHeader
+        )
+    }
 }
