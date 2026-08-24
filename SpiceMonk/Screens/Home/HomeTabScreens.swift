@@ -129,110 +129,337 @@ struct CategoriesTabScreen: View {
     }
 }
 
-struct AccountPlaceholderScreen: View {
+// MARK: - Account Tab Screen
+
+struct AccountTabScreen: View {
 
     @ObservedObject var addressViewModel: AddressViewModel
+    @ObservedObject private var cart = CartStore.shared
+    var onLogout: () -> Void
+
     @State private var isPickingAddress = false
+    @State private var isPickingPayment = false
+    @State private var isConfirmingLogout = false
+
+    private var userMobile: String {
+        let mobile = UserDefaultManager.shared.getUserDefaultsString(key: .userMobile)
+        return mobile.isEmptyString ? "9999999999" : mobile
+    }
+
+    private var userName: String {
+        let name = UserDefaultManager.shared.getUserDefaultsString(key: .userName)
+        return name.isEmptyString ? "Welcome" : name
+    }
+
+    private var userInitials: String {
+        let name = userName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if name.isEmpty || name.lowercased() == "welcome" {
+            return "WE"
+        }
+        let parts = name.split(separator: " ")
+        if parts.count >= 2 {
+            let first = parts[0].prefix(1)
+            let second = parts[1].prefix(1)
+            return "\(first)\(second)".uppercased()
+        } else {
+            return String(name.prefix(2)).uppercased()
+        }
+    }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Button {
-                    isPickingAddress = true
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "location.fill")
-                            .font(.system(size: 16))
-                            .foregroundStyle(AppTheme.brandGreen)
-                            .frame(width: 42, height: 42)
-                            .background(AppTheme.accentSoft)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Saved addresses")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundStyle(AppTheme.textPrimary)
-                            Text("Manage your delivery locations")
-                                .font(.system(size: 13))
-                                .foregroundStyle(AppTheme.textSecondary)
-                        }
-
-                        Spacer(minLength: 0)
-
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(AppTheme.textMuted)
-                    }
-                    .padding(14)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(AppTheme.cardBorder, lineWidth: 1)
-                    }
-                }
-                .buttonStyle(.plain)
-
-                NavigationLink {
-                    OrdersScreen()
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "bag.fill")
-                            .font(.system(size: 16))
-                            .foregroundStyle(AppTheme.brandGreen)
-                            .frame(width: 42, height: 42)
-                            .background(AppTheme.accentSoft)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Your orders")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundStyle(AppTheme.textPrimary)
-                            Text("Track, cancel, or buy again")
-                                .font(.system(size: 13))
-                                .foregroundStyle(AppTheme.textSecondary)
-                        }
-
-                        Spacer(minLength: 0)
-
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(AppTheme.textMuted)
-                    }
-                    .padding(14)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(AppTheme.cardBorder, lineWidth: 1)
-                    }
-                }
-                .buttonStyle(.plain)
-
-                VStack(spacing: 8) {
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(AppTheme.brandGreen)
-                    Text("More coming soon")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                    Text("Your profile will live here soon.")
-                        .font(.system(size: 13))
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 24)
+        VStack(spacing: 0) {
+            // Header Bar
+            HStack {
+                Text("Your account")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.white)
+                Spacer()
             }
-            .padding(16)
+            .padding(.horizontal, 20)
+            .padding(.top, 14)
+            .padding(.bottom, 16)
+            .background(
+                LinearGradient(
+                    colors: [AppTheme.homeHeaderTop, AppTheme.homeHeaderBottom],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea(edges: .top)
+            )
+
+            // Content
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Profile Card
+                    profileCard
+                        .padding(.top, 16)
+
+                    // Section 1: Your orders & addresses
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Your orders & addresses")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color(hex: "6A7B72"))
+                            .padding(.leading, 4)
+
+                        VStack(spacing: 12) {
+                            NavigationLink {
+                                OrdersScreen()
+                            } label: {
+                                accountRow(
+                                    icon: "doc.text.fill",
+                                    title: "Order history",
+                                    subtitle: "Track deliveries and reorder in a tap"
+                                )
+                            }
+                            .buttonStyle(.plain)
+
+                            NavigationLink {
+                                SavedAddressesScreen(viewModel: addressViewModel)
+                            } label: {
+                                accountRow(
+                                    icon: "mappin.circle.fill",
+                                    title: "Saved addresses",
+                                    subtitle: "Manage where your spices land"
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+
+                    // Section 2: Payment
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Payment")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color(hex: "6A7B72"))
+                            .padding(.leading, 4)
+
+                        Button {
+                            isPickingPayment = true
+                        } label: {
+                            accountRow(
+                                icon: "creditcard.fill",
+                                title: "Payment method",
+                                subtitle: cart.paymentMethod.rawValue
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    // Section 3: Support
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Support")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color(hex: "6A7B72"))
+                            .padding(.leading, 4)
+
+                        Button {
+                            if let url = URL(string: "https://wa.me/") {
+                                UIApplication.shared.open(url)
+                            }
+                        } label: {
+                            accountRow(
+                                icon: "message.fill",
+                                title: "Help & support",
+                                subtitle: "Chat with us on WhatsApp"
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    // Log Out Button
+                    Button {
+                        isConfirmingLogout = true
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .font(.system(size: 16, weight: .bold))
+                            Text("Log out")
+                                .font(.system(size: 16, weight: .bold))
+                        }
+                        .foregroundStyle(Color(hex: "D93838"))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(Color(hex: "FFF5F5"))
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(Color(hex: "FCD4D4"), lineWidth: 1)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 4)
+
+                    // Footer Tagline
+                    Text("Freshly ground, straight from the monks.")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color(hex: "8FA196"))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 8)
+                        .padding(.bottom, 36)
+                }
+                .padding(.horizontal, 16)
+            }
         }
-        .background(Color.white)
-        .spiceNavigationBar(title: "Account")
+        .background(Color(hex: "F8FAF8").ignoresSafeArea())
         .sheet(isPresented: $isPickingAddress) {
             AddressPickerSheet(viewModel: addressViewModel)
+        }
+        .sheet(isPresented: $isPickingPayment) {
+            PaymentMethodPickerSheet()
+        }
+        .sheet(isPresented: $isConfirmingLogout) {
+            LogoutConfirmationSheet(
+                onLogout: onLogout,
+                onDismiss: { isConfirmingLogout = false }
+            )
+            .presentationDetents([.fraction(0.38), .medium])
+            .presentationDragIndicator(.visible)
         }
         .toast(isPresenting: $addressViewModel.isShowToastView, duration: 1.8, offsetY: 10, alert: {
             AlertToast(displayMode: .banner(.pop), type: .regular, title: addressViewModel.toastMessage)
         }, onTap: nil, completion: nil)
+    }
+
+    // MARK: - Profile Card
+
+    private var profileCard: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(Color(hex: "E0F2E9"))
+                    .frame(width: 58, height: 58)
+
+                Text(userInitials)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(Color(hex: "1F6335"))
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(userName)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+
+                Text(userMobile)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color(hex: "5A6B62"))
+            }
+
+            Spacer()
+        }
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+        }
+    }
+
+    // MARK: - Account Row Component
+
+    private func accountRow(icon: String, title: String, subtitle: String) -> some View {
+        HStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color(hex: "EBF6EE"))
+                    .frame(width: 44, height: 44)
+
+                Image(systemName: icon)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color(hex: "1F6335"))
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+
+                Text(subtitle)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color(hex: "6A7B72"))
+            }
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color(hex: "A3B3AA"))
+        }
+        .padding(14)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+        }
+    }
+}
+
+// MARK: - Logout Confirmation Sheet
+
+struct LogoutConfirmationSheet: View {
+
+    let onLogout: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Icon
+            ZStack {
+                Circle()
+                    .fill(Color(hex: "E8F5EE"))
+                    .frame(width: 64, height: 64)
+
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(Color(hex: "1F6335"))
+            }
+            .padding(.top, 24)
+
+            // Title
+            Text("Log out?")
+                .font(.system(size: 22, weight: .heavy))
+                .foregroundStyle(AppTheme.textPrimary)
+                .padding(.top, 16)
+
+            // Subtitle
+            Text("You'll need your mobile number to get back in. Your cart stays safe with us.")
+                .font(.system(size: 14))
+                .foregroundStyle(Color(hex: "5A6B62"))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+                .padding(.top, 8)
+
+            // Primary Log out button
+            Button {
+                onLogout()
+            } label: {
+                Text("Log out")
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(Color(hex: "1F6335"))
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
+
+            // Stay signed in
+            Button {
+                onDismiss()
+            } label: {
+                Text("Stay signed in")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(Color(hex: "2D4F38"))
+                    .frame(height: 44)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 6)
+            .padding(.bottom, 16)
+        }
+        .frame(maxWidth: .infinity)
+        .background(Color.white)
     }
 }

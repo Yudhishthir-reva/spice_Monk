@@ -13,6 +13,7 @@ enum APIRouter: RouterManagable {
     case addressList
     case addressDetail(id: Int)
     case setDefaultAddress(id: Int)
+    case deleteAddress(id: Int)
     case storeAddress
     case cityByPincode
     case widgetProducts
@@ -54,6 +55,8 @@ enum APIRouter: RouterManagable {
             return "customer/address/\(id)"
         case .setDefaultAddress(let id):
             return "customer/address/\(id)/default"
+        case .deleteAddress(let id):
+            return "customer/address/\(id)"
         case .storeAddress:
             return "customer/address"
         case .cityByPincode:
@@ -109,7 +112,7 @@ enum APIRouter: RouterManagable {
         switch self {
         case .addressList, .addressDetail, .cart, .coupons, .orders, .orderDetail:
             return .get
-        case .cartClear:
+        case .cartClear, .deleteAddress:
             return .delete
         default:
             return .post

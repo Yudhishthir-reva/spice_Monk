@@ -72,4 +72,31 @@ class AddressViewModel: ObservableObject {
             return copy
         }
     }
+
+    func deleteAddress(_ address: Address) {
+        serviceManagable.deleteAddress(id: address.id)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] completion in
+                if case .failure(let error) = completion {
+                    self?.toastMessage = (error as? RequestError)?.errorString ?? error.localizedDescription
+                    self?.isShowToastView = true
+                    self?.load()
+                }
+            } receiveValue: { [weak self] response in
+                guard let self else { return }
+                if response.status == true {
+                    self.addresses.removeAll(where: { $0.id == address.id })
+                    self.toastMessage = response.message ?? "Address deleted successfully."
+                    self.isShowToastView = true
+                } else {
+                    self.toastMessage = response.message ?? "Could not delete address."
+                    self.isShowToastView = true
+                    self.load()
+                }
+            }
+            .store(in: &cancellables)
+
+        // Optimistic removal
+        addresses.removeAll(where: { $0.id == address.id })
+    }
 }

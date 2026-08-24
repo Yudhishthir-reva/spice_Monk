@@ -19,6 +19,7 @@
 		C5784A463039F6A800C60492 /* OrderDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A433039F6A800C60492 /* OrderDetailScreen.swift */; };
 		C5784A483039F97500C60492 /* OrderSuccessScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A473039F97500C60492 /* OrderSuccessScreen.swift */; };
 		C5784A4A3039FB4700C60492 /* PaymentSimulationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A493039FB4700C60492 /* PaymentSimulationSheet.swift */; };
+		C58CD04C303C4F5F0038A272 /* SavedAddressesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58CD04B303C4F5F0038A272 /* SavedAddressesScreen.swift */; };
 		DD2F2278302F29FD0025FC97 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD2F2274302F29FD0025FC97 /* Assets.xcassets */; };
 		DD2F2279302F29FD0025FC97 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DD2F2275302F29FD0025FC97 /* LaunchScreen.storyboard */; };
 		DD2F227A302F29FD0025FC97 /* NetworkServiceManagable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2256302F29FD0025FC97 /* NetworkServiceManagable.swift */; };
@@ -92,6 +93,7 @@
 		C5784A443039F6A800C60492 /* OrderDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderDetailViewModel.swift; sourceTree = "<group>"; };
 		C5784A473039F97500C60492 /* OrderSuccessScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderSuccessScreen.swift; sourceTree = "<group>"; };
 		C5784A493039FB4700C60492 /* PaymentSimulationSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentSimulationSheet.swift; sourceTree = "<group>"; };
+		C58CD04B303C4F5F0038A272 /* SavedAddressesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedAddressesScreen.swift; sourceTree = "<group>"; };
 		DD2F21A1302F20850025FC97 /* SpiceMonk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpiceMonk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD2F2256302F29FD0025FC97 /* NetworkServiceManagable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkServiceManagable.swift; sourceTree = "<group>"; };
 		DD2F2257302F29FD0025FC97 /* NetworkServiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkServiceManager.swift; sourceTree = "<group>"; };
@@ -343,6 +345,7 @@
 		DD2F22A8302F7E010025FC97 /* Address */ = {
 			isa = PBXGroup;
 			children = (
+				C58CD04B303C4F5F0038A272 /* SavedAddressesScreen.swift */,
 				DD2F22A9302F7E010025FC97 /* AddressModels.swift */,
 				DD2F22AA302F7E010025FC97 /* AddressServiceManager.swift */,
 				DD2F22AB302F7E010025FC97 /* AddressViewModel.swift */,
@@ -491,6 +494,7 @@
 				DD2F22A6302F6D010025FC97 /* HomeWidgetViews.swift in Sources */,
 				DD2F22A7302F6D010025FC97 /* HomeChrome.swift in Sources */,
 				DD2F22D1302FB0010025FC97 /* WidgetProductsViewModel.swift in Sources */,
+				C58CD04C303C4F5F0038A272 /* SavedAddressesScreen.swift in Sources */,
 				DD2F22D3302FB0010025FC97 /* WidgetProductsScreen.swift in Sources */,
 				DD2F22D5302FC0010025FC97 /* CategoryProductsViewModel.swift in Sources */,
 				C5784A453039F6A800C60492 /* OrderDetailViewModel.swift in Sources */,

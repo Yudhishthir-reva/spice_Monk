@@ -63,7 +63,7 @@ struct SpiceIllustration: View {
             slit.addLine(to: CGPoint(x: center.x, y: center.y - outer * 0.24))
 
             let rotation = CGAffineTransform(translationX: center.x, y: center.y)
-                .rotated(by: .pi / 4 * Double(i))
+                .rotated(by: Double.pi / 4.0 * Double(i))
                 .translatedBy(x: -center.x, y: -center.y)
 
             context.fill(

@@ -150,7 +150,12 @@ struct HomeScreen: View {
     // MARK: - Account Tab
 
     private var accountContent: some View {
-        AccountPlaceholderScreen(addressViewModel: addressViewModel)
+        AccountTabScreen(
+            addressViewModel: addressViewModel,
+            onLogout: {
+                viewModel.logout()
+            }
+        )
     }
 
     // MARK: - Header & Feed

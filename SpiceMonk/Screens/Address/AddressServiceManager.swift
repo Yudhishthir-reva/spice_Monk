@@ -38,6 +38,14 @@ class AddressServiceManager {
         )
     }
 
+    func deleteAddress(id: Int) -> AnyPublisher<StatusResponse, Error> {
+        networkService.request(
+            APIRouter.deleteAddress(id: id),
+            params: [String: Any](),
+            headers: UserDefaultManager.shared.authHeader
+        )
+    }
+
     func storeAddress(params: RequestConstants.Param) -> AnyPublisher<AddressDetailResponse, Error> {
         networkService.request(
             APIRouter.storeAddress,

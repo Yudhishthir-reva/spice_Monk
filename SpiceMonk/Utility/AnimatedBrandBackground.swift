@@ -44,7 +44,7 @@ struct AnimatedBrandBackground: View {
     /// Eased 0 → 1 → 0 ramp. A cosine keeps velocity continuous, so the wash never visibly snaps
     /// at the turnaround the way a linear reverse would.
     static func breathFraction(at time: TimeInterval, cycle: Double) -> Double {
-        (1 - cos(2 * .pi * time / cycle)) / 2
+        (1 - cos(2.0 * Double.pi * time / cycle)) / 2
     }
 }
 
@@ -66,7 +66,7 @@ struct AmbientDrift {
     ) {
         let period = Double(max(periodMs, 1)) / 1000
         let progress = (time / period + phase).truncatingRemainder(dividingBy: 1)
-        let angle = progress * 2 * .pi
+        let angle = progress * 2.0 * Double.pi
 
         translation = CGSize(
             width: cos(angle * 2) * amplitude * 0.32,
