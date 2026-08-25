@@ -26,14 +26,22 @@ final class AuthSessionManager {
         )
     }
 
+    /// Explicit method to ensure singleton observer is active at app launch
+    func start() {
+        // Observer initialized in init()
+    }
+
     @objc private func handleUnauthorized() {
         // Always dispatch to main — the Combine pipeline may post from a background queue.
         DispatchQueue.main.async { [weak self] in
-            self?.redirectToLogin()
+            guard let self else { return }
+            // Avoid duplicate triggers if credentials have already been cleared
+            guard UserDefaultManager.shared.isUserLoggedIn else { return }
+            self.redirectToLogin()
         }
     }
 
-    private func redirectToLogin() {
+    func redirectToLogin() {
         // Clear stored credentials
         UserDefaultManager.shared.resetUserData()
 

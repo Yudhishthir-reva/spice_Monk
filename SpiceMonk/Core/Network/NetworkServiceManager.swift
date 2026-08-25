@@ -120,9 +120,21 @@ class NetworkServiceManager: NetworkServiceManagable {
                 switch httpResponse.statusCode {
                 case 200...299:
                     return data
+                case 401:
+                    NotificationCenter.default.post(name: UnauthorizedAccessNotification.name, object: nil)
+                    if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let message = json["message"] as? String, !message.isEmpty {
+                        throw RequestError.apiMessage(message)
+                    }
+                    throw RequestError.unAuthroizedUser
                 default:
                     if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                        let message = json["message"] as? String, !message.isEmpty {
+                        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                        if trimmed == "unauthenticated." || trimmed == "unauthenticated" {
+                            NotificationCenter.default.post(name: UnauthorizedAccessNotification.name, object: nil)
+                            throw RequestError.unAuthroizedUser
+                        }
                         throw RequestError.apiMessage(message)
                     }
                     throw RequestError.unknownError
