@@ -30,6 +30,10 @@ final class CartStore: ObservableObject {
     private var updatingIds = Set<Int>()
     private var addingKeys = Set<String>()
     private var cancellables = Set<AnyCancellable>()
+    private var pendingQtyTimers: [String: DispatchWorkItem] = [:]
+    private var pendingAddTapCount: [String: Int] = [:]
+    private let qtyDebounceInterval: TimeInterval = 0.35
+    private let debounceQueue = DispatchQueue.main
     var serviceManagable = CartServiceManager()
 
     var isEmpty: Bool { items.isEmpty }
@@ -98,6 +102,9 @@ final class CartStore: ObservableObject {
         removingIds.removeAll()
         updatingIds.removeAll()
         addingKeys.removeAll()
+        pendingQtyTimers.values.forEach { $0.cancel() }
+        pendingQtyTimers.removeAll()
+        pendingAddTapCount.removeAll()
         bump()
     }
 
@@ -183,9 +190,43 @@ final class CartStore: ObservableObject {
 
     /// First add sends `qty: 1`. Later taps send the new total (`2`, `3`, …) via update when we
     /// already have a `cart_id`, or via add if we only know product + variant.
+    /// Debounced so rapid taps on the same product collapse into a single API call.
     func addOrIncrement(productId: Int, variantId: Int, availableQty: Int) {
+        let key = Self.key(productId: productId, variantId: variantId)
+
         runWhenReady { [weak self] in
-            self?.performAddOrIncrement(productId: productId, variantId: variantId, availableQty: availableQty)
+            guard let self = self else { return }
+
+            // Cancel any pending add-tap timer for this item
+            self.pendingQtyTimers[key]?.cancel()
+
+            // Track how many taps came in before debounce fires
+            self.pendingAddTapCount[key, default: 0] += 1
+            let tapCount = self.pendingAddTapCount[key]!
+
+            // Optimistically bump local state now (per tap)
+            let current = self.quantity(productId: productId, variantId: variantId)
+            let optimisticQty = current + tapCount
+            if let item = self.line(productId: productId, variantId: variantId), item.cartId > 0 {
+                self.patch(cartId: item.cartId) { $0.setQty(optimisticQty) }
+                self.bump()
+            }
+
+            let workItem = DispatchWorkItem { [weak self] in
+                guard let self = self else { return }
+                self.pendingQtyTimers[key] = nil
+                let count = self.pendingAddTapCount[key] ?? 0
+                self.pendingAddTapCount[key] = nil
+                guard count > 0 else { return }
+                self.performAddOrIncrement(
+                    productId: productId,
+                    variantId: variantId,
+                    availableQty: availableQty,
+                    tapCount: count
+                )
+            }
+            self.pendingQtyTimers[key] = workItem
+            self.debounceQueue.asyncAfter(deadline: .now() + self.qtyDebounceInterval, execute: workItem)
         }
     }
 
@@ -196,10 +237,12 @@ final class CartStore: ObservableObject {
         }
     }
 
+    /// Optimistically updates the local qty and debounces the API call.
+    /// Rapid +/- taps on the same item collapse into a single network request with the final qty.
     func changeQty(_ item: CartItem, by delta: Int) {
         let next = item.qty + delta
         if next < 1 {
-            remove(item)
+            debouncedRemove(item)
             return
         }
         if item.availableQty > 0, next > item.availableQty {
@@ -207,11 +250,33 @@ final class CartStore: ObservableObject {
             isShowToastView = true
             return
         }
-        updateQty(item, qty: next)
+
+        // Optimistic local update
+        patch(cartId: item.cartId) { $0.setQty(next) }
+        bump()
+
+        // Debounce the API call
+        let key = String(item.cartId)
+        pendingQtyTimers[key]?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            self.pendingQtyTimers[key] = nil
+            if let current = self.line(productId: item.productId, variantId: item.variantId), current.cartId == item.cartId {
+                self.updateQty(current, qty: current.qty)
+            }
+        }
+        pendingQtyTimers[key] = workItem
+        debounceQueue.asyncAfter(deadline: .now() + qtyDebounceInterval, execute: workItem)
     }
 
-    func remove(_ item: CartItem) {
+    private func debouncedRemove(_ item: CartItem) {
         guard item.cartId > 0, !removingIds.contains(item.cartId) else { return }
+
+        let key = String(item.cartId)
+        pendingQtyTimers[key]?.cancel()
+        pendingQtyTimers[key] = nil
+
+        // Optimistic local removal
         removingIds.insert(item.cartId)
         bump()
         let snapshot = items
@@ -253,6 +318,9 @@ final class CartStore: ObservableObject {
     func clear() {
         guard !isClearing, !items.isEmpty else { return }
         isClearing = true
+        pendingQtyTimers.values.forEach { $0.cancel() }
+        pendingQtyTimers.removeAll()
+        pendingAddTapCount.removeAll()
         let snapshot = items
         let snapshotSummary = summary
         items = []
@@ -287,12 +355,17 @@ final class CartStore: ObservableObject {
             .store(in: &cancellables)
     }
 
-    private func performAddOrIncrement(productId: Int, variantId: Int, availableQty: Int) {
+    private func performAddOrIncrement(productId: Int, variantId: Int, availableQty: Int, tapCount: Int = 1) {
         let current = quantity(productId: productId, variantId: variantId)
-        let next = current + 1
+        let next = current + tapCount
         if availableQty > 0, next > availableQty {
             toastMessage = "Only \(availableQty) units available in stock."
             isShowToastView = true
+            // Roll back optimistic UI to actual qty
+            if let item = line(productId: productId, variantId: variantId), item.cartId > 0 {
+                patch(cartId: item.cartId) { $0.setQty(current) }
+                bump()
+            }
             return
         }
         if let item = line(productId: productId, variantId: variantId), item.cartId > 0 {
