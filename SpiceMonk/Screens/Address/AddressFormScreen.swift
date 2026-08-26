@@ -11,6 +11,7 @@ struct AddressFormScreen: View {
 
     @StateObject private var viewModel = AddressFormViewModel()
     @Environment(\.dismiss) private var dismiss
+    @State private var showMapPicker: Bool = false
 
     let onSaved: (Address?) -> Void
 
@@ -18,6 +19,8 @@ struct AddressFormScreen: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 18) {
+                    mapPickerButton
+
                     field("Full name", text: $viewModel.fullName, placeholder: "John Doe")
 
                     field(
@@ -75,10 +78,58 @@ struct AddressFormScreen: View {
                         .foregroundStyle(AppTheme.textSecondary)
                 }
             }
+            .sheet(isPresented: $showMapPicker) {
+                LocationPickerScreen { location in
+                    viewModel.applyPickedLocation(location)
+                }
+            }
         }
         .toast(isPresenting: $viewModel.isShowToastView, duration: 2, offsetY: 10, alert: {
             AlertToast(displayMode: .banner(.pop), type: .regular, title: viewModel.toastMessage)
         }, onTap: nil, completion: nil)
+    }
+
+    // MARK: - Map Picker Button
+
+    private var mapPickerButton: some View {
+        Button {
+            showMapPicker = true
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(AppTheme.accentSoft)
+                        .frame(width: 40, height: 40)
+
+                    Image(systemName: "map.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(AppTheme.brandGreen)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Select location on Google Map")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                    Text("Auto-fills area, district, state & PIN code")
+                        .font(.system(size: 12))
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(AppTheme.textMuted)
+            }
+            .padding(12)
+            .background(AppTheme.fieldBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(AppTheme.fieldBorder, lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Fields

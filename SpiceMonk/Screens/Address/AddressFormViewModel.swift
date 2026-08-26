@@ -76,6 +76,26 @@ class AddressFormViewModel: ObservableObject {
             }
     }
 
+    /// Auto-fills form values from map location picker
+    func applyPickedLocation(_ info: ResolvedLocationInfo) {
+        if !info.postalCode.isEmpty {
+            self.pinCode = info.postalCode
+            self.pinCodeChanged()
+        }
+        if !info.area.isEmpty {
+            self.area = info.area
+        }
+        if !info.street.isEmpty && self.houseFlatNo.isEmpty {
+            self.houseFlatNo = info.street
+        }
+        if !info.city.isEmpty {
+            self.district = info.city
+        }
+        if !info.state.isEmpty {
+            self.state = info.state
+        }
+    }
+
     func save(onSuccess: @escaping (Address?) -> Void) {
         if let validationError = firstValidationError {
             show(validationError)

@@ -6,5 +6,6 @@ target 'SpiceMonk' do
   use_frameworks!
 
   # Pods for SpiceMonk
-  
+  pod 'GoogleMaps'
+  pod 'GooglePlaces'
 end

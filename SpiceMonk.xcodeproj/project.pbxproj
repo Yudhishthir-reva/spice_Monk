@@ -19,6 +19,10 @@
 		C5784A463039F6A800C60492 /* OrderDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A433039F6A800C60492 /* OrderDetailScreen.swift */; };
 		C5784A483039F97500C60492 /* OrderSuccessScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A473039F97500C60492 /* OrderSuccessScreen.swift */; };
 		C5784A4A3039FB4700C60492 /* PaymentSimulationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A493039FB4700C60492 /* PaymentSimulationSheet.swift */; };
+		C5784A51303A000100C60492 /* GoogleMapsConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A50303A000100C60492 /* GoogleMapsConfig.swift */; };
+		C5784A53303A000200C60492 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A52303A000200C60492 /* LocationManager.swift */; };
+		C5784A55303A000300C60492 /* GoogleMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A54303A000300C60492 /* GoogleMapView.swift */; };
+		C5784A57303A000400C60492 /* LocationPickerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A56303A000400C60492 /* LocationPickerScreen.swift */; };
 		C58CD04C303C4F5F0038A272 /* SavedAddressesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58CD04B303C4F5F0038A272 /* SavedAddressesScreen.swift */; };
 		C5F10F68303D79F100525CC1 /* AuthSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5F10F67303D79F100525CC1 /* AuthSessionManager.swift */; };
 		DD2F2278302F29FD0025FC97 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD2F2274302F29FD0025FC97 /* Assets.xcassets */; };
@@ -94,7 +98,12 @@
 		C5784A443039F6A800C60492 /* OrderDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderDetailViewModel.swift; sourceTree = "<group>"; };
 		C5784A473039F97500C60492 /* OrderSuccessScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderSuccessScreen.swift; sourceTree = "<group>"; };
 		C5784A493039FB4700C60492 /* PaymentSimulationSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentSimulationSheet.swift; sourceTree = "<group>"; };
+		C5784A50303A000100C60492 /* GoogleMapsConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleMapsConfig.swift; sourceTree = "<group>"; };
+		C5784A52303A000200C60492 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
+		C5784A54303A000300C60492 /* GoogleMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleMapView.swift; sourceTree = "<group>"; };
+		C5784A56303A000400C60492 /* LocationPickerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPickerScreen.swift; sourceTree = "<group>"; };
 		C58CD04B303C4F5F0038A272 /* SavedAddressesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedAddressesScreen.swift; sourceTree = "<group>"; };
+		C5784A58303A000500C60492 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C5F10F67303D79F100525CC1 /* AuthSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSessionManager.swift; sourceTree = "<group>"; };
 		DD2F21A1302F20850025FC97 /* SpiceMonk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpiceMonk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD2F2256302F29FD0025FC97 /* NetworkServiceManagable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkServiceManagable.swift; sourceTree = "<group>"; };
@@ -318,6 +327,8 @@
 		DD2F2272302F29FD0025FC97 /* Utility */ = {
 			isa = PBXGroup;
 			children = (
+				C5784A50303A000100C60492 /* GoogleMapsConfig.swift */,
+				C5784A52303A000200C60492 /* LocationManager.swift */,
 				DD2F2270302F29FD0025FC97 /* AlertToast.swift */,
 				DD2F2271302F29FD0025FC97 /* AppConstant.swift */,
 				DD2F2290302F3A010025FC97 /* AppTheme.swift */,
@@ -338,6 +349,7 @@
 				DD2F226F302F29FD0025FC97 /* Screens */,
 				DD2F2272302F29FD0025FC97 /* Utility */,
 				DD2F2273302F29FD0025FC97 /* AppDelegate.swift */,
+				C5784A58303A000500C60492 /* Info.plist */,
 				DD2F2274302F29FD0025FC97 /* Assets.xcassets */,
 				DD2F2275302F29FD0025FC97 /* LaunchScreen.storyboard */,
 				DD2F2276302F29FD0025FC97 /* SpiceMonkApp.swift */,
@@ -349,6 +361,8 @@
 			isa = PBXGroup;
 			children = (
 				C58CD04B303C4F5F0038A272 /* SavedAddressesScreen.swift */,
+				C5784A54303A000300C60492 /* GoogleMapView.swift */,
+				C5784A56303A000400C60492 /* LocationPickerScreen.swift */,
 				DD2F22A9302F7E010025FC97 /* AddressModels.swift */,
 				DD2F22AA302F7E010025FC97 /* AddressServiceManager.swift */,
 				DD2F22AB302F7E010025FC97 /* AddressViewModel.swift */,
@@ -385,6 +399,7 @@
 				DD2F219D302F20850025FC97 /* Sources */,
 				DD2F219E302F20850025FC97 /* Frameworks */,
 				DD2F219F302F20850025FC97 /* Resources */,
+				5DECDCC3D3CAB1C117A0A62A /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -442,6 +457,27 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		5DECDCC3D3CAB1C117A0A62A /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		B5CDCFD748F5783BAA6D43DD /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -529,6 +565,10 @@
 				DD2F228C302F29FD0025FC97 /* AlertToast.swift in Sources */,
 				DD2F228D302F29FD0025FC97 /* AppConstant.swift in Sources */,
 				DD2F228E302F29FD0025FC97 /* AppDelegate.swift in Sources */,
+				C5784A51303A000100C60492 /* GoogleMapsConfig.swift in Sources */,
+				C5784A53303A000200C60492 /* LocationManager.swift in Sources */,
+				C5784A55303A000300C60492 /* GoogleMapView.swift in Sources */,
+				C5784A57303A000400C60492 /* LocationPickerScreen.swift in Sources */,
 				DD2F228F302F29FD0025FC97 /* SpiceMonkApp.swift in Sources */,
 				DD2F2294302F3A010025FC97 /* AppTheme.swift in Sources */,
 				DD2F2295302F3A010025FC97 /* SpiceDecorView.swift in Sources */,
@@ -671,6 +711,10 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SpiceMonk/Info.plist;
+				INFOPLIST_KEY_GoogleMapsAPIKey = "";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "SpiceMonk uses your location to provide accurate address selection and delivery tracking.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SpiceMonk needs your location to help you select delivery addresses accurately and show nearby stores.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -690,7 +734,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.SpiceMonk;
+				PRODUCT_BUNDLE_IDENTIFIER = com.SpiceMonk.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -720,6 +764,10 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SpiceMonk/Info.plist;
+				INFOPLIST_KEY_GoogleMapsAPIKey = "";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "SpiceMonk uses your location to provide accurate address selection and delivery tracking.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SpiceMonk needs your location to help you select delivery addresses accurately and show nearby stores.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -739,7 +787,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.SpiceMonk;
+				PRODUCT_BUNDLE_IDENTIFIER = com.SpiceMonk.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
