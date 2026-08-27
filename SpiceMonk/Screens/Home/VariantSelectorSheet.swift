@@ -44,12 +44,12 @@ struct VariantSelectorSheet: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(product.name)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.appFont(size: 16, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
                     .lineLimit(1)
 
                 Text("Select size / variant")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.appFont(size: 13, weight: .medium))
                     .foregroundStyle(AppTheme.textSecondary)
             }
 
@@ -59,7 +59,7 @@ struct VariantSelectorSheet: View {
                 dismiss()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.appFont(size: 14, weight: .bold))
                     .foregroundStyle(AppTheme.textSecondary)
                     .frame(width: 32, height: 32)
                     .background(Color.black.opacity(0.05))
@@ -78,24 +78,24 @@ struct VariantSelectorSheet: View {
         return HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(variant.weight.isEmptyString ? "Standard" : variant.weight)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.appFont(size: 15, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
 
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text("₹\(variant.displayPrice)")
-                        .font(.system(size: 15, weight: .heavy))
+                        .font(.appFont(size: 15, weight: .heavy))
                         .foregroundStyle(AppTheme.textPrimary)
 
                     if variant.hasDiscount {
                         Text("₹\(variant.mrp)")
-                            .font(.system(size: 12))
+                            .font(.appFont(size: 12))
                             .strikethrough()
                             .foregroundStyle(AppTheme.textMuted)
                     }
 
                     if variant.saveAmount > 0 {
                         Text("Save ₹\(variant.saveAmount)")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.appFont(size: 10, weight: .bold))
                             .foregroundStyle(AppTheme.accentGreen)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)

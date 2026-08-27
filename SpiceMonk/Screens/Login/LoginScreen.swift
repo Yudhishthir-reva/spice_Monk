@@ -61,16 +61,16 @@ struct LoginScreen: View {
                                 // "Welcome to" with leaf accents
                                 HStack(spacing: 6) {
                                     Image(systemName: "leaf.fill")
-                                        .font(.system(size: 13))
+                                        .font(.appFont(size: 13))
                                         .foregroundStyle(Color(hex: "3F8E4D"))
                                         .rotationEffect(.degrees(-20))
 
                                     Text("Welcome to")
-                                        .font(.system(size: 26, weight: .bold, design: .serif))
+                                        .font(.appFont(size: 26, weight: .bold, design: .serif))
                                         .foregroundStyle(Color(hex: "1F5F32"))
 
                                     Image(systemName: "leaf.fill")
-                                        .font(.system(size: 13))
+                                        .font(.appFont(size: 13))
                                         .foregroundStyle(Color(hex: "3F8E4D"))
                                         .rotationEffect(.degrees(40))
                                 }
@@ -79,11 +79,11 @@ struct LoginScreen: View {
                                 // "SpiceMonk" with leaf
                                 HStack(spacing: 6) {
                                     Text("SpiceMonk")
-                                        .font(.system(size: 36, weight: .heavy, design: .rounded))
+                                        .font(.appFont(size: 36, weight: .heavy, design: .rounded))
                                         .foregroundStyle(Color(hex: "144E27"))
 
                                     Image(systemName: "leaf.fill")
-                                        .font(.system(size: 18))
+                                        .font(.appFont(size: 18))
                                         .foregroundStyle(Color(hex: "3F8E4D"))
                                         .rotationEffect(.degrees(25))
                                 }
@@ -94,7 +94,7 @@ struct LoginScreen: View {
                                         .fill(Color(hex: "7CAE8B").opacity(0.6))
                                         .frame(width: 24, height: 1)
                                     Image(systemName: "leaf.fill")
-                                        .font(.system(size: 9))
+                                        .font(.appFont(size: 9))
                                         .foregroundStyle(Color(hex: "3F8E4D"))
                                     Rectangle()
                                         .fill(Color(hex: "7CAE8B").opacity(0.6))
@@ -103,7 +103,7 @@ struct LoginScreen: View {
                                 .padding(.top, 4)
 
                                 Text("India's finest flavours,\ndelivered to your doorstep.")
-                                    .font(.system(size: 14, weight: .medium))
+                                    .font(.appFont(size: 14, weight: .medium))
                                     .foregroundStyle(Color(hex: "2C4F38"))
                                     .multilineTextAlignment(.center)
                                     .padding(.top, 4)
@@ -153,10 +153,10 @@ struct LoginScreen: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 6) {
                 Image(systemName: "iphone")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.appFont(size: 14, weight: .semibold))
                     .foregroundStyle(Color(hex: "1F6335"))
                 Text("MOBILE NUMBER")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.appFont(size: 12, weight: .bold))
                     .foregroundStyle(Color(hex: "1F6335"))
                     .tracking(0.6)
             }
@@ -164,9 +164,9 @@ struct LoginScreen: View {
             HStack(spacing: 10) {
                 HStack(spacing: 6) {
                     Text("🇮🇳")
-                        .font(.system(size: 18))
+                        .font(.appFont(size: 18))
                     Text("+91")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.appFont(size: 16, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
                 }
 
@@ -178,7 +178,7 @@ struct LoginScreen: View {
                     .keyboardType(.numberPad)
                     .textContentType(.telephoneNumber)
                     .focused($isMobileFocused)
-                    .font(.system(size: 17, weight: .medium))
+                    .font(.appFont(size: 17, weight: .medium))
                     .foregroundStyle(AppTheme.textPrimary)
                     .onChange(of: viewModel.mobile) { _, newValue in
                         let digits = String(newValue.filter(\.isNumber).prefix(10))
@@ -211,7 +211,7 @@ struct LoginScreen: View {
                     } else {
                         Spacer()
                         Text("Continue")
-                            .font(.system(size: 17, weight: .bold))
+                            .font(.appFont(size: 17, weight: .bold))
                             .foregroundStyle(.white)
                         Spacer()
                         ZStack {
@@ -219,7 +219,7 @@ struct LoginScreen: View {
                                 .fill(Color.white.opacity(0.22))
                                 .frame(width: 32, height: 32)
                             Image(systemName: "arrow.right")
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.appFont(size: 13, weight: .bold))
                                 .foregroundStyle(.white)
                         }
                     }
@@ -283,16 +283,16 @@ struct LoginScreen: View {
                     .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
 
                 Image(systemName: icon)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.appFont(size: 17, weight: .semibold))
                     .foregroundStyle(Color(hex: "1F6335"))
             }
 
             VStack(spacing: 2) {
                 Text(title)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.appFont(size: 11, weight: .bold))
                     .foregroundStyle(Color(hex: "1C3D26"))
                 Text(subtitle)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.appFont(size: 11, weight: .medium))
                     .foregroundStyle(Color(hex: "1C3D26"))
             }
             .multilineTextAlignment(.center)
@@ -306,7 +306,7 @@ struct LoginScreen: View {
     private var termsPillBanner: some View {
         HStack(spacing: 8) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 18, weight: .bold))
+                .font(.appFont(size: 18, weight: .bold))
                 .foregroundStyle(Color(hex: "278E48"))
 
             (
@@ -317,7 +317,7 @@ struct LoginScreen: View {
                     .foregroundColor(Color(hex: "18562B"))
                     .bold()
             )
-            .font(.system(size: 11.5))
+            .font(.appFont(size: 11.5))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

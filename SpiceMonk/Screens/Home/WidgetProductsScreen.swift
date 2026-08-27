@@ -50,24 +50,35 @@ struct WidgetProductsScreen: View {
         )
     }
 
+    @State private var showCart: Bool = false
+
     var body: some View {
-        Group {
-            if viewModel.isLoading && viewModel.products.isEmpty {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let error = viewModel.loadError, viewModel.products.isEmpty {
-                HomeErrorState(message: error) {
-                    viewModel.loadFirstPage()
+        VStack(spacing: 0) {
+            Group {
+                if viewModel.isLoading && viewModel.products.isEmpty {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let error = viewModel.loadError, viewModel.products.isEmpty {
+                    HomeErrorState(message: error) {
+                        viewModel.loadFirstPage()
+                    }
+                } else if viewModel.products.isEmpty {
+                    emptyState
+                } else {
+                    productGrid
                 }
-            } else if viewModel.products.isEmpty {
-                emptyState
-            } else {
-                productGrid
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            FloatingCartBar {
+                showCart = true
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.white)
         .spiceNavigationBar(title: viewModel.title)
+        .navigationDestination(isPresented: $showCart) {
+            CartScreen()
+        }
         .onAppear {
             if viewModel.products.isEmpty {
                 viewModel.loadFirstPage()
@@ -105,10 +116,10 @@ struct WidgetProductsScreen: View {
     private var emptyState: some View {
         VStack(spacing: 8) {
             Text("No products found")
-                .font(.system(size: 18, weight: .bold))
+                .font(.appFont(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
             Text("We couldn't find any products here.")
-                .font(.system(size: 14))
+                .font(.appFont(size: 14))
                 .foregroundStyle(AppTheme.textSecondary)
                 .multilineTextAlignment(.center)
         }

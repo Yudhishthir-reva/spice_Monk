@@ -12,6 +12,7 @@ struct ProductDetailScreen: View {
     @StateObject var viewModel: ProductDetailViewModel
     @ObservedObject private var cart = CartStore.shared
     @Environment(\.dismiss) private var dismiss
+    @State private var showCart: Bool = false
 
     init(productId: Int, seedName: String, seedImageUrl: String?) {
         _viewModel = StateObject(
@@ -38,6 +39,9 @@ struct ProductDetailScreen: View {
         }
         .background(Color.white)
         .spiceNavigationBar(title: viewModel.product?.name ?? viewModel.seedName)
+        .navigationDestination(isPresented: $showCart) {
+            CartScreen()
+        }
         .onAppear {
             CartStore.shared.loadIfNeeded()
             if viewModel.product == nil, !viewModel.notFound {
@@ -53,10 +57,10 @@ struct ProductDetailScreen: View {
     private var missingState: some View {
         VStack(spacing: 8) {
             Text("Product not found")
-                .font(.system(size: 18, weight: .bold))
+                .font(.appFont(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
             Text("This product may have been removed or is no longer available.")
-                .font(.system(size: 14))
+                .font(.appFont(size: 14))
                 .foregroundStyle(AppTheme.textSecondary)
                 .multilineTextAlignment(.center)
         }
@@ -82,8 +86,14 @@ struct ProductDetailScreen: View {
                 .padding(.bottom, 24)
             }
 
-            if let variant = viewModel.selectedVariant {
-                stickyBar(variant)
+            VStack(spacing: 0) {
+                FloatingCartBar {
+                    showCart = true
+                }
+
+                if let variant = viewModel.selectedVariant {
+                    stickyBar(variant)
+                }
             }
         }
     }
@@ -126,12 +136,12 @@ struct ProductDetailScreen: View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 10) {
                 Text(product.name)
-                    .font(.system(size: 22, weight: .heavy))
+                    .font(.appFont(size: 22, weight: .heavy))
                     .foregroundStyle(AppTheme.textPrimary)
 
                 if let weight = viewModel.selectedVariant?.weight, !weight.isEmptyString {
                     Text(weight)
-                        .font(.system(size: 14))
+                        .font(.appFont(size: 14))
                         .foregroundStyle(AppTheme.textSecondary)
                 }
 
@@ -143,7 +153,7 @@ struct ProductDetailScreen: View {
             if product.variants.count > 1 {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Select size")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.appFont(size: 15, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
                     variantChips(product.variants)
                 }
@@ -156,10 +166,10 @@ struct ProductDetailScreen: View {
             if let description = product.description, !description.isEmptyString {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("About this product")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.appFont(size: 15, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
                     Text(description)
-                        .font(.system(size: 15))
+                        .font(.appFont(size: 15))
                         .foregroundStyle(AppTheme.textSecondary)
                         .lineSpacing(4)
                 }
@@ -197,7 +207,7 @@ struct ProductDetailScreen: View {
         if !viewModel.related.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 Text("You might also like")
-                    .font(.system(size: 17, weight: .heavy))
+                    .font(.appFont(size: 17, weight: .heavy))
                     .foregroundStyle(AppTheme.textPrimary)
                     .padding(.horizontal, 18)
 
@@ -229,18 +239,18 @@ struct ProductDetailScreen: View {
     private func priceBlock(_ variant: ProductDetailVariant) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Text("₹\(variant.displayPrice)")
-                .font(.system(size: 22, weight: .heavy))
+                .font(.appFont(size: 22, weight: .heavy))
                 .foregroundStyle(AppTheme.textPrimary)
 
             if variant.hasDiscount {
                 Text("₹\(variant.mrp)")
-                    .font(.system(size: 15))
+                    .font(.appFont(size: 15))
                     .strikethrough()
                     .foregroundStyle(AppTheme.textMuted)
 
                 if variant.effectiveSaveAmount > 0 {
                     Text("SAVE ₹\(variant.effectiveSaveAmount)")
-                        .font(.system(size: 11, weight: .heavy))
+                        .font(.appFont(size: 11, weight: .heavy))
                         .foregroundStyle(AppTheme.badgeSuccess)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
@@ -261,10 +271,10 @@ struct ProductDetailScreen: View {
                     } label: {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(variant.weight.isEmptyString ? "Variant \(index + 1)" : variant.weight)
-                                .font(.system(size: 14, weight: .bold))
+                                .font(.appFont(size: 14, weight: .bold))
                                 .foregroundStyle(variant.inStock ? AppTheme.textPrimary : AppTheme.textMuted)
                             Text(variant.inStock ? "₹\(variant.displayPrice)" : "Out of stock")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(.appFont(size: 12, weight: .medium))
                                 .foregroundStyle(selected ? AppTheme.accentRed : AppTheme.textSecondary)
                         }
                         .padding(.horizontal, 14)
@@ -298,9 +308,9 @@ struct ProductDetailScreen: View {
 
         return HStack(spacing: 8) {
             Image(systemName: copy.0)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.appFont(size: 13, weight: .semibold))
             Text(copy.1)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.appFont(size: 14, weight: .semibold))
         }
         .foregroundStyle(copy.2)
         .padding(.horizontal, 14)
@@ -325,10 +335,10 @@ struct ProductDetailScreen: View {
     private func trustChip(_ text: String) -> some View {
         HStack(spacing: 5) {
             Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 12))
+                .font(.appFont(size: 12))
                 .foregroundStyle(AppTheme.badgeSuccess)
             Text(text)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.appFont(size: 11, weight: .semibold))
                 .foregroundStyle(AppTheme.textSecondary)
                 .lineLimit(1)
         }
@@ -341,7 +351,7 @@ struct ProductDetailScreen: View {
     private func exploreCard(title: String, subtitle: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: "tag.fill")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.appFont(size: 16, weight: .semibold))
                 .foregroundStyle(AppTheme.accentRed)
                 .frame(width: 44, height: 44)
                 .background(AppTheme.accentSoft)
@@ -349,18 +359,18 @@ struct ProductDetailScreen: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.appFont(size: 16, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
                     .lineLimit(1)
                 Text(subtitle)
-                    .font(.system(size: 13))
+                    .font(.appFont(size: 13))
                     .foregroundStyle(AppTheme.textSecondary)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.appFont(size: 13, weight: .semibold))
                 .foregroundStyle(AppTheme.textMuted)
         }
         .padding(14)
@@ -381,17 +391,17 @@ struct ProductDetailScreen: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text("₹\(variant.displayPrice)")
-                        .font(.system(size: 18, weight: .heavy))
+                        .font(.appFont(size: 18, weight: .heavy))
                         .foregroundStyle(AppTheme.textPrimary)
                     if variant.hasDiscount {
                         Text("₹\(variant.mrp)")
-                            .font(.system(size: 11))
+                            .font(.appFont(size: 11))
                             .strikethrough()
                             .foregroundStyle(AppTheme.textMuted)
                     }
                 }
                 Text("Inclusive of all taxes")
-                    .font(.system(size: 11))
+                    .font(.appFont(size: 11))
                     .foregroundStyle(AppTheme.textSecondary)
             }
             .frame(minWidth: 90, alignment: .leading)
@@ -406,9 +416,9 @@ struct ProductDetailScreen: View {
                                 .tint(.white)
                         } else {
                             Text("Add to cart")
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(.appFont(size: 16, weight: .semibold))
                             Image(systemName: "cart.fill")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.appFont(size: 14, weight: .semibold))
                         }
                     }
                     .foregroundStyle(.white)
@@ -433,18 +443,18 @@ struct ProductDetailScreen: View {
         HStack(spacing: 0) {
             Button(action: viewModel.decrementCart) {
                 Image(systemName: qty <= 1 ? "trash" : "minus")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.appFont(size: 15, weight: .bold))
                     .frame(width: 52, height: 52)
             }
             .disabled(isBusy)
 
             Text("\(qty)")
-                .font(.system(size: 18, weight: .heavy))
+                .font(.appFont(size: 18, weight: .heavy))
                 .frame(maxWidth: .infinity)
 
             Button(action: viewModel.addToCart) {
                 Image(systemName: "plus")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.appFont(size: 15, weight: .bold))
                     .frame(width: 52, height: 52)
             }
             .disabled(isBusy || (variant.availableQty > 0 && qty >= variant.availableQty))
@@ -460,7 +470,7 @@ struct ProductDetailScreen: View {
 
     private func heroBadge(_ title: String, fill: Color, foreground: Color) -> some View {
         Text(title)
-            .font(.system(size: 11, weight: .heavy))
+            .font(.appFont(size: 11, weight: .heavy))
             .foregroundStyle(foreground)
             .padding(.horizontal, 9)
             .padding(.vertical, 4)

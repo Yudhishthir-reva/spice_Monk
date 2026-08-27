@@ -25,14 +25,14 @@ struct MaintenanceDialogView: View {
                         .frame(width: 84, height: 84)
 
                     Image(systemName: "wrench.and.screwdriver.fill")
-                        .font(.system(size: 38, weight: .semibold))
+                        .font(.appFont(size: 38, weight: .semibold))
                         .foregroundStyle(AppTheme.brandGreen)
                 }
                 .padding(.top, 8)
 
                 VStack(spacing: 8) {
                     Text("MAINTENANCE")
-                        .font(.system(size: 11, weight: .heavy))
+                        .font(.appFont(size: 11, weight: .heavy))
                         .foregroundStyle(AppTheme.brandGreen)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
@@ -40,11 +40,11 @@ struct MaintenanceDialogView: View {
                         .clipShape(Capsule())
 
                     Text("We'll Be Back Soon!")
-                        .font(.system(size: 22, weight: .bold))
+                        .font(.appFont(size: 22, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
 
                     Text("SpiceMonk is undergoing scheduled maintenance to make your shopping experience even fresher. Please check back shortly.")
-                        .font(.system(size: 14, weight: .regular))
+                        .font(.appFont(size: 14, weight: .regular))
                         .foregroundStyle(AppTheme.textSecondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 8)
@@ -61,10 +61,10 @@ struct MaintenanceDialogView: View {
                                 .tint(.white)
                         } else {
                             Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 15, weight: .bold))
+                                .font(.appFont(size: 15, weight: .bold))
                         }
                         Text(manager.isCheckingStatus ? "Checking..." : "Retry")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.appFont(size: 16, weight: .bold))
                     }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -107,14 +107,14 @@ struct AppUpdateDialogView: View {
                         .frame(width: 84, height: 84)
 
                     Image(systemName: isForce ? "arrow.triangle.2.circlepath.circle.fill" : "sparkles")
-                        .font(.system(size: 40, weight: .semibold))
+                        .font(.appFont(size: 40, weight: .semibold))
                         .foregroundStyle(AppTheme.brandGreen)
                 }
                 .padding(.top, 8)
 
                 VStack(spacing: 8) {
                     Text(isForce ? "UPDATE REQUIRED" : "NEW VERSION AVAILABLE")
-                        .font(.system(size: 11, weight: .heavy))
+                        .font(.appFont(size: 11, weight: .heavy))
                         .foregroundStyle(AppTheme.brandGreen)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
@@ -122,11 +122,11 @@ struct AppUpdateDialogView: View {
                         .clipShape(Capsule())
 
                     Text(isForce ? "Time to Update!" : "Exciting New Updates!")
-                        .font(.system(size: 22, weight: .bold))
+                        .font(.appFont(size: 22, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
 
                     Text(message.isEmptyString ? "A brand new version of SpiceMonk is ready with exciting features, improvements, and freshest flavours. Update now to enjoy the best experience." : message)
-                        .font(.system(size: 14, weight: .regular))
+                        .font(.appFont(size: 14, weight: .regular))
                         .foregroundStyle(AppTheme.textSecondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 8)
@@ -137,9 +137,9 @@ struct AppUpdateDialogView: View {
                     Button(action: onUpdate) {
                         HStack(spacing: 8) {
                             Image(systemName: "arrow.down.circle.fill")
-                                .font(.system(size: 17, weight: .bold))
+                                .font(.appFont(size: 17, weight: .bold))
                             Text("Update Now")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.appFont(size: 16, weight: .bold))
                         }
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -153,7 +153,7 @@ struct AppUpdateDialogView: View {
                     if !isForce, let onDismiss = onDismiss {
                         Button(action: onDismiss) {
                             Text("Maybe Later")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.appFont(size: 14, weight: .semibold))
                                 .foregroundStyle(AppTheme.textSecondary)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 38)

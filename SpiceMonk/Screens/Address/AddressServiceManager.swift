@@ -54,6 +54,14 @@ class AddressServiceManager {
         )
     }
 
+    func updateAddress(id: Int, params: RequestConstants.Param) -> AnyPublisher<AddressDetailResponse, Error> {
+        networkService.request(
+            APIRouter.updateAddress(id: id),
+            params: params,
+            headers: UserDefaultManager.shared.authHeader
+        )
+    }
+
     func lookupPincode(_ pinCode: String) -> AnyPublisher<PincodeLookupResponse, Error> {
         networkService.request(
             APIRouter.cityByPincode,

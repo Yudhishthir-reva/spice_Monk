@@ -11,7 +11,7 @@ struct NoInternetBanner: View {
         HStack(spacing: 10) {
             Image(systemName: "wifi.slash")
             Text("No internet connection")
-                .font(.system(size: 15, weight: .semibold))
+                .font(.appFont(size: 15, weight: .semibold))
         }
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity)

@@ -14,6 +14,7 @@ struct SavedAddressesScreen: View {
     @State private var pickedLocation: ResolvedLocationInfo? = nil
     @State private var editingAddress: Address?
     @State private var addressToDelete: Address?
+    @State private var showCart = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -33,20 +34,24 @@ struct SavedAddressesScreen: View {
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 16)
-                        .padding(.bottom, 96) // Space for bottom floating button
+                        .padding(.bottom, 120) // Space for bottom floating button & cart
                     }
                 }
 
                 // Bottom Add Address Button
                 VStack(spacing: 0) {
+                    FloatingCartBar {
+                        showCart = true
+                    }
+
                     Button {
                         showLocationPicker = true
                     } label: {
                         HStack(spacing: 8) {
                             Text("Add a new address")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.appFont(size: 16, weight: .bold))
                             Image(systemName: "plus")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.appFont(size: 16, weight: .bold))
                         }
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -70,6 +75,9 @@ struct SavedAddressesScreen: View {
         }
         .background(Color(hex: "F8FAF8").ignoresSafeArea())
         .navigationBarHidden(true)
+        .navigationDestination(isPresented: $showCart) {
+            CartScreen(addressViewModel: viewModel)
+        }
         .onAppear {
             viewModel.load()
         }
@@ -123,7 +131,7 @@ struct SavedAddressesScreen: View {
                 dismiss()
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.appFont(size: 16, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(width: 38, height: 38)
                     .background(Color.white.opacity(0.2))
@@ -133,11 +141,11 @@ struct SavedAddressesScreen: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Your addresses")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.appFont(size: 20, weight: .bold))
                     .foregroundStyle(.white)
 
                 Text("Manage your delivery locations")
-                    .font(.system(size: 13))
+                    .font(.appFont(size: 13))
                     .foregroundStyle(.white.opacity(0.85))
             }
 
@@ -176,17 +184,17 @@ struct SavedAddressesScreen: View {
                             .frame(width: 36, height: 36)
 
                         Image(systemName: "mappin.circle.fill")
-                            .font(.system(size: 18))
+                            .font(.appFont(size: 18))
                             .foregroundStyle(Color(hex: "1F6335"))
                     }
 
                     Text(address.fullName)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.appFont(size: 16, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
 
                     if address.isDefault {
                         Text("DEFAULT")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.appFont(size: 10, weight: .bold))
                             .foregroundStyle(Color(hex: "1F6335"))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
@@ -199,14 +207,14 @@ struct SavedAddressesScreen: View {
 
                 // Address body
                 Text(address.fullLine)
-                    .font(.system(size: 14))
+                    .font(.appFont(size: 14))
                     .foregroundStyle(Color(hex: "4A5B52"))
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
 
                 // Phone number
                 Text(address.mobile)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.appFont(size: 13, weight: .medium))
                     .foregroundStyle(Color(hex: "8A9B92"))
 
                 // Action buttons row
@@ -217,9 +225,9 @@ struct SavedAddressesScreen: View {
                         } label: {
                             HStack(spacing: 5) {
                                 Image(systemName: "checkmark")
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(.appFont(size: 12, weight: .bold))
                                 Text("Set default")
-                                    .font(.system(size: 13, weight: .semibold))
+                                    .font(.appFont(size: 13, weight: .semibold))
                             }
                             .foregroundStyle(Color(hex: "2D4F38"))
                         }
@@ -234,9 +242,9 @@ struct SavedAddressesScreen: View {
                     } label: {
                         HStack(spacing: 5) {
                             Image(systemName: "pencil")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.appFont(size: 13, weight: .semibold))
                             Text("Edit")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.appFont(size: 13, weight: .semibold))
                         }
                         .foregroundStyle(Color(hex: "2D4F38"))
                     }
@@ -248,9 +256,9 @@ struct SavedAddressesScreen: View {
                     } label: {
                         HStack(spacing: 5) {
                             Image(systemName: "trash")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.appFont(size: 13, weight: .semibold))
                             Text("Delete")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.appFont(size: 13, weight: .semibold))
                         }
                         .foregroundStyle(Color(hex: "2D4F38"))
                     }
@@ -279,16 +287,16 @@ struct SavedAddressesScreen: View {
                     .frame(width: 72, height: 72)
 
                 Image(systemName: "mappin.slash")
-                    .font(.system(size: 28))
+                    .font(.appFont(size: 28))
                     .foregroundStyle(Color(hex: "1F6335"))
             }
 
             Text("No saved addresses")
-                .font(.system(size: 18, weight: .bold))
+                .font(.appFont(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 
             Text("Add your delivery locations to order spices quickly.")
-                .font(.system(size: 14))
+                .font(.appFont(size: 14))
                 .foregroundStyle(Color(hex: "6A7B72"))
                 .multilineTextAlignment(.center)
         }

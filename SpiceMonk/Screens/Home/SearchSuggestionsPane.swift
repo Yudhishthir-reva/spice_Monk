@@ -28,6 +28,10 @@ struct SearchSuggestionsPane: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(AppTheme.homeCanvas)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            UIApplication.shared.endEditing()
+        }
         .scrollDismissesKeyboard(.immediately)
     }
 
@@ -95,10 +99,10 @@ struct SearchSuggestionsPane: View {
         } label: {
             VStack(spacing: 8) {
                 Text("No matches")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.appFont(size: 18, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
                 Text("Press search to look up “\(viewModel.trimmedQuery)” anyway.")
-                    .font(.system(size: 14))
+                    .font(.appFont(size: 14))
                     .foregroundStyle(AppTheme.textSecondary)
                     .multilineTextAlignment(.center)
             }
@@ -111,7 +115,7 @@ struct SearchSuggestionsPane: View {
 
     private func hint(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 14))
+            .font(.appFont(size: 14))
             .foregroundStyle(AppTheme.textSecondary)
             .multilineTextAlignment(.center)
             .padding(.horizontal, 32)
@@ -127,7 +131,7 @@ private struct SuggestionRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: suggestion.kindIcon)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.appFont(size: 15, weight: .semibold))
                 .foregroundStyle(AppTheme.accentRed)
                 .frame(width: 36, height: 36)
                 .background(AppTheme.accentSoft)
@@ -135,18 +139,18 @@ private struct SuggestionRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(suggestion.name)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.appFont(size: 15, weight: .semibold))
                     .foregroundStyle(AppTheme.textPrimary)
                     .lineLimit(1)
                 Text(suggestion.kindTitle)
-                    .font(.system(size: 12))
+                    .font(.appFont(size: 12))
                     .foregroundStyle(AppTheme.textMuted)
             }
 
             Spacer(minLength: 0)
 
             Image(systemName: "arrow.right")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.appFont(size: 13, weight: .semibold))
                 .foregroundStyle(AppTheme.textMuted)
         }
         .padding(.horizontal, 14)

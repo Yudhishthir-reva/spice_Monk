@@ -11,6 +11,7 @@ struct OrderDetailScreen: View {
     @StateObject private var viewModel = OrderDetailViewModel()
     @Environment(\.dismiss) private var dismiss
     @State private var isConfirmingCancel = false
+    @State private var showCart = false
 
     var body: some View {
         Group {
@@ -20,13 +21,13 @@ struct OrderDetailScreen: View {
             } else if let error = viewModel.loadError {
                 VStack(spacing: 16) {
                     Text(error)
-                        .font(.system(size: 14))
+                        .font(.appFont(size: 14))
                         .foregroundStyle(AppTheme.textSecondary)
                         .multilineTextAlignment(.center)
                     Button("Retry") {
                         viewModel.load(orderId: orderId)
                     }
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.appFont(size: 14, weight: .bold))
                     .foregroundStyle(AppTheme.brandGreen)
                 }
                 .padding(32)
@@ -39,6 +40,9 @@ struct OrderDetailScreen: View {
             }
         }
         .background(Color(hex: "F5F5F5"))
+        .navigationDestination(isPresented: $showCart) {
+            CartScreen()
+        }
         .onAppear {
             viewModel.load(orderId: orderId)
         }
@@ -60,17 +64,22 @@ struct OrderDetailScreen: View {
                 .padding(.bottom, 24)
             }
 
-            stickyBottomBar(order)
+            VStack(spacing: 0) {
+                FloatingCartBar {
+                    showCart = true
+                }
+                stickyBottomBar(order)
+            }
         }
         .spiceNavigationBar()
         .toolbar {
             ToolbarItem(placement: .principal) {
                 VStack(spacing: 1) {
                     Text(order.orderNo)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.appFont(size: 16, weight: .bold))
                         .foregroundStyle(.white)
                     Text(order.date)
-                        .font(.system(size: 11))
+                        .font(.appFont(size: 11))
                         .foregroundStyle(.white.opacity(0.85))
                 }
             }
@@ -103,7 +112,7 @@ struct OrderDetailScreen: View {
 
         return HStack {
             Text("Order status")
-                .font(.system(size: 15, weight: .bold))
+                .font(.appFont(size: 15, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 
             Spacer()
@@ -114,7 +123,7 @@ struct OrderDetailScreen: View {
                     .frame(width: 6, height: 6)
 
                 Text(order.status)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.appFont(size: 11, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
             }
             .padding(.horizontal, 10)
@@ -140,7 +149,7 @@ struct OrderDetailScreen: View {
     private func itemsCard(_ order: OrderDetail) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("\(order.items.count) \(order.items.count == 1 ? "item" : "items") in this order")
-                .font(.system(size: 15, weight: .bold))
+                .font(.appFont(size: 15, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
                 .padding(.horizontal, 14)
                 .padding(.top, 14)
@@ -177,13 +186,13 @@ struct OrderDetailScreen: View {
             // Details
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.productName.uppercased())
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.appFont(size: 13, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
                     .lineLimit(2)
 
                 HStack(spacing: 6) {
                     Text(item.weight)
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.appFont(size: 10, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -191,7 +200,7 @@ struct OrderDetailScreen: View {
                         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
 
                     Text("Qty \(item.qty)")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.appFont(size: 10, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -201,17 +210,17 @@ struct OrderDetailScreen: View {
 
                 HStack(spacing: 6) {
                     Text("₹\(Int(item.customerPrice.rounded()))")
-                        .font(.system(size: 13, weight: .heavy))
+                        .font(.appFont(size: 13, weight: .heavy))
                         .foregroundStyle(AppTheme.textPrimary)
 
                     if item.mrp > item.customerPrice {
                         Text("₹\(Int(item.mrp.rounded()))")
-                            .font(.system(size: 10))
+                            .font(.appFont(size: 10))
                             .strikethrough()
                             .foregroundStyle(AppTheme.textMuted)
 
                         Text("\(Int(item.discountPercent.rounded()))% off")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.appFont(size: 10, weight: .bold))
                             .foregroundStyle(AppTheme.brandGreen)
                     }
                 }
@@ -221,12 +230,12 @@ struct OrderDetailScreen: View {
             // Line totals on the right
             VStack(alignment: .trailing, spacing: 2) {
                 Text("₹\(Int(item.price.rounded()))")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.appFont(size: 14, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
 
                 if item.saveAmount > 0 {
                     Text("Saved ₹\(Int((item.saveAmount * Double(item.qty)).rounded()))")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.appFont(size: 10, weight: .bold))
                         .foregroundStyle(AppTheme.brandGreen)
                 }
             }
@@ -242,11 +251,11 @@ struct OrderDetailScreen: View {
         if order.totalSave > 0 {
             HStack(spacing: 8) {
                 Image(systemName: "piggybank.fill")
-                    .font(.system(size: 15))
+                    .font(.appFont(size: 15))
                     .foregroundStyle(AppTheme.brandGreen)
 
                 Text("You saved ₹\(Int(order.totalSave.rounded())) on this order")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.appFont(size: 13, weight: .bold))
                     .foregroundStyle(AppTheme.brandGreen)
             }
             .padding(.horizontal, 14)
@@ -267,10 +276,10 @@ struct OrderDetailScreen: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Image(systemName: "doc.text.fill")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.appFont(size: 15, weight: .semibold))
                     .foregroundStyle(AppTheme.brandGreen)
                 Text("Bill summary")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.appFont(size: 15, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
             }
 
@@ -295,11 +304,11 @@ struct OrderDetailScreen: View {
 
             HStack {
                 Text("Amount to pay")
-                    .font(.system(size: 15, weight: .heavy))
+                    .font(.appFont(size: 15, weight: .heavy))
                     .foregroundStyle(AppTheme.textPrimary)
                 Spacer()
                 Text("₹\(Int(order.totalAmount.rounded()))")
-                    .font(.system(size: 16, weight: .heavy))
+                    .font(.appFont(size: 16, weight: .heavy))
                     .foregroundStyle(AppTheme.textPrimary)
             }
         }
@@ -315,11 +324,11 @@ struct OrderDetailScreen: View {
     private func billRow(label: String, value: String, color: Color) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 13))
+                .font(.appFont(size: 13))
                 .foregroundStyle(AppTheme.textSecondary)
             Spacer()
             Text(value)
-                .font(.system(size: 13, weight: .bold))
+                .font(.appFont(size: 13, weight: .bold))
                 .foregroundStyle(color)
         }
     }
@@ -329,7 +338,7 @@ struct OrderDetailScreen: View {
     private func addressCard(_ order: OrderDetail) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "mappin.circle.fill")
-                .font(.system(size: 18))
+                .font(.appFont(size: 18))
                 .foregroundStyle(AppTheme.brandGreen)
                 .frame(width: 38, height: 38)
                 .background(AppTheme.accentSoft)
@@ -337,20 +346,20 @@ struct OrderDetailScreen: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("Delivered to")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.appFont(size: 14, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
 
                 Text(order.deliveryAddress.fullName)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.appFont(size: 12, weight: .semibold))
                     .foregroundStyle(AppTheme.textSecondary)
 
                 Text(order.deliveryAddress.address)
-                    .font(.system(size: 12))
+                    .font(.appFont(size: 12))
                     .foregroundStyle(AppTheme.textSecondary)
                     .lineLimit(2)
 
                 Text(order.deliveryAddress.mobile)
-                    .font(.system(size: 12))
+                    .font(.appFont(size: 12))
                     .foregroundStyle(AppTheme.textMuted)
             }
         }
@@ -369,7 +378,7 @@ struct OrderDetailScreen: View {
     private func paymentCard(_ order: OrderDetail) -> some View {
         HStack(spacing: 12) {
             Image(systemName: order.paymentType == "cod" ? "banknote.fill" : "creditcard.fill")
-                .font(.system(size: 16))
+                .font(.appFont(size: 16))
                 .foregroundStyle(AppTheme.brandGreen)
                 .frame(width: 38, height: 38)
                 .background(AppTheme.accentSoft)
@@ -377,12 +386,12 @@ struct OrderDetailScreen: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Payment")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.appFont(size: 14, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
 
                 let label = order.paymentType == "cod" ? "Cash on Delivery" : "Paid Online"
                 Text("\(label) · \(order.paymentStatus)")
-                    .font(.system(size: 12))
+                    .font(.appFont(size: 12))
                     .foregroundStyle(AppTheme.textSecondary)
             }
         }
@@ -405,7 +414,7 @@ struct OrderDetailScreen: View {
                 repeatOrder(order)
             } label: {
                 Text("Order these again")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.appFont(size: 15, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)
@@ -420,7 +429,7 @@ struct OrderDetailScreen: View {
                     cancelOrder(order)
                 } label: {
                     Text("Cancel order")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.appFont(size: 14, weight: .bold))
                         .foregroundStyle(Color(hex: "F4F4F6") == Color.white ? .red : AppTheme.textSecondary)
                 }
                 .buttonStyle(.plain)

@@ -51,31 +51,10 @@ struct HomeTopBar: View {
         .padding(.top, safeAreaTop + 8)
         .background {
             ZStack {
-                LinearGradient(
-                    colors: [
-                        AppTheme.homeHeaderTop,
-                        Color(hex: "13683B"),
-                        AppTheme.homeHeaderBottom
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                Color(hex: "F7FAF7")
 
-                // Emerald mint glow (top-leading)
-                RadialGradient(
-                    colors: [AppTheme.homeHeaderGlowCool.opacity(0.22), Color.clear],
-                    center: .topLeading,
-                    startRadius: 10,
-                    endRadius: 180
-                )
-
-                // Saffron glow (top-trailing)
-                RadialGradient(
-                    colors: [AppTheme.homeHeaderGlowWarm.opacity(0.18), Color.clear],
-                    center: .topTrailing,
-                    startRadius: 10,
-                    endRadius: 160
-                )
+                HomeHeaderAuroraCanvas()
+                    .opacity(addressOpacity)
             }
             .ignoresSafeArea(edges: .top)
         }
@@ -87,16 +66,16 @@ struct HomeTopBar: View {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 5) {
                         Image(systemName: "location.fill")
-                            .font(.system(size: 11))
+                            .font(.appFont(size: 11))
                             .foregroundStyle(.white)
                         Text("Delivering to")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.appFont(size: 12, weight: .medium))
                             .foregroundStyle(.white.opacity(0.9))
 
                         // Pincode/city chip
                         if let city = address?.cityName, !city.isEmptyString {
                             Text(city.uppercased())
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.appFont(size: 10, weight: .bold))
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 7)
                                 .padding(.vertical, 2)
@@ -109,11 +88,11 @@ struct HomeTopBar: View {
                         Text(address?.shortLine.isEmptyString == false
                              ? address!.shortLine
                              : "Set your delivery address")
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.appFont(size: 15, weight: .bold))
                             .foregroundStyle(.white)
                             .lineLimit(1)
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(.appFont(size: 11, weight: .bold))
                             .foregroundStyle(.white)
                     }
                 }
@@ -122,29 +101,169 @@ struct HomeTopBar: View {
 
             Spacer()
 
-            Button {
+            AnimatedHeaderBell {
                 if let onNotificationTap {
                     onNotificationTap()
                 } else if let onProfileTap {
                     onProfileTap()
                 }
-            } label: {
+            }
+        }
+    }
+}
+
+private let TAU: CGFloat = 2.0 * .pi
+
+/// Living "Spiced Aurora" Canvas Background matching Android Jetpack Compose reference.
+/// 60/120 FPS GPU-accelerated drawing with drifting Lissajous glows, light sweep sheen, and rising spice specks.
+ struct HomeHeaderAuroraCanvas: View {
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
+            let date = timeline.date.timeIntervalSinceReferenceDate
+            let warmPhase = CGFloat(date.truncatingRemainder(dividingBy: 11.0) / 11.0)
+            let coolPhase = CGFloat((date + 14.5 * 0.33).truncatingRemainder(dividingBy: 14.5) / 14.5)
+            let deepPhase = CGFloat((date + 8.6 * 0.66).truncatingRemainder(dividingBy: 8.6) / 8.6)
+            let sweepPhase = CGFloat(date.truncatingRemainder(dividingBy: 6.4) / 6.4)
+
+            Canvas { context, size in
+                let w = size.width
+                let h = size.height
+                guard w > 0, h > 0 else { return }
+
+                // 1. Base 3-Hue Diagonal Gradient
+                let gradient = Gradient(colors: [
+                    AppTheme.homeHeaderTop,
+                    Color(hex: "13683B"),
+                    AppTheme.homeHeaderBottom
+                ])
+                let baseRect = CGRect(origin: .zero, size: size)
+                context.fill(
+                    Path(baseRect),
+                    with: .linearGradient(
+                        gradient,
+                        startPoint: .zero,
+                        endPoint: CGPoint(x: w, y: h * 1.4)
+                    )
+                )
+
+                // 2. Drifting Radial Glows (Lissajous loops)
+                func drawGlow(phase: CGFloat, color: Color, baseX: CGFloat, baseY: CGFloat, radiusFactor: CGFloat, strength: CGFloat) {
+                    let a = phase * TAU
+                    let centerX = w * baseX + sin(a) * w * 0.16
+                    let centerY = h * baseY + cos(a * 1.3) * h * 0.30
+                    let radius = radiusFactor * w
+
+                    let glowGradient = Gradient(colors: [
+                        color.opacity(Double(strength)),
+                        color.opacity(0.0)
+                    ])
+
+                    let circleRect = CGRect(
+                        x: centerX - radius,
+                        y: centerY - radius,
+                        width: radius * 2,
+                        height: radius * 2
+                    )
+
+                    context.fill(
+                        Path(ellipseIn: circleRect),
+                        with: .radialGradient(
+                            glowGradient,
+                            center: CGPoint(x: centerX, y: centerY),
+                            startRadius: 0,
+                            endRadius: radius
+                        )
+                    )
+                }
+
+                // Saffron warm glow
+                drawGlow(phase: warmPhase, color: AppTheme.homeHeaderGlowWarm, baseX: 0.80, baseY: 0.18, radiusFactor: 0.62, strength: 0.34)
+                // Emerald mint glow
+                drawGlow(phase: coolPhase, color: AppTheme.homeHeaderGlowCool, baseX: 0.14, baseY: 0.86, radiusFactor: 0.55, strength: 0.30)
+                // Deep center glow
+                drawGlow(phase: deepPhase, color: AppTheme.homeHeaderGlowWarm, baseX: 0.48, baseY: 0.55, radiusFactor: 0.40, strength: 0.16)
+
+                // 3. Diagonal light sweep (Sheen pass)
+                let sweepX = (sweepPhase * 2.2 - 0.6) * w
+                let sheenGradient = Gradient(colors: [
+                    Color.white.opacity(0.0),
+                    Color.white.opacity(0.10),
+                    Color.white.opacity(0.0)
+                ])
+                context.fill(
+                    Path(baseRect),
+                    with: .linearGradient(
+                        sheenGradient,
+                        startPoint: CGPoint(x: sweepX, y: 0),
+                        endPoint: CGPoint(x: sweepX + w * 0.42, y: h)
+                    )
+                )
+
+                // 4. 7 Rising spice specks / motes
+                for i in 0..<7 {
+                    let seed = CGFloat(i) * 0.137
+                    let p = (deepPhase + seed).truncatingRemainder(dividingBy: 1.0)
+                    let x = w * (CGFloat(i) * 0.1613 + 0.06).truncatingRemainder(dividingBy: 1.0) + sin((p + seed) * TAU) * w * 0.05
+                    let y = h * (1.05 - p * 1.15)
+                    let fade = sin(p * .pi)
+                    let radius = 1.2 + CGFloat(i % 3) * 0.7
+
+                    let speckRect = CGRect(
+                        x: x - radius,
+                        y: y - radius,
+                        width: radius * 2,
+                        height: radius * 2
+                    )
+
+                    context.fill(
+                        Path(ellipseIn: speckRect),
+                        with: .color(Color.white.opacity(Double(0.22 * fade)))
+                    )
+                }
+            }
+        }
+    }
+}
+
+/// Bell that rings on a periodic loop — quick damped wobble every 4.2s pivoted at top crown with a pulsing golden dot.
+private struct AnimatedHeaderBell: View {
+
+    let onTap: () -> Void
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
+            let date = timeline.date.timeIntervalSinceReferenceDate
+            let ringPhase = CGFloat(date.truncatingRemainder(dividingBy: 4.2) / 4.2)
+            let pulsePhase = CGFloat(date.truncatingRemainder(dividingBy: 1.6) / 1.6)
+
+            // Damped wobble in first 20% of cycle
+            let burst = ringPhase < 0.2 ? (ringPhase / 0.2) : 0.0
+            let angle: Double = burst > 0 ? Double(sin(burst * TAU * 3.0) * 15.0 * (1.0 - burst)) : 0.0
+
+            // Pulse scale for unread dot
+            let scale: CGFloat = 1.0 + sin(pulsePhase * TAU) * 0.28
+
+            Button(action: onTap) {
                 ZStack(alignment: .topTrailing) {
                     Circle()
                         .fill(Color.white.opacity(0.18))
                         .frame(width: 40, height: 40)
 
                     Image(systemName: "bell.fill")
-                        .font(.system(size: 16))
+                        .font(.appFont(size: 16))
                         .foregroundStyle(.white)
                         .frame(width: 40, height: 40)
+                        .rotationEffect(.degrees(angle), anchor: UnitPoint(x: 0.5, y: 0.08))
 
                     Circle()
                         .fill(Color(hex: "FFC53D"))
                         .frame(width: 8.5, height: 8.5)
+                        .scaleEffect(scale)
                         .offset(x: -2.5, y: 2.5)
                 }
             }
+            .buttonStyle(.plain)
         }
     }
 }
@@ -210,14 +329,14 @@ struct SpiceSearchBar: View {
                 onBack?()
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.appFont(size: 16, weight: .semibold))
                     .foregroundStyle(AppTheme.textPrimary)
                     .frame(width: 38, height: 38)
             }
             .buttonStyle(.plain)
         } else {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 17, weight: .bold))
+                .font(.appFont(size: 17, weight: .bold))
                 .foregroundStyle(AppTheme.brandGreen)
                 .frame(width: 38, height: 38)
                 .contentShape(Rectangle())
@@ -229,7 +348,7 @@ struct SpiceSearchBar: View {
     private var field: some View {
         if isActive, let query {
             TextField(currentPlaceholder, text: query)
-                .font(.system(size: 14, weight: .medium))
+                .font(.appFont(size: 14, weight: .medium))
                 .foregroundStyle(AppTheme.textPrimary)
                 .focused($isFocused)
                 .submitLabel(.search)
@@ -238,7 +357,7 @@ struct SpiceSearchBar: View {
                 .onSubmit { onSubmit?() }
         } else {
             Text(currentPlaceholder)
-                .font(.system(size: 14, weight: .medium))
+                .font(.appFont(size: 14, weight: .medium))
                 .foregroundStyle(AppTheme.textMuted)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -258,7 +377,7 @@ struct SpiceSearchBar: View {
                 onClear?()
             } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 18))
+                    .font(.appFont(size: 18))
                     .foregroundStyle(AppTheme.textMuted)
                     .frame(width: 38, height: 38)
             }
@@ -273,7 +392,7 @@ struct SpiceSearchBar: View {
                     onMic?()
                 } label: {
                     Image(systemName: "mic.fill")
-                        .font(.system(size: 15))
+                        .font(.appFont(size: 15))
                         .foregroundStyle(AppTheme.brandGreen)
                         .frame(width: 38, height: 38)
                 }
@@ -291,6 +410,7 @@ struct SearchTopBar: View {
     let onBack: () -> Void
     let onClear: () -> Void
     let onSubmit: () -> Void
+    var onMic: (() -> Void)? = nil
 
     @FocusState private var isFieldFocused: Bool
 
@@ -302,7 +422,7 @@ struct SearchTopBar: View {
                 onBack()
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.appFont(size: 16, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(width: 38, height: 38)
                     .background(Color.white.opacity(0.18))
@@ -313,12 +433,12 @@ struct SearchTopBar: View {
             // Search input field capsule
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.appFont(size: 16, weight: .bold))
                     .foregroundStyle(AppTheme.brandGreen)
                     .frame(width: 20, height: 20)
 
                 TextField(placeholder, text: $query)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.appFont(size: 15, weight: .medium))
                     .foregroundStyle(AppTheme.textPrimary)
                     .focused($isFieldFocused)
                     .submitLabel(.search)
@@ -329,8 +449,16 @@ struct SearchTopBar: View {
                 if !query.isEmpty {
                     Button(action: onClear) {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 17))
+                            .font(.appFont(size: 17))
                             .foregroundStyle(AppTheme.textMuted)
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.plain)
+                } else if let onMic {
+                    Button(action: onMic) {
+                        Image(systemName: "mic.fill")
+                            .font(.appFont(size: 15))
+                            .foregroundStyle(AppTheme.brandGreen)
                             .frame(width: 28, height: 28)
                     }
                     .buttonStyle(.plain)
@@ -346,16 +474,8 @@ struct SearchTopBar: View {
         .padding(.bottom, 10)
         .padding(.top, safeAreaTop + 6)
         .background {
-            LinearGradient(
-                colors: [
-                    AppTheme.homeHeaderTop,
-                    Color(hex: "13683B"),
-                    AppTheme.homeHeaderBottom
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea(edges: .top)
+            HomeHeaderAuroraCanvas()
+                .ignoresSafeArea(edges: .top)
         }
         .onAppear {
             isFieldFocused = true
@@ -406,18 +526,18 @@ struct FloatingCartBar: View {
                                 .frame(width: 36, height: 36)
 
                             Image(systemName: "bag.fill")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.appFont(size: 16, weight: .bold))
                                 .foregroundStyle(.white)
                         }
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text("\(itemsCount) ITEM\(itemsCount == 1 ? "" : "S") • ₹\(Int(totalPay.rounded()))")
-                                .font(.system(size: 13, weight: .heavy))
+                                .font(.appFont(size: 13, weight: .heavy))
                                 .foregroundStyle(.white)
 
                             if savings > 0 {
                                 Text("Saved ₹\(Int(savings.rounded())) on MRP")
-                                    .font(.system(size: 11, weight: .bold))
+                                    .font(.appFont(size: 11, weight: .bold))
                                     .foregroundStyle(.white.opacity(0.9))
                             }
                         }
@@ -427,9 +547,9 @@ struct FloatingCartBar: View {
 
                     HStack(spacing: 4) {
                         Text("View Cart")
-                            .font(.system(size: 13, weight: .heavy))
+                            .font(.appFont(size: 13, weight: .heavy))
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 13, weight: .bold))
+                            .font(.appFont(size: 13, weight: .bold))
                     }
                     .foregroundStyle(.white)
                 }
@@ -495,13 +615,13 @@ struct HomeBottomBar: View {
                                 .scaleEffect(isSelected ? 1 : 0.6)
 
                             Image(systemName: tab.icon)
-                                .font(.system(size: 16, weight: isSelected ? .bold : .regular))
+                                .font(.appFont(size: 16, weight: isSelected ? .bold : .regular))
                                 .foregroundStyle(isSelected ? .white : AppTheme.textMuted)
                         }
                         .frame(width: 46, height: 28)
 
                         Text(tab.title)
-                            .font(.system(size: 11, weight: isSelected ? .bold : .medium))
+                            .font(.appFont(size: 11, weight: isSelected ? .bold : .medium))
                             .foregroundStyle(isSelected ? AppTheme.brandGreen : AppTheme.textMuted)
                     }
                     .frame(maxWidth: .infinity)
@@ -582,24 +702,24 @@ struct HomeErrorState: View {
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: "cloud.slash")
-                .font(.system(size: 30))
+                .font(.appFont(size: 30))
                 .foregroundStyle(AppTheme.accentRed)
                 .frame(width: 72, height: 72)
                 .background(AppTheme.accentSoft)
                 .clipShape(Circle())
 
             Text("Something went wrong")
-                .font(.system(size: 18, weight: .bold))
+                .font(.appFont(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 
             Text(message)
-                .font(.system(size: 14))
+                .font(.appFont(size: 14))
                 .foregroundStyle(AppTheme.textSecondary)
                 .multilineTextAlignment(.center)
 
             Button(action: retry) {
                 Text("Try again")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.appFont(size: 15, weight: .semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 28)
                     .frame(height: 48)

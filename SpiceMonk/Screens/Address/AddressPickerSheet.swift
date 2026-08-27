@@ -44,7 +44,7 @@ struct AddressPickerSheet: View {
             // Header: Title & Close Button
             HStack {
                 Text("Select delivery location")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.appFont(size: 20, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
 
                 Spacer()
@@ -53,7 +53,7 @@ struct AddressPickerSheet: View {
                     dismiss()
                 } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.appFont(size: 14, weight: .bold))
                         .foregroundStyle(Color(hex: "6B7280"))
                         .frame(width: 32, height: 32)
                         .background(Color(hex: "F3F4F6"))
@@ -78,24 +78,24 @@ struct AddressPickerSheet: View {
                         } label: {
                             HStack(spacing: 14) {
                                 Image(systemName: "scope")
-                                    .font(.system(size: 20, weight: .semibold))
+                                    .font(.appFont(size: 20, weight: .semibold))
                                     .foregroundStyle(AppTheme.brandGreen)
                                     .frame(width: 28)
 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Use my current location")
-                                        .font(.system(size: 15, weight: .bold))
+                                        .font(.appFont(size: 15, weight: .bold))
                                         .foregroundStyle(AppTheme.brandGreen)
 
                                     Text("Fills your address in from GPS")
-                                        .font(.system(size: 12, weight: .regular))
+                                        .font(.appFont(size: 12, weight: .regular))
                                         .foregroundStyle(Color(hex: "6A7B72"))
                                 }
 
                                 Spacer()
 
                                 Image(systemName: "chevron.right")
-                                    .font(.system(size: 13, weight: .semibold))
+                                    .font(.appFont(size: 13, weight: .semibold))
                                     .foregroundStyle(Color(hex: "9CA3AF"))
                             }
                             .padding(.vertical, 12)
@@ -112,18 +112,18 @@ struct AddressPickerSheet: View {
                         } label: {
                             HStack(spacing: 14) {
                                 Image(systemName: "plus")
-                                    .font(.system(size: 18, weight: .bold))
+                                    .font(.appFont(size: 18, weight: .bold))
                                     .foregroundStyle(AppTheme.brandGreen)
                                     .frame(width: 28)
 
                                 Text("Add a new address")
-                                    .font(.system(size: 15, weight: .bold))
+                                    .font(.appFont(size: 15, weight: .bold))
                                     .foregroundStyle(AppTheme.brandGreen)
 
                                 Spacer()
 
                                 Image(systemName: "chevron.right")
-                                    .font(.system(size: 13, weight: .semibold))
+                                    .font(.appFont(size: 13, weight: .semibold))
                                     .foregroundStyle(Color(hex: "9CA3AF"))
                             }
                             .padding(.vertical, 14)
@@ -135,7 +135,7 @@ struct AddressPickerSheet: View {
                     // Saved Addresses Section Header
                     HStack {
                         Text("YOUR SAVED ADDRESSES")
-                            .font(.system(size: 11.5, weight: .bold))
+                            .font(.appFont(size: 11.5, weight: .bold))
                             .foregroundStyle(Color(hex: "7C8B82"))
                             .tracking(0.5)
 
@@ -145,7 +145,7 @@ struct AddressPickerSheet: View {
                             isManaging = true
                         } label: {
                             Text("Manage")
-                                .font(.system(size: 13.5, weight: .bold))
+                                .font(.appFont(size: 13.5, weight: .bold))
                                 .foregroundStyle(AppTheme.brandGreen)
                         }
                         .buttonStyle(.plain)
@@ -207,11 +207,11 @@ struct AddressPickerSheet: View {
     private var searchField: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 16, weight: .medium))
+                .font(.appFont(size: 16, weight: .medium))
                 .foregroundStyle(Color(hex: "9CA3AF"))
 
             TextField("Search by PIN code or saved address", text: $searchQuery)
-                .font(.system(size: 14, weight: .medium))
+                .font(.appFont(size: 14, weight: .medium))
                 .foregroundStyle(AppTheme.textPrimary)
                 .autocorrectionDisabled()
 
@@ -220,7 +220,7 @@ struct AddressPickerSheet: View {
                     searchQuery = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 15))
+                        .font(.appFont(size: 15))
                         .foregroundStyle(Color(hex: "9CA3AF"))
                 }
                 .buttonStyle(.plain)
@@ -243,19 +243,19 @@ struct AddressPickerSheet: View {
                     .frame(width: 44, height: 44)
 
                 Image(systemName: "mappin.fill")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.appFont(size: 18, weight: .semibold))
                     .foregroundStyle(AppTheme.brandGreen)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
                     Text(address.fullName)
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.appFont(size: 15, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
 
                     if address.isDefault {
                         Text("DEFAULT")
-                            .font(.system(size: 9.5, weight: .heavy))
+                            .font(.appFont(size: 9.5, weight: .heavy))
                             .foregroundStyle(AppTheme.brandGreen)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2.5)
@@ -265,7 +265,7 @@ struct AddressPickerSheet: View {
                 }
 
                 Text(address.fullLine)
-                    .font(.system(size: 13, weight: .regular))
+                    .font(.appFont(size: 13, weight: .regular))
                     .foregroundStyle(Color(hex: "4B5563"))
                     .lineLimit(3)
                     .multilineTextAlignment(.leading)
@@ -276,7 +276,7 @@ struct AddressPickerSheet: View {
 
             if address.isDefault {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.appFont(size: 16, weight: .bold))
                     .foregroundStyle(AppTheme.brandGreen)
                     .padding(.top, 4)
             }
@@ -296,12 +296,12 @@ struct AddressPickerSheet: View {
     private var emptySavedAddresses: some View {
         VStack(spacing: 10) {
             Image(systemName: "mappin.slash")
-                .font(.system(size: 24))
+                .font(.appFont(size: 24))
                 .foregroundStyle(Color(hex: "9CA3AF"))
                 .padding(.top, 12)
 
             Text(searchQuery.isEmpty ? "No saved addresses yet" : "No matching address found")
-                .font(.system(size: 14, weight: .medium))
+                .font(.appFont(size: 14, weight: .medium))
                 .foregroundStyle(Color(hex: "6A7B72"))
         }
         .frame(maxWidth: .infinity)

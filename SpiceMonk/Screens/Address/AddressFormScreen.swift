@@ -145,6 +145,7 @@ struct AddressFormScreen: View {
             viewModel.applyPickedLocation(initialInfo)
             mapCenterCoord = initialInfo.coordinate
         } else if let editing = editingAddress {
+            viewModel.editingAddressId = editing.id
             viewModel.fullName = editing.fullName
             viewModel.mobile = editing.mobile
             viewModel.alternateMobile = editing.alternateMobile ?? ""
@@ -155,6 +156,11 @@ struct AddressFormScreen: View {
             viewModel.state = editing.stateName ?? ""
             viewModel.district = editing.cityName ?? ""
             viewModel.isDefault = editing.isDefault
+            viewModel.latitude = editing.latitude
+            viewModel.longitude = editing.longitude
+            if let lat = editing.latitude, let lng = editing.longitude {
+                mapCenterCoord = CLLocationCoordinate2D(latitude: lat, longitude: lng)
+            }
             viewModel.pinCodeChanged()
         } else if isFromGPS {
             if let lastInfo = LocationManager.shared.lastResolvedInfo {
@@ -179,7 +185,7 @@ struct AddressFormScreen: View {
                 dismiss()
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.appFont(size: 16, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(width: 36, height: 36)
                     .background(Color.white.opacity(0.18))
@@ -188,7 +194,7 @@ struct AddressFormScreen: View {
             .buttonStyle(.plain)
 
             Text(editingAddress == nil ? "Add a new address" : "Edit address")
-                .font(.system(size: 19, weight: .bold))
+                .font(.appFont(size: 19, weight: .bold))
                 .foregroundStyle(.white)
 
             Spacer()
@@ -219,11 +225,11 @@ struct AddressFormScreen: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.appFont(size: 13, weight: .semibold))
                 .foregroundStyle(Color(hex: "374151"))
 
             TextField(placeholder, text: text)
-                .font(.system(size: 15, weight: .medium))
+                .font(.appFont(size: 15, weight: .medium))
                 .foregroundStyle(AppTheme.textPrimary)
                 .keyboardType(keyboard)
                 .autocorrectionDisabled()
@@ -243,12 +249,12 @@ struct AddressFormScreen: View {
     private var pinCodeSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("PIN code")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.appFont(size: 13, weight: .semibold))
                 .foregroundStyle(Color(hex: "374151"))
 
             HStack(spacing: 8) {
                 TextField("6-digit PIN code", text: $viewModel.pinCode)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.appFont(size: 15, weight: .medium))
                     .foregroundStyle(AppTheme.textPrimary)
                     .keyboardType(.numberPad)
                     .autocorrectionDisabled()
@@ -261,11 +267,11 @@ struct AddressFormScreen: View {
                         .scaleEffect(0.8)
                 } else if viewModel.isDeliverable || viewModel.didResolvePincode {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.appFont(size: 18, weight: .bold))
                         .foregroundStyle(AppTheme.brandGreen)
                 } else if viewModel.pincodeError != nil && viewModel.pinCode.count == 6 {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.appFont(size: 18, weight: .bold))
                         .foregroundStyle(Color(hex: "DC2626"))
                 }
             }
@@ -296,7 +302,7 @@ struct AddressFormScreen: View {
             if viewModel.isDeliverable && !viewModel.district.isEmpty && !viewModel.state.isEmpty {
                 HStack(spacing: 6) {
                     Text("Deliverable to \(viewModel.district), \(viewModel.state)")
-                        .font(.system(size: 13.5, weight: .bold))
+                        .font(.appFont(size: 13.5, weight: .bold))
                         .foregroundStyle(Color(hex: "1F6335"))
                     Spacer()
                 }
@@ -308,11 +314,11 @@ struct AddressFormScreen: View {
             } else if let errorMsg = viewModel.pincodeError, !viewModel.isDeliverable {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.circle.fill")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.appFont(size: 15, weight: .semibold))
                         .foregroundStyle(Color(hex: "DC2626"))
 
                     Text(errorMsg)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.appFont(size: 13, weight: .semibold))
                         .foregroundStyle(Color(hex: "DC2626"))
                     Spacer()
                 }
@@ -332,7 +338,7 @@ struct AddressFormScreen: View {
             // Header
             HStack {
                 Text("Delivery location")
-                    .font(.system(size: 13.5, weight: .bold))
+                    .font(.appFont(size: 13.5, weight: .bold))
                     .foregroundStyle(Color(hex: "374151"))
 
                 Spacer()
@@ -341,7 +347,7 @@ struct AddressFormScreen: View {
                     showMapPicker = true
                 } label: {
                     Text("Change")
-                        .font(.system(size: 13.5, weight: .bold))
+                        .font(.appFont(size: 13.5, weight: .bold))
                         .foregroundStyle(AppTheme.brandGreen)
                 }
                 .buttonStyle(.plain)
@@ -364,7 +370,7 @@ struct AddressFormScreen: View {
 
                     // Pin Marker
                     Image(systemName: "mappin.circle.fill")
-                        .font(.system(size: 32, weight: .bold))
+                        .font(.appFont(size: 32, weight: .bold))
                         .foregroundStyle(AppTheme.brandGreen)
                         .shadow(color: Color.black.opacity(0.2), radius: 4, y: 2)
                 }
@@ -374,12 +380,12 @@ struct AddressFormScreen: View {
                 // Address info bottom row
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "mappin.fill")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.appFont(size: 14, weight: .semibold))
                         .foregroundStyle(AppTheme.brandGreen)
                         .padding(.top, 2)
 
                     Text(formattedDeliveryAddressText)
-                        .font(.system(size: 12, weight: .regular))
+                        .font(.appFont(size: 12, weight: .regular))
                         .foregroundStyle(Color(hex: "4B5563"))
                         .lineLimit(3)
                         .multilineTextAlignment(.leading)
@@ -422,7 +428,7 @@ struct AddressFormScreen: View {
     private var suggestedAreasSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Suggested areas for this PIN")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.appFont(size: 12, weight: .semibold))
                 .foregroundStyle(Color(hex: "6B7280"))
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -434,7 +440,7 @@ struct AddressFormScreen: View {
                             viewModel.area = areaName
                         } label: {
                             Text(areaName)
-                                .font(.system(size: 13, weight: isSelected ? .bold : .medium))
+                                .font(.appFont(size: 13, weight: isSelected ? .bold : .medium))
                                 .foregroundStyle(isSelected ? AppTheme.brandGreen : Color(hex: "374151"))
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 7)
@@ -458,11 +464,11 @@ struct AddressFormScreen: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Set as default address")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.appFont(size: 15, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
 
                 Text("Orders will be delivered here by default")
-                    .font(.system(size: 12, weight: .regular))
+                    .font(.appFont(size: 12, weight: .regular))
                     .foregroundStyle(Color(hex: "6B7280"))
             }
 
@@ -496,8 +502,8 @@ struct AddressFormScreen: View {
                     ProgressView()
                         .tint(.white)
                 }
-                Text("Save address")
-                    .font(.system(size: 16, weight: .bold))
+                Text(editingAddress == nil ? "Save address" : "Update address")
+                    .font(.appFont(size: 16, weight: .bold))
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)

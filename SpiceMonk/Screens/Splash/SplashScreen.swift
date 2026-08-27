@@ -68,16 +68,16 @@ struct SplashScreen: View {
                         // "Welcome to" with leaf accents
                         HStack(spacing: 6) {
                             Image(systemName: "leaf.fill")
-                                .font(.system(size: 13))
+                                .font(.appFont(size: 13))
                                 .foregroundStyle(Color(hex: "3F8E4D"))
                                 .rotationEffect(.degrees(-20))
 
                             Text("Welcome to")
-                                .font(.system(size: 26, weight: .bold, design: .serif))
+                                .font(.appFont(size: 26, weight: .bold, design: .serif))
                                 .foregroundStyle(Color(hex: "1F5F32"))
 
                             Image(systemName: "leaf.fill")
-                                .font(.system(size: 13))
+                                .font(.appFont(size: 13))
                                 .foregroundStyle(Color(hex: "3F8E4D"))
                                 .rotationEffect(.degrees(40))
                         }
@@ -88,11 +88,11 @@ struct SplashScreen: View {
                         // "SpiceMonk" with leaf
                         HStack(spacing: 6) {
                             Text("SpiceMonk")
-                                .font(.system(size: 38, weight: .heavy, design: .rounded))
+                                .font(.appFont(size: 38, weight: .heavy, design: .rounded))
                                 .foregroundStyle(Color(hex: "144E27"))
 
                             Image(systemName: "leaf.fill")
-                                .font(.system(size: 20))
+                                .font(.appFont(size: 20))
                                 .foregroundStyle(Color(hex: "3F8E4D"))
                                 .rotationEffect(.degrees(25))
                         }
@@ -105,7 +105,7 @@ struct SplashScreen: View {
                                 .fill(Color(hex: "7CAE8B").opacity(0.6))
                                 .frame(width: 28, height: 1)
                             Image(systemName: "leaf.fill")
-                                .font(.system(size: 9))
+                                .font(.appFont(size: 9))
                                 .foregroundStyle(Color(hex: "3F8E4D"))
                             Rectangle()
                                 .fill(Color(hex: "7CAE8B").opacity(0.6))
@@ -115,7 +115,7 @@ struct SplashScreen: View {
                         .opacity(showsHeader ? 1 : 0)
 
                         Text("India's finest flavours,\ndelivered to your doorstep.")
-                            .font(.system(size: 15, weight: .medium))
+                            .font(.appFont(size: 15, weight: .medium))
                             .foregroundStyle(Color(hex: "2C4F38"))
                             .multilineTextAlignment(.center)
                             .padding(.top, 6)
@@ -176,16 +176,16 @@ struct SplashScreen: View {
                     .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
 
                 Image(systemName: icon)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.appFont(size: 18, weight: .semibold))
                     .foregroundStyle(Color(hex: "1F6335"))
             }
 
             VStack(spacing: 2) {
                 Text(title)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.appFont(size: 12, weight: .bold))
                     .foregroundStyle(Color(hex: "1C3D26"))
                 Text(subtitle)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.appFont(size: 12, weight: .medium))
                     .foregroundStyle(Color(hex: "1C3D26"))
             }
             .multilineTextAlignment(.center)

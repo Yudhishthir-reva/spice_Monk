@@ -249,12 +249,12 @@ public struct AlertToast: View {
                     }
                     
                     Text(LocalizedStringKey(title ?? ""))
-                        .font(style?.titleFont ?? Font.headline.bold())
+                        .font(style?.titleFont ?? Font.dmHeadline)
                 }
                 
                 if !(subTitle?.isEmptyString ?? true) {
                     Text(LocalizedStringKey(subTitle!))
-                        .font(style?.subTitleFont ?? Font.subheadline)
+                        .font(style?.subTitleFont ?? Font.dmSubheadline)
                 }
             }
             .multilineTextAlignment(.leading)
@@ -297,11 +297,11 @@ public struct AlertToast: View {
                 if !(title?.isEmptyString ?? true) || !(subTitle?.isEmptyString ?? true) {
                     VStack(alignment: type == .regular ? .center : .leading, spacing: 2) {
                         Text(LocalizedStringKey(title ?? ""))
-                            .font(style?.titleFont ?? Font.body.bold())
+                            .font(style?.titleFont ?? Font.dmBodyBold)
                             .multilineTextAlignment(.center)
                             .textColor(style?.titleColor ?? nil)
                         Text(LocalizedStringKey(subTitle ?? ""))
-                            .font(style?.subTitleFont ?? Font.footnote)
+                            .font(style?.subTitleFont ?? Font.dmCaption1)
                             .opacity(0.7)
                             .multilineTextAlignment(.center)
                             .textColor(style?.subtitleColor ?? nil)
@@ -360,13 +360,13 @@ public struct AlertToast: View {
             VStack(spacing: type == .regular ? 8 : 2) {
                 if !(title?.isEmptyString ?? true) {
                     Text(LocalizedStringKey(title ?? ""))
-                        .font(style?.titleFont ?? Font.body.bold())
+                        .font(style?.titleFont ?? Font.dmBodyBold)
                         .multilineTextAlignment(.center)
                         .textColor(style?.titleColor ?? nil)
                 }
                 if !(subTitle?.isEmptyString ?? true) {
                     Text(LocalizedStringKey(subTitle ?? ""))
-                        .font(style?.subTitleFont ?? Font.footnote)
+                        .font(style?.subTitleFont ?? Font.dmCaption1)
                         .opacity(0.7)
                         .multilineTextAlignment(.center)
                         .textColor(style?.subtitleColor ?? nil)

@@ -106,7 +106,7 @@ struct LocationPickerScreen: View {
             ZStack {
                 // Custom green teardrop pin
                 Image(systemName: "mappin.circle.fill")
-                    .font(.system(size: 42, weight: .bold))
+                    .font(.appFont(size: 42, weight: .bold))
                     .foregroundStyle(Color(hex: "13683B"))
                     .background(
                         Circle()
@@ -138,7 +138,7 @@ struct LocationPickerScreen: View {
                 dismiss()
             } label: {
                 Image(systemName: "arrow.left")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.appFont(size: 16, weight: .bold))
                     .foregroundStyle(Color(hex: "1F2937"))
                     .frame(width: 48, height: 48)
                     .background(Color.white)
@@ -150,11 +150,11 @@ struct LocationPickerScreen: View {
             // Search Bar
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.appFont(size: 16, weight: .semibold))
                     .foregroundStyle(Color(hex: "13683B"))
 
                 TextField("Search for area, street or landmark", text: $searchQuery)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.appFont(size: 14, weight: .medium))
                     .foregroundStyle(AppTheme.textPrimary)
                     .autocorrectionDisabled()
                     .onChange(of: searchQuery) { _, query in
@@ -171,7 +171,7 @@ struct LocationPickerScreen: View {
                         showSearchResults = false
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 16))
+                            .font(.appFont(size: 16))
                             .foregroundStyle(Color(hex: "9CA3AF"))
                     }
                     .buttonStyle(.plain)
@@ -194,11 +194,11 @@ struct LocationPickerScreen: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "scope")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.appFont(size: 16, weight: .bold))
                     .foregroundStyle(AppTheme.brandGreen)
 
                 Text("Use my current location")
-                    .font(.system(size: 13.5, weight: .bold))
+                    .font(.appFont(size: 13.5, weight: .bold))
                     .foregroundStyle(AppTheme.brandGreen)
             }
             .padding(.horizontal, 14)
@@ -216,29 +216,29 @@ struct LocationPickerScreen: View {
         VStack(alignment: .leading, spacing: 14) {
             // Small Section Title
             Text("DELIVERING YOUR ORDER TO")
-                .font(.system(size: 11, weight: .bold))
+                .font(.appFont(size: 11, weight: .bold))
                 .foregroundStyle(Color(hex: "6B7280"))
                 .tracking(0.5)
 
             // Location details row
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "mappin.fill")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.appFont(size: 20, weight: .semibold))
                     .foregroundStyle(AppTheme.brandGreen)
                     .padding(.top, 2)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(displayAreaTitle)
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.appFont(size: 17, weight: .bold))
                         .foregroundStyle(Color(hex: "1F2937"))
 
                     if isResolving {
                         Text("Fetching address...")
-                            .font(.system(size: 13, weight: .regular))
+                            .font(.appFont(size: 13, weight: .regular))
                             .foregroundStyle(Color(hex: "6B7280"))
                     } else {
                         Text(displaySubtitle)
-                            .font(.system(size: 13, weight: .regular))
+                            .font(.appFont(size: 13, weight: .regular))
                             .foregroundStyle(Color(hex: "4B5563"))
                             .lineLimit(3)
                             .fixedSize(horizontal: false, vertical: true)
@@ -262,7 +262,7 @@ struct LocationPickerScreen: View {
             } label: {
                 HStack(spacing: 8) {
                     Text("Confirm location")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.appFont(size: 16, weight: .bold))
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
@@ -312,17 +312,17 @@ struct LocationPickerScreen: View {
                     HStack(spacing: 12) {
                         Image(systemName: "mappin.circle.fill")
                             .foregroundStyle(AppTheme.brandGreen)
-                            .font(.system(size: 17))
+                            .font(.appFont(size: 17))
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(result.title)
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.appFont(size: 14, weight: .semibold))
                                 .foregroundStyle(AppTheme.textPrimary)
                                 .lineLimit(1)
 
                             if !result.subtitle.isEmpty {
                                 Text(result.subtitle)
-                                    .font(.system(size: 12))
+                                    .font(.appFont(size: 12))
                                     .foregroundStyle(AppTheme.textSecondary)
                                     .lineLimit(1)
                             }
@@ -480,18 +480,4 @@ struct LocationPickerScreen: View {
     }
 }
 
-// MARK: - Rounded Corner Shape Helper
 
-struct RoundedCornerShape: Shape {
-    var radius: CGFloat = .infinity
-    var corners: UIRectCorner = .allCorners
-
-    func path(in rect: CGRect) -> Path {
-        let path = UIBezierPath(
-            roundedRect: rect,
-            byRoundingCorners: corners,
-            cornerRadii: CGSize(width: radius, height: radius)
-        )
-        return Path(path.cgPath)
-    }
-}

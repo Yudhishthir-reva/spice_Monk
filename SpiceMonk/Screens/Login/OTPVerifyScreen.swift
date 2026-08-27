@@ -54,7 +54,7 @@ struct OTPVerifyScreen: View {
                             dismiss()
                         } label: {
                             Image(systemName: "chevron.left")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.appFont(size: 16, weight: .bold))
                                 .foregroundStyle(Color(hex: "1F6335"))
                                 .frame(width: 42, height: 42)
                                 .background(Color.white)
@@ -64,7 +64,7 @@ struct OTPVerifyScreen: View {
                         .padding(.top, max(geo.safeAreaInsets.top, 12) + 8)
 
                         Text("Verify your number")
-                            .font(.system(size: 28, weight: .heavy, design: .rounded))
+                            .font(.appFont(size: 28, weight: .heavy, design: .rounded))
                             .foregroundStyle(Color(hex: "144E27"))
                             .padding(.top, 24)
 
@@ -74,7 +74,7 @@ struct OTPVerifyScreen: View {
                                 .fill(Color(hex: "7CAE8B").opacity(0.6))
                                 .frame(width: 24, height: 1)
                             Image(systemName: "leaf.fill")
-                                .font(.system(size: 9))
+                                .font(.appFont(size: 9))
                                 .foregroundStyle(Color(hex: "3F8E4D"))
                             Rectangle()
                                 .fill(Color(hex: "7CAE8B").opacity(0.6))
@@ -84,12 +84,12 @@ struct OTPVerifyScreen: View {
 
                         HStack(spacing: 4) {
                             Text("OTP sent to +91 \(formattedMobile)")
-                                .font(.system(size: 15, weight: .medium))
+                                .font(.appFont(size: 15, weight: .medium))
                                 .foregroundStyle(Color(hex: "3D5E48"))
                             Button("Change") {
                                 dismiss()
                             }
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.appFont(size: 15, weight: .bold))
                             .foregroundStyle(Color(hex: "1F6335"))
                         }
                         .padding(.top, 12)
@@ -110,7 +110,7 @@ struct OTPVerifyScreen: View {
                                     } else {
                                         Spacer()
                                         Text("Verify OTP")
-                                            .font(.system(size: 17, weight: .bold))
+                                            .font(.appFont(size: 17, weight: .bold))
                                             .foregroundStyle(.white)
                                         Spacer()
                                         ZStack {
@@ -118,7 +118,7 @@ struct OTPVerifyScreen: View {
                                                 .fill(Color.white.opacity(0.22))
                                                 .frame(width: 32, height: 32)
                                             Image(systemName: "checkmark")
-                                                .font(.system(size: 13, weight: .bold))
+                                                .font(.appFont(size: 13, weight: .bold))
                                                 .foregroundStyle(.white)
                                         }
                                     }
@@ -148,7 +148,7 @@ struct OTPVerifyScreen: View {
                                     .foregroundStyle(Color(hex: "1F6335"))
                                 Text(viewModel.canResend ? "Didn't get the code?" : "Resend OTP in \(viewModel.timerText)")
                             }
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.appFont(size: 13, weight: .medium))
                             .foregroundStyle(Color(hex: "3D5E48"))
 
                             Spacer()
@@ -156,7 +156,7 @@ struct OTPVerifyScreen: View {
                             Button("Resend Now") {
                                 viewModel.resendOTP()
                             }
-                            .font(.system(size: 13, weight: .bold))
+                            .font(.appFont(size: 13, weight: .bold))
                             .foregroundStyle(viewModel.canResend ? Color(hex: "1F6335") : AppTheme.textMuted)
                             .disabled(!viewModel.canResend)
                         }
@@ -214,7 +214,7 @@ struct OTPVerifyScreen: View {
                                 .frame(width: 7, height: 7)
                         } else {
                             Text(digit)
-                                .font(.system(size: 22, weight: .bold))
+                                .font(.appFont(size: 22, weight: .bold))
                                 .foregroundStyle(AppTheme.textPrimary)
                         }
                     }

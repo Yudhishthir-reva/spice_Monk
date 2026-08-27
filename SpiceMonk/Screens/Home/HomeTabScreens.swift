@@ -32,14 +32,30 @@ struct CategoriesTabScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Search bar
+            // Aurora Title Header
+            HStack {
+                Text("Categories")
+                    .font(.appFont(size: 20, weight: .bold))
+                    .foregroundStyle(.white)
+
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 14)
+            .padding(.top, (UIApplication.shared.keyWindow?.safeAreaInsets.top ?? 50) + 8)
+            .background {
+                HomeHeaderAuroraCanvas()
+                    .ignoresSafeArea(edges: .top)
+            }
+
+            // Search bar in body
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.appFont(size: 15, weight: .medium))
                     .foregroundStyle(AppTheme.textMuted)
 
                 TextField("Search categories", text: $searchText)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.appFont(size: 14, weight: .medium))
                     .foregroundStyle(AppTheme.textPrimary)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -49,7 +65,7 @@ struct CategoriesTabScreen: View {
                         searchText = ""
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 16))
+                            .font(.appFont(size: 16))
                             .foregroundStyle(AppTheme.textMuted)
                     }
                     .buttonStyle(.plain)
@@ -67,10 +83,10 @@ struct CategoriesTabScreen: View {
             if filtered.isEmpty {
                 VStack(spacing: 8) {
                     Text("No categories")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.appFont(size: 18, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
                     Text("Categories will appear here once available.")
-                        .font(.system(size: 14))
+                        .font(.appFont(size: 14))
                         .foregroundStyle(AppTheme.textSecondary)
                         .multilineTextAlignment(.center)
                 }
@@ -93,14 +109,14 @@ struct CategoriesTabScreen: View {
                         }
                     }
                     .padding(.horizontal, 16)
-                    .padding(.top, 8)
+                    .padding(.top, 14)
                     .padding(.bottom, 24)
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(hex: "F7F8F7"))
-        .spiceNavigationBar(title: "Categories")
+        .ignoresSafeArea(edges: .top)
     }
 
     private func categoryCell(_ item: CategoryItem) -> some View {
@@ -112,7 +128,7 @@ struct CategoriesTabScreen: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             Text(item.name)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.appFont(size: 12, weight: .semibold))
                 .foregroundStyle(AppTheme.textPrimary)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
@@ -173,7 +189,7 @@ struct AccountTabScreen: View {
             // Header Bar
             HStack {
                 Text("Your account")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.appFont(size: 22, weight: .bold))
                     .foregroundStyle(.white)
                 Spacer()
             }
@@ -199,7 +215,7 @@ struct AccountTabScreen: View {
                     // Section 1: Your orders & addresses
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Your orders & addresses")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.appFont(size: 13, weight: .semibold))
                             .foregroundStyle(Color(hex: "6A7B72"))
                             .padding(.leading, 4)
 
@@ -231,7 +247,7 @@ struct AccountTabScreen: View {
                     // Section 2: Payment
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Payment")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.appFont(size: 13, weight: .semibold))
                             .foregroundStyle(Color(hex: "6A7B72"))
                             .padding(.leading, 4)
 
@@ -250,7 +266,7 @@ struct AccountTabScreen: View {
                     // Section 3: Support
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Support")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.appFont(size: 13, weight: .semibold))
                             .foregroundStyle(Color(hex: "6A7B72"))
                             .padding(.leading, 4)
 
@@ -276,9 +292,9 @@ struct AccountTabScreen: View {
                     } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "rectangle.portrait.and.arrow.right")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.appFont(size: 16, weight: .bold))
                             Text("Log out")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.appFont(size: 16, weight: .bold))
                         }
                         .foregroundStyle(Color(hex: "D93838"))
                         .frame(maxWidth: .infinity)
@@ -300,9 +316,9 @@ struct AccountTabScreen: View {
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "trash")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.appFont(size: 13, weight: .medium))
                             Text("Delete account")
-                                .font(.system(size: 13.5, weight: .medium))
+                                .font(.appFont(size: 13.5, weight: .medium))
                         }
                         .foregroundStyle(Color(hex: "9CA3AF"))
                         .frame(maxWidth: .infinity)
@@ -312,7 +328,7 @@ struct AccountTabScreen: View {
 
                     // Footer Tagline
                     Text("Freshly ground, straight from the monks.")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.appFont(size: 12, weight: .medium))
                         .foregroundStyle(Color(hex: "8FA196"))
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.top, 4)
@@ -366,17 +382,17 @@ struct AccountTabScreen: View {
                     .frame(width: 58, height: 58)
 
                 Text(userInitials)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.appFont(size: 18, weight: .bold))
                     .foregroundStyle(Color(hex: "1F6335"))
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(userName)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.appFont(size: 18, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
 
                 Text(userMobile)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.appFont(size: 14, weight: .medium))
                     .foregroundStyle(Color(hex: "5A6B62"))
             }
 
@@ -408,25 +424,25 @@ struct AccountTabScreen: View {
                         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                 } else {
                     Image(systemName: icon)
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.appFont(size: 17, weight: .semibold))
                         .foregroundStyle(Color(hex: "1F6335"))
                 }
             }
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.appFont(size: 15, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
 
                 Text(subtitle)
-                    .font(.system(size: 12, weight: .regular))
+                    .font(.appFont(size: 12, weight: .regular))
                     .foregroundStyle(Color(hex: "6A7B72"))
             }
 
             Spacer(minLength: 8)
 
             Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.appFont(size: 13, weight: .semibold))
                 .foregroundStyle(Color(hex: "A3B3AA"))
         }
         .padding(14)
@@ -455,20 +471,20 @@ struct LogoutConfirmationSheet: View {
                     .frame(width: 64, height: 64)
 
                 Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.appFont(size: 24, weight: .bold))
                     .foregroundStyle(Color(hex: "1F6335"))
             }
             .padding(.top, 24)
 
             // Title
             Text("Log out?")
-                .font(.system(size: 22, weight: .heavy))
+                .font(.appFont(size: 22, weight: .heavy))
                 .foregroundStyle(AppTheme.textPrimary)
                 .padding(.top, 16)
 
             // Subtitle
             Text("You'll need your mobile number to get back in. Your cart stays safe with us.")
-                .font(.system(size: 14))
+                .font(.appFont(size: 14))
                 .foregroundStyle(Color(hex: "5A6B62"))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
@@ -479,7 +495,7 @@ struct LogoutConfirmationSheet: View {
                 onLogout()
             } label: {
                 Text("Log out")
-                    .font(.system(size: 17, weight: .bold))
+                    .font(.appFont(size: 17, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
@@ -495,7 +511,7 @@ struct LogoutConfirmationSheet: View {
                 onDismiss()
             } label: {
                 Text("Stay signed in")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.appFont(size: 15, weight: .bold))
                     .foregroundStyle(Color(hex: "2D4F38"))
                     .frame(height: 44)
             }

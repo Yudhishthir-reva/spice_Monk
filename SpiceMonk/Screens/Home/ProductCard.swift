@@ -24,7 +24,7 @@ struct ProductCard: View {
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(product.name)
-                            .font(.system(size: 13, weight: .bold))
+                            .font(.appFont(size: 13, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
@@ -33,7 +33,7 @@ struct ProductCard: View {
                         HStack(spacing: 4) {
                             if !product.weight.isEmptyString {
                                 Text(product.weight)
-                                    .font(.system(size: 10.5, weight: .medium))
+                                    .font(.appFont(size: 10.5, weight: .medium))
                                     .foregroundStyle(AppTheme.textSecondary)
                                     .lineLimit(1)
                             }
@@ -41,9 +41,9 @@ struct ProductCard: View {
                             if product.variantsCount > 1 {
                                 HStack(spacing: 2) {
                                     Text("\(product.variantsCount) options")
-                                        .font(.system(size: 9.5, weight: .bold))
+                                        .font(.appFont(size: 9.5, weight: .bold))
                                     Image(systemName: "chevron.down")
-                                        .font(.system(size: 6.5, weight: .bold))
+                                        .font(.appFont(size: 6.5, weight: .bold))
                                 }
                                 .foregroundStyle(AppTheme.brandGreen)
                                 .padding(.horizontal, 4.5)
@@ -58,12 +58,12 @@ struct ProductCard: View {
 
                         HStack(alignment: .firstTextBaseline, spacing: 4) {
                             Text("₹\(product.displayPrice)")
-                                .font(.system(size: 14.5, weight: .heavy))
+                                .font(.appFont(size: 14.5, weight: .heavy))
                                 .foregroundStyle(AppTheme.textPrimary)
 
                             if product.hasDiscount {
                                 Text("₹\(product.mrp)")
-                                    .font(.system(size: 10.5))
+                                    .font(.appFont(size: 10.5))
                                     .strikethrough()
                                     .foregroundStyle(AppTheme.textMuted)
                             }
@@ -75,11 +75,11 @@ struct ProductCard: View {
                         Group {
                             if product.effectiveSaveAmount > 0 {
                                 Text("Save ₹\(product.effectiveSaveAmount)")
-                                    .font(.system(size: 10, weight: .bold))
+                                    .font(.appFont(size: 10, weight: .bold))
                                     .foregroundStyle(AppTheme.brandGreen)
                             } else {
                                 Text(" ")
-                                    .font(.system(size: 10))
+                                    .font(.appFont(size: 10))
                             }
                         }
                         .frame(height: 14, alignment: .leading)
@@ -154,7 +154,7 @@ struct ProductCard: View {
         ZStack {
             Color.white.opacity(0.7)
             Text("Out of stock")
-                .font(.system(size: 10.5, weight: .bold))
+                .font(.appFont(size: 10.5, weight: .bold))
                 .foregroundStyle(AppTheme.textSecondary)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
@@ -166,7 +166,7 @@ struct ProductCard: View {
 
     private func badge(_ text: String, fill: Color, text textColor: Color) -> some View {
         Text(text)
-            .font(.system(size: 9, weight: .heavy))
+            .font(.appFont(size: 9, weight: .heavy))
             .foregroundStyle(textColor)
             .lineLimit(1)
             .minimumScaleFactor(0.8)
@@ -238,7 +238,7 @@ struct ProductCartControl: View {
     var body: some View {
         if !product.inStock && cartTotalQuantity == 0 {
             Text("Sold out")
-                .font(.system(size: 11.5, weight: .bold))
+                .font(.appFont(size: 11.5, weight: .bold))
                 .foregroundStyle(Color(hex: "71717A"))
                 .frame(maxWidth: .infinity)
                 .frame(height: 30)
@@ -252,7 +252,7 @@ struct ProductCartControl: View {
             } label: {
                 HStack(spacing: 3) {
                     Text(totalQty > 0 ? "\(totalQty) IN CART" : "ADD +")
-                        .font(.system(size: 12, weight: .heavy))
+                        .font(.appFont(size: 12, weight: .heavy))
                         .tracking(0.4)
                 }
                 .foregroundStyle(AppTheme.brandGreen)

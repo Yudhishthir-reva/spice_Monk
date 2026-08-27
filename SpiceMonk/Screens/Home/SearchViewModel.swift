@@ -36,7 +36,7 @@ class SearchViewModel: ObservableObject {
     }
 
     /// Letters, digits and spaces only — same filter Android applies before the request.
-    func updateQuery(_ raw: String) {
+    func updateQuery(_ raw: String, immediate: Bool = false) {
         let sanitized = String(raw.filter { $0.isLetter || $0.isNumber || $0.isWhitespace })
         if sanitized != query {
             query = sanitized
@@ -50,6 +50,9 @@ class SearchViewModel: ObservableObject {
         } else {
             isSuggesting = true
             suggestionError = nil
+            if immediate {
+                fetchIfNeeded(sanitized.trim)
+            }
         }
     }
 
@@ -67,8 +70,8 @@ class SearchViewModel: ObservableObject {
 
     func openResults(query: String) {
         let q = query.trim
-        if q.count < Self.minQueryLength {
-            toastMessage = "Type at least 3 letters to search"
+        guard !q.isEmpty else {
+            toastMessage = "Please type or speak something to search"
             isShowToastView = true
             return
         }

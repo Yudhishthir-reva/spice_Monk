@@ -29,7 +29,7 @@ struct ApplyCouponSheet: View {
                 // Enter coupon code row
                 HStack(spacing: 12) {
                     TextField("Enter coupon code", text: $couponInput)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.appFont(size: 14, weight: .medium))
                         .foregroundStyle(AppTheme.textPrimary)
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
@@ -55,7 +55,7 @@ struct ApplyCouponSheet: View {
                                     .scaleEffect(0.85)
                             } else {
                                 Text("APPLY")
-                                    .font(.system(size: 14, weight: .bold))
+                                    .font(.appFont(size: 14, weight: .bold))
                                     .foregroundStyle(trimmed.isEmpty ? Color(hex: "A3B8B0") : AppTheme.brandGreen)
                             }
                         }
@@ -72,7 +72,7 @@ struct ApplyCouponSheet: View {
 
                 if let applyError {
                     Text(applyError)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.appFont(size: 12, weight: .semibold))
                         .foregroundStyle(.red)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 16)
@@ -87,13 +87,13 @@ struct ApplyCouponSheet: View {
                     } else if let error = loadError {
                         VStack(spacing: 12) {
                             Text(error)
-                                .font(.system(size: 14))
+                                .font(.appFont(size: 14))
                                 .foregroundStyle(AppTheme.textSecondary)
                                 .multilineTextAlignment(.center)
                             Button("Retry") {
                                 loadCoupons()
                             }
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.appFont(size: 14, weight: .bold))
                             .foregroundStyle(AppTheme.brandGreen)
                         }
                         .padding(32)
@@ -101,10 +101,10 @@ struct ApplyCouponSheet: View {
                     } else if coupons.isEmpty {
                         VStack(spacing: 8) {
                             Text("No Coupons Available")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.appFont(size: 16, weight: .bold))
                                 .foregroundStyle(AppTheme.textPrimary)
                             Text("Check back later for exciting offers!")
-                                .font(.system(size: 13))
+                                .font(.appFont(size: 13))
                                 .foregroundStyle(AppTheme.textSecondary)
                         }
                         .padding(32)
@@ -131,7 +131,7 @@ struct ApplyCouponSheet: View {
                 ToolbarItem(placement: .topBarLeading) {
                     HStack(spacing: 8) {
                         Image(systemName: "tag.fill")
-                            .font(.system(size: 16))
+                            .font(.appFont(size: 16))
                             .foregroundStyle(AppTheme.brandGreen)
                     }
                 }
@@ -140,7 +140,7 @@ struct ApplyCouponSheet: View {
                         dismiss()
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(.appFont(size: 18, weight: .semibold))
                             .foregroundStyle(AppTheme.textMuted)
                     }
                     .buttonStyle(.plain)
@@ -159,7 +159,7 @@ struct ApplyCouponSheet: View {
             HStack(alignment: .center, spacing: 0) {
                 // Code badge
                 Text(coupon.code)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.appFont(size: 12, weight: .bold))
                     .foregroundStyle(AppTheme.brandGreen)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
@@ -182,7 +182,7 @@ struct ApplyCouponSheet: View {
                             .scaleEffect(0.75)
                     } else {
                         Text("APPLY")
-                            .font(.system(size: 13, weight: .bold))
+                            .font(.appFont(size: 13, weight: .bold))
                             .foregroundStyle(coupon.isEligible ? AppTheme.brandGreen : Color(hex: "A3B8B0"))
                     }
                 }
@@ -191,23 +191,23 @@ struct ApplyCouponSheet: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(coupon.discountText)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.appFont(size: 14, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
 
                 Text(coupon.description)
-                    .font(.system(size: 12))
+                    .font(.appFont(size: 12))
                     .foregroundStyle(AppTheme.textSecondary)
                     .lineLimit(2)
             }
 
             if !coupon.isEligible, let reason = coupon.ineligibleReason {
                 Text(reason)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.appFont(size: 11, weight: .semibold))
                     .foregroundStyle(AppTheme.brandGreen)
                     .padding(.top, 2)
             } else {
                 Text("Valid till \(coupon.endDate)")
-                    .font(.system(size: 11))
+                    .font(.appFont(size: 11))
                     .foregroundStyle(AppTheme.textMuted)
                     .padding(.top, 2)
             }

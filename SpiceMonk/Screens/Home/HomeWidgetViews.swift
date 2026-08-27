@@ -152,7 +152,7 @@ struct BrandCategoryBlock: View {
                     }
 
                 Text(group.title)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.appFont(size: 16, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
             }
             .padding(.horizontal, HomeMetrics.gutter)
@@ -177,7 +177,7 @@ struct SectionHeader: View {
     var body: some View {
         HStack(alignment: .center) {
             Text(title)
-                .font(.system(size: 18, weight: .bold))
+                .font(.appFont(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 
             Spacer()
@@ -188,9 +188,9 @@ struct SectionHeader: View {
                 } label: {
                     HStack(spacing: 3) {
                         Text("View all")
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.appFont(size: 12, weight: .bold))
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 9, weight: .heavy))
+                            .font(.appFont(size: 9, weight: .heavy))
                     }
                     .foregroundStyle(AppTheme.brandGreen)
                     .padding(.horizontal, 10)
@@ -294,7 +294,7 @@ struct CategoryChip: View {
                 }
 
             Text(item.name)
-                .font(.system(size: 11.5, weight: .semibold))
+                .font(.appFont(size: 11.5, weight: .semibold))
                 .foregroundStyle(AppTheme.textPrimary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
@@ -475,7 +475,7 @@ private struct BlackProductCard: View {
 
             HStack(alignment: .center, spacing: 6) {
                 Text(product.weight.isEmptyString ? " " : product.weight)
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.appFont(size: 13, weight: .bold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
@@ -495,12 +495,12 @@ private struct BlackProductCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
                         Text("₹\(product.displayPrice)")
-                            .font(.system(size: 16, weight: .heavy))
+                            .font(.appFont(size: 16, weight: .heavy))
                             .foregroundStyle(.white)
 
                         if product.hasDiscount {
                             Text("₹\(product.mrp)")
-                                .font(.system(size: 12))
+                                .font(.appFont(size: 12))
                                 .strikethrough()
                                 .foregroundStyle(AppTheme.blackCardMuted)
                         }
@@ -508,7 +508,7 @@ private struct BlackProductCard: View {
                     .lineLimit(1)
 
                     Text(product.name)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.appFont(size: 13, weight: .medium))
                         .foregroundStyle(.white)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
@@ -528,7 +528,7 @@ private struct BlackProductCard: View {
         ZStack {
             Color.white.opacity(0.6)
             Text("Out of stock")
-                .font(.system(size: 11, weight: .bold))
+                .font(.appFont(size: 11, weight: .bold))
                 .foregroundStyle(AppTheme.textSecondary)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)

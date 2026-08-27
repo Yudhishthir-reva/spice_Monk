@@ -72,9 +72,12 @@ enum AppTheme {
     static let saveBadgeFill = Color(hex: "DCFCE7")
 }
 
-extension View {
-    func spiceNavigationBar(title: String? = nil) -> some View {
-        self
+struct SpiceNavigationBarModifier: ViewModifier {
+    let title: String?
+    @Environment(\.dismiss) private var dismiss
+
+    func body(content: Content) -> some View {
+        content
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle(title ?? "")
             .toolbar(.visible, for: .navigationBar)
@@ -82,5 +85,36 @@ extension View {
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .tint(.white)
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        dismiss()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.appFont(size: 17, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 32, height: 32)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if let title, !title.isEmpty {
+                    ToolbarItem(placement: .principal) {
+                        Text(title)
+                            .font(.appFont(size: 17, weight: .bold))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                    }
+                }
+            }
+    }
+}
+
+extension View {
+    func spiceNavigationBar(title: String? = nil) -> some View {
+        self.modifier(SpiceNavigationBarModifier(title: title))
     }
 }

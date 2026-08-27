@@ -18,6 +18,7 @@ struct HomeScreen: View {
     @State private var isConfirmingLogout = false
     @State private var isPickingAddress = false
     @State private var isSearchActive = false
+    @State private var isVoiceSearching = false
     @State private var selectedVariantProduct: ProductItem? = nil
 
     var body: some View {
@@ -92,6 +93,15 @@ struct HomeScreen: View {
         }
         .sheet(item: $selectedVariantProduct) { product in
             VariantSelectorSheet(product: product)
+        }
+        .sheet(isPresented: $isVoiceSearching) {
+            VoiceSearchSheet { query in
+                isSearchActive = true
+                searchViewModel.updateQuery(query, immediate: true)
+            }
+            .presentationDetents([.height(420)])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(28)
         }
         .confirmationDialog("Log out of SpiceMonk?", isPresented: $isConfirmingLogout) {
             Button("Log out", role: .destructive) {
@@ -181,7 +191,7 @@ struct HomeScreen: View {
                 viewModel.isShowToastView = true
             },
             onSearchTap: enterSearch,
-            onSearchMic: enterSearch
+            onSearchMic: handleHomeMicTap
         )
         .visualEffect { content, proxy in
             let minY = proxy.frame(in: .scrollView(axis: .vertical)).minY
@@ -227,7 +237,8 @@ struct HomeScreen: View {
                 safeAreaTop: safeAreaTop,
                 onBack: exitSearch,
                 onClear: { searchViewModel.clear() },
-                onSubmit: { searchViewModel.submit() }
+                onSubmit: { searchViewModel.submit() },
+                onMic: { isVoiceSearching = true }
             )
 
             SearchSuggestionsPane(viewModel: searchViewModel)
@@ -237,6 +248,13 @@ struct HomeScreen: View {
 
     private func enterSearch() {
         isSearchActive = true
+    }
+
+    private func handleHomeMicTap() {
+        isSearchActive = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            isVoiceSearching = true
+        }
     }
 
     private func exitSearch() {

@@ -15,7 +15,7 @@ struct PaymentMethodPickerSheet: View {
             // Header
             HStack {
                 Text("How would you like to pay?")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.appFont(size: 18, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
 
                 Spacer()
@@ -24,7 +24,7 @@ struct PaymentMethodPickerSheet: View {
                     dismiss()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
+                        .font(.appFont(size: 20))
                         .foregroundStyle(AppTheme.textMuted)
                 }
                 .buttonStyle(.plain)
@@ -48,11 +48,11 @@ struct PaymentMethodPickerSheet: View {
             // Footer note
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "checkmark.shield.fill")
-                    .font(.system(size: 14))
+                    .font(.appFont(size: 14))
                     .foregroundStyle(AppTheme.textMuted)
 
                 Text("Online payments are processed securely by Cashfree. We never see or store your card details.")
-                    .font(.system(size: 11))
+                    .font(.appFont(size: 11))
                     .foregroundStyle(AppTheme.textMuted)
                     .lineSpacing(3)
             }
@@ -72,7 +72,7 @@ struct PaymentMethodPickerSheet: View {
             HStack(spacing: 14) {
                 // Icon
                 Image(systemName: method.icon)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.appFont(size: 16, weight: .bold))
                     .foregroundStyle(AppTheme.brandGreen)
                     .frame(width: 38, height: 38)
                     .background(AppTheme.accentSoft)
@@ -81,11 +81,11 @@ struct PaymentMethodPickerSheet: View {
                 // Texts
                 VStack(alignment: .leading, spacing: 2) {
                     Text(method.rawValue)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.appFont(size: 14, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
 
                     Text(method.description)
-                        .font(.system(size: 12))
+                        .font(.appFont(size: 12))
                         .foregroundStyle(AppTheme.textSecondary)
                         .multilineTextAlignment(.leading)
                 }
@@ -95,7 +95,7 @@ struct PaymentMethodPickerSheet: View {
                 // Selection checkmark
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.appFont(size: 20, weight: .semibold))
                         .foregroundStyle(AppTheme.brandGreen)
                 } else {
                     Circle()

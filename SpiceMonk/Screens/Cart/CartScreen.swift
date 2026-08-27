@@ -22,6 +22,10 @@ struct CartScreen: View {
     @State private var prepaidInitiateData: PaymentInitiateData? = nil
     @State private var pendingOrderPlaceData: OrderPlaceData? = nil
 
+    init(addressViewModel: AddressViewModel = AddressViewModel()) {
+        self.addressViewModel = addressViewModel
+    }
+
     private var itemCount: Int {
         cart.summary.totalItems > 0 ? cart.summary.totalItems : cart.items.reduce(0) { $0 + $1.qty }
     }
@@ -121,20 +125,35 @@ struct CartScreen: View {
             )
         }
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar(.visible, for: .navigationBar)
         .toolbarBackground(AppTheme.brandGreen, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.appFont(size: 17, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+
             ToolbarItem(placement: .principal) {
                 VStack(spacing: 1) {
                     Text("Shopping Cart")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.appFont(size: 17, weight: .bold))
                         .foregroundStyle(.white)
                     if !cart.isEmpty, itemCount > 0 {
                         Text(itemCount == 1 ? "1 item" : "\(itemCount) items")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.8))
+                            .font(.appFont(size: 11, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.85))
                     }
                 }
             }
@@ -144,7 +163,7 @@ struct CartScreen: View {
                         isConfirmingClear = true
                     } label: {
                         Image(systemName: "trash")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.appFont(size: 15, weight: .semibold))
                             .foregroundStyle(.white)
                     }
                     .disabled(cart.isClearing)
@@ -207,7 +226,7 @@ struct CartScreen: View {
         let address = addressViewModel.defaultAddress
         return HStack(spacing: 12) {
             Image(systemName: address == nil ? "mappin.and.ellipse" : "house.fill")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.appFont(size: 16, weight: .semibold))
                 .foregroundStyle(AppTheme.brandGreen)
                 .frame(width: 38, height: 38)
                 .background(AppTheme.accentSoft)
@@ -217,23 +236,23 @@ struct CartScreen: View {
                 if let address {
                     HStack(spacing: 6) {
                         Text("Delivering to")
-                            .font(.system(size: 11))
+                            .font(.appFont(size: 11))
                             .foregroundStyle(AppTheme.textSecondary)
                         Text(address.fullName.isEmptyString ? "Home" : address.fullName)
-                            .font(.system(size: 11, weight: .bold))
+                            .font(.appFont(size: 11, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
                             .lineLimit(1)
                     }
                     Text(address.cartDeliveryLine)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.appFont(size: 13, weight: .medium))
                         .foregroundStyle(AppTheme.textPrimary)
                         .lineLimit(1)
                 } else {
                     Text("No delivery address selected")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.appFont(size: 13, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
                     Text("Add an address to proceed to checkout")
-                        .font(.system(size: 11))
+                        .font(.appFont(size: 11))
                         .foregroundStyle(AppTheme.textSecondary)
                 }
             }
@@ -246,7 +265,7 @@ struct CartScreen: View {
                     isPickingAddress = true
                 }
             }
-            .font(.system(size: 14, weight: .bold))
+            .font(.appFont(size: 14, weight: .bold))
             .foregroundStyle(AppTheme.brandGreen)
         }
         .padding(14)
@@ -261,7 +280,7 @@ struct CartScreen: View {
     private var deliverySlaBanner: some View {
         HStack(spacing: 10) {
             Image(systemName: "bolt.fill")
-                .font(.system(size: 13, weight: .bold))
+                .font(.appFont(size: 13, weight: .bold))
                 .foregroundStyle(AppTheme.brandGreen)
                 .frame(width: 28, height: 28)
                 .background(AppTheme.brandGreen.opacity(0.18))
@@ -269,10 +288,10 @@ struct CartScreen: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 Text("Delivery in 7 - 10 Days")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.appFont(size: 13, weight: .bold))
                     .foregroundStyle(AppTheme.brandGreen)
                 Text("Shipment packed & dispatched from your nearest SpiceMonk hub")
-                    .font(.system(size: 11))
+                    .font(.appFont(size: 11))
                     .foregroundStyle(AppTheme.textSecondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -323,7 +342,7 @@ struct CartScreen: View {
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: cart.paymentMethod.icon)
-                    .font(.system(size: 16))
+                    .font(.appFont(size: 16))
                     .foregroundStyle(AppTheme.brandGreen)
                     .frame(width: 38, height: 38)
                     .background(AppTheme.accentSoft)
@@ -331,17 +350,17 @@ struct CartScreen: View {
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Paying by")
-                        .font(.system(size: 11))
+                        .font(.appFont(size: 11))
                         .foregroundStyle(AppTheme.textSecondary)
                     Text(cart.paymentMethod.rawValue)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.appFont(size: 14, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
                 }
 
                 Spacer(minLength: 0)
 
                 Text("Change")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.appFont(size: 14, weight: .bold))
                     .foregroundStyle(AppTheme.brandGreen)
             }
             .padding(14)
@@ -369,7 +388,7 @@ struct CartScreen: View {
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: "tag.fill")
-                    .font(.system(size: 16))
+                    .font(.appFont(size: 16))
                     .foregroundStyle(AppTheme.brandGreen)
                     .frame(width: 38, height: 38)
                     .background(AppTheme.accentSoft)
@@ -378,19 +397,19 @@ struct CartScreen: View {
                 if let coupon = cart.appliedCoupon {
                     VStack(alignment: .leading, spacing: 1) {
                         Text("\(coupon.code) applied")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.appFont(size: 14, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
                         Text("Saving of \(CartItem.rupees(couponDiscount)) applied successfully")
-                            .font(.system(size: 11))
+                            .font(.appFont(size: 11))
                             .foregroundStyle(AppTheme.brandGreen)
                     }
                 } else {
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Apply Coupon")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.appFont(size: 14, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
                         Text("Select or enter coupon code")
-                            .font(.system(size: 11))
+                            .font(.appFont(size: 11))
                             .foregroundStyle(AppTheme.textSecondary)
                     }
                 }
@@ -398,7 +417,7 @@ struct CartScreen: View {
                 Spacer(minLength: 0)
 
                 Text(cart.appliedCoupon != nil ? "Remove" : "Apply")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.appFont(size: 14, weight: .bold))
                     .foregroundStyle(cart.appliedCoupon != nil ? .red : AppTheme.brandGreen)
             }
             .padding(14)
@@ -419,10 +438,10 @@ struct CartScreen: View {
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Image(systemName: "doc.text.fill")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.appFont(size: 15, weight: .semibold))
                     .foregroundStyle(AppTheme.brandGreen)
                 Text("Bill Details")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.appFont(size: 15, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
             }
 
@@ -455,15 +474,15 @@ struct CartScreen: View {
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Grand Total")
-                        .font(.system(size: 15, weight: .heavy))
+                        .font(.appFont(size: 15, weight: .heavy))
                         .foregroundStyle(AppTheme.textPrimary)
                     Text("Inclusive of all taxes")
-                        .font(.system(size: 10))
+                        .font(.appFont(size: 10))
                         .foregroundStyle(AppTheme.textMuted)
                 }
                 Spacer()
                 Text(CartItem.rupees(grandTotalAmount))
-                    .font(.system(size: 18, weight: .heavy))
+                    .font(.appFont(size: 18, weight: .heavy))
                     .foregroundStyle(AppTheme.textPrimary)
             }
 
@@ -471,10 +490,10 @@ struct CartScreen: View {
             if totalSavedAmount > 0 {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 14))
+                        .font(.appFont(size: 14))
                         .foregroundStyle(AppTheme.brandGreen)
                     Text("Yay! You're saving \(CartItem.rupees(totalSavedAmount)) on this order")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.appFont(size: 12, weight: .bold))
                         .foregroundStyle(AppTheme.brandGreen)
                 }
                 .padding(.horizontal, 12)
@@ -496,17 +515,17 @@ struct CartScreen: View {
     private func billRow(label: String, value: String, strike: String? = nil, color: Color) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 13))
+                .font(.appFont(size: 13))
                 .foregroundStyle(AppTheme.textSecondary)
             Spacer()
             if let strike {
                 Text(strike)
-                    .font(.system(size: 11))
+                    .font(.appFont(size: 11))
                     .strikethrough()
                     .foregroundStyle(AppTheme.textMuted)
             }
             Text(value)
-                .font(.system(size: 13, weight: .bold))
+                .font(.appFont(size: 13, weight: .bold))
                 .foregroundStyle(color)
         }
     }
@@ -514,14 +533,14 @@ struct CartScreen: View {
     private var cancellationNote: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "info.circle.fill")
-                .font(.system(size: 15))
+                .font(.appFont(size: 15))
                 .foregroundStyle(AppTheme.brandGreen)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Cancellation Policy")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.appFont(size: 12, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
                 Text("Orders cannot be cancelled once packed. Please ensure your delivery address is accurate before placing order.")
-                    .font(.system(size: 11))
+                    .font(.appFont(size: 11))
                     .foregroundStyle(AppTheme.textSecondary)
             }
         }
@@ -550,15 +569,15 @@ struct CartScreen: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "mappin.circle.fill")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.appFont(size: 14, weight: .semibold))
                         .foregroundStyle(AppTheme.brandGreen)
                     Text(stickyAddressLabel)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.appFont(size: 12, weight: .semibold))
                         .foregroundStyle(AppTheme.textPrimary)
                         .lineLimit(1)
                     Spacer(minLength: 8)
                     Text("Change")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.appFont(size: 12, weight: .bold))
                         .foregroundStyle(AppTheme.brandGreen)
                 }
                 .padding(.horizontal, 16)
@@ -570,15 +589,15 @@ struct CartScreen: View {
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("TO PAY")
-                        .font(.system(size: 10, weight: .heavy))
+                        .font(.appFont(size: 10, weight: .heavy))
                         .foregroundStyle(AppTheme.textMuted)
                     HStack(alignment: .firstTextBaseline, spacing: 0) {
                         Text(CartItem.rupees(grandTotalAmount))
-                            .font(.system(size: 20, weight: .heavy))
+                            .font(.appFont(size: 20, weight: .heavy))
                             .foregroundStyle(AppTheme.textPrimary)
                     }
                     Text(cart.paymentMethod.rawValue)
-                        .font(.system(size: 10))
+                        .font(.appFont(size: 10))
                         .foregroundStyle(AppTheme.textSecondary)
                 }
 
@@ -592,9 +611,9 @@ struct CartScreen: View {
                 } label: {
                     HStack(spacing: 8) {
                         Text("Place Order")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.appFont(size: 16, weight: .bold))
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.appFont(size: 14, weight: .bold))
                     }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -623,19 +642,19 @@ struct CartScreen: View {
     private var emptyState: some View {
         VStack(spacing: 8) {
             Image(systemName: "cart.badge.minus")
-                .font(.system(size: 44, weight: .medium))
+                .font(.appFont(size: 44, weight: .medium))
                 .foregroundStyle(AppTheme.brandGreen)
                 .frame(width: 110, height: 110)
                 .background(AppTheme.accentSoft)
                 .clipShape(Circle())
 
             Text("Your Cart is Empty")
-                .font(.system(size: 22, weight: .heavy))
+                .font(.appFont(size: 22, weight: .heavy))
                 .foregroundStyle(AppTheme.textPrimary)
                 .padding(.top, 16)
 
             Text("Explore our premium spices, powders, and seasonings to start cooking healthy!")
-                .font(.system(size: 15))
+                .font(.appFont(size: 15))
                 .foregroundStyle(AppTheme.textSecondary)
                 .multilineTextAlignment(.center)
 
@@ -644,9 +663,9 @@ struct CartScreen: View {
             } label: {
                 HStack(spacing: 8) {
                     Text("Start Shopping")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.appFont(size: 16, weight: .bold))
                     Image(systemName: "arrow.right")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.appFont(size: 14, weight: .bold))
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
@@ -730,32 +749,32 @@ private struct CartItemRow: View {
     private var details: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(item.productName.uppercased())
-                .font(.system(size: 13, weight: .bold))
+                .font(.appFont(size: 13, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
                 .lineLimit(2)
             
             if !item.variantName.isEmptyString {
                 Text(item.variantName)
-                    .font(.system(size: 11))
+                    .font(.appFont(size: 11))
                     .foregroundStyle(AppTheme.textSecondary)
                     .lineLimit(1)
             }
             
             HStack(spacing: 6) {
                 Text(formatPrice(item.displayPrice))
-                    .font(.system(size: 15, weight: .heavy))
+                    .font(.appFont(size: 15, weight: .heavy))
                     .foregroundStyle(AppTheme.textPrimary)
                 
                 if item.hasDiscount {
                     Text(formatPrice(item.mrp))
-                        .font(.system(size: 11))
+                        .font(.appFont(size: 11))
                         .strikethrough()
                         .foregroundStyle(AppTheme.textMuted)
                 }
                 
                 if item.savingsPerUnit > 0 {
                     Text("Save \(CartItem.rupees(item.savingsPerUnit))")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.appFont(size: 10, weight: .bold))
                         .foregroundStyle(AppTheme.brandGreen)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 1)
@@ -791,7 +810,7 @@ struct CartQtyStepper: View {
         Group {
             if !inStock {
                 Text("Sold out")
-                    .font(.system(size: compact ? 11 : 12, weight: .bold))
+                    .font(.appFont(size: compact ? 11 : 12, weight: .bold))
                     .foregroundStyle(Color(hex: "71717A"))
                     .frame(height: compact ? 30 : 36)
                     .padding(.horizontal, 10)
@@ -806,7 +825,7 @@ struct CartQtyStepper: View {
                                 .scaleEffect(0.75)
                         } else {
                             Text("ADD +")
-                                .font(.system(size: addFont, weight: .heavy))
+                                .font(.appFont(size: addFont, weight: .heavy))
                                 .tracking(0.4)
                         }
                     }
@@ -827,7 +846,7 @@ struct CartQtyStepper: View {
                 HStack(spacing: 0) {
                     Button(action: onDecrement) {
                         Image(systemName: "minus")
-                            .font(.system(size: iconSize, weight: .bold))
+                            .font(.appFont(size: iconSize, weight: .bold))
                             .foregroundStyle(.white)
                             .frame(width: hitSize, height: hitSize)
                     }
@@ -840,7 +859,7 @@ struct CartQtyStepper: View {
                                 .scaleEffect(0.7)
                         } else {
                             Text("\(qty)")
-                                .font(.system(size: listing ? 12 : (compact ? 13 : 14), weight: .heavy))
+                                .font(.appFont(size: listing ? 12 : (compact ? 13 : 14), weight: .heavy))
                                 .foregroundStyle(.white)
                         }
                     }
@@ -848,7 +867,7 @@ struct CartQtyStepper: View {
 
                     Button(action: onIncrement) {
                         Image(systemName: "plus")
-                            .font(.system(size: iconSize, weight: .bold))
+                            .font(.appFont(size: iconSize, weight: .bold))
                             .foregroundStyle(.white)
                             .frame(width: hitSize, height: hitSize)
                     }

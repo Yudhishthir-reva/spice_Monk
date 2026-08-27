@@ -5,6 +5,7 @@
 
 import SwiftUI
 import Combine
+internal import _LocationEssentials
 
 class AddressFormViewModel: ObservableObject {
 
@@ -19,9 +20,12 @@ class AddressFormViewModel: ObservableObject {
     @Published var area = ""
     @Published var houseFlatNo = ""
     @Published var landmark = ""
+    @Published var latitude: Double?
+    @Published var longitude: Double?
     @Published var isDefault = false
     @Published var resolvedLocationInfo: ResolvedLocationInfo?
     @Published var suggestedAreas: [String] = []
+    var editingAddressId: Int? = nil
 
     @Published private(set) var isLookingUpPincode = false
     @Published private(set) var didResolvePincode = false
@@ -112,6 +116,8 @@ class AddressFormViewModel: ObservableObject {
     /// Auto-fills form values from map location picker
     func applyPickedLocation(_ info: ResolvedLocationInfo) {
         self.resolvedLocationInfo = info
+        self.latitude = info.coordinate.latitude
+        self.longitude = info.coordinate.longitude
 
         // 1. Street / House No.
         if !info.street.isEmpty {
@@ -176,6 +182,16 @@ class AddressFormViewModel: ObservableObject {
     private func submit(onSuccess: @escaping (Address?) -> Void) {
         isSaving = true
 
+        let finalLat: Double = latitude
+            ?? resolvedLocationInfo?.coordinate.latitude
+            ?? LocationManager.shared.lastResolvedInfo?.coordinate.latitude
+            ?? LocationManager.defaultCoordinate.latitude
+
+        let finalLng: Double = longitude
+            ?? resolvedLocationInfo?.coordinate.longitude
+            ?? LocationManager.shared.lastResolvedInfo?.coordinate.longitude
+            ?? LocationManager.defaultCoordinate.longitude
+
         let params: [String: Any] = [
             "full_name": fullName.trim,
             "mobile": mobile.trim,
@@ -187,10 +203,19 @@ class AddressFormViewModel: ObservableObject {
             "area": area.trim,
             "house_flat_no": houseFlatNo.trim,
             "landmark": landmark.trim,
+            "latitude": String(finalLat),
+            "longitude": String(finalLng),
             "is_default": isDefault ? "1" : "0"
         ]
 
-        serviceManagable.storeAddress(params: params)
+        let publisher: AnyPublisher<AddressDetailResponse, Error>
+        if let addressId = editingAddressId {
+            publisher = serviceManagable.updateAddress(id: addressId, params: params)
+        } else {
+            publisher = serviceManagable.storeAddress(params: params)
+        }
+
+        publisher
             .receive(on: RunLoop.main)
             .sink { [weak self] completion in
                 guard let self else { return }

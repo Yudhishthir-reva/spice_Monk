@@ -26,18 +26,18 @@ struct OrderSuccessScreen: View {
                         .shadow(color: AppTheme.brandGreen.opacity(0.24), radius: 12, x: 0, y: 6)
 
                     Image(systemName: "checkmark")
-                        .font(.system(size: 34, weight: .heavy))
+                        .font(.appFont(size: 34, weight: .heavy))
                         .foregroundStyle(.white)
                 }
 
                 // Headings
                 VStack(spacing: 8) {
                     Text("Order placed!")
-                        .font(.system(size: 26, weight: .heavy))
+                        .font(.appFont(size: 26, weight: .heavy))
                         .foregroundStyle(AppTheme.textPrimary)
 
                     Text("The monks are packing your spices.")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.appFont(size: 14, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
                 }
 
@@ -46,11 +46,11 @@ struct OrderSuccessScreen: View {
                     // Order Number Row
                     HStack {
                         Text("Order number")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.appFont(size: 14, weight: .medium))
                             .foregroundStyle(AppTheme.textSecondary)
                         Spacer()
                         Text(orderData.orderNo)
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.appFont(size: 14, weight: .bold))
                             .foregroundStyle(AppTheme.brandGreen)
                     }
 
@@ -60,11 +60,11 @@ struct OrderSuccessScreen: View {
                     HStack {
                         let isCod = orderData.paymentType == "cod"
                         Text(isCod ? "Pay on delivery" : "Paid Online")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.appFont(size: 14, weight: .medium))
                             .foregroundStyle(AppTheme.textSecondary)
                         Spacer()
                         Text("₹\(Int(orderData.grandTotal.rounded()))")
-                            .font(.system(size: 16, weight: .heavy))
+                            .font(.appFont(size: 16, weight: .heavy))
                             .foregroundStyle(AppTheme.textPrimary)
                     }
 
@@ -75,9 +75,9 @@ struct OrderSuccessScreen: View {
                         // Badge 1
                         HStack(spacing: 5) {
                             Image(systemName: isCod ? "banknote.fill" : "creditcard.fill")
-                                .font(.system(size: 12))
+                                .font(.appFont(size: 12))
                             Text(isCod ? "Pay on delivery" : "Paid Online")
-                                .font(.system(size: 11, weight: .bold))
+                                .font(.appFont(size: 11, weight: .bold))
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
@@ -88,9 +88,9 @@ struct OrderSuccessScreen: View {
                         // Badge 2
                         HStack(spacing: 5) {
                             Image(systemName: "clock.fill")
-                                .font(.system(size: 12))
+                                .font(.appFont(size: 12))
                             Text("Packed shortly")
-                                .font(.system(size: 11, weight: .bold))
+                                .font(.appFont(size: 11, weight: .bold))
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
@@ -118,9 +118,9 @@ struct OrderSuccessScreen: View {
                     Button(action: onTrack) {
                         HStack(spacing: 8) {
                             Text("Track my order")
-                                .font(.system(size: 15, weight: .bold))
+                                .font(.appFont(size: 15, weight: .bold))
                             Image(systemName: "doc.text.fill")
-                                .font(.system(size: 14))
+                                .font(.appFont(size: 14))
                         }
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -134,7 +134,7 @@ struct OrderSuccessScreen: View {
                     // Dismiss Button
                     Button(action: onDismiss) {
                         Text("Continue shopping")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.appFont(size: 14, weight: .bold))
                             .foregroundStyle(AppTheme.textSecondary)
                             .frame(height: 36)
                     }

@@ -45,9 +45,11 @@ struct Address: Decodable, Identifiable {
     let state: PlaceReference?
     /// The list calls this `district` while the write endpoints nest it under `city`; both land here.
     let city: PlaceReference?
+    let latitude: Double?
+    let longitude: Double?
 
     enum CodingKeys: String, CodingKey {
-        case id, area, landmark, state, city, district, mobile
+        case id, area, landmark, state, city, district, mobile, latitude, longitude
         case fullName = "full_name"
         case alternateMobile = "alternate_mobile"
         case pinCode = "pin_code"
@@ -69,6 +71,8 @@ struct Address: Decodable, Identifiable {
         state = try? container.decodeIfPresent(PlaceReference.self, forKey: .state)
         city = (try? container.decodeIfPresent(PlaceReference.self, forKey: .district))
             ?? (try? container.decodeIfPresent(PlaceReference.self, forKey: .city))
+        latitude = container.decodeDoubleLeniently(forKey: .latitude)
+        longitude = container.decodeDoubleLeniently(forKey: .longitude)
     }
 
     var cityName: String? {

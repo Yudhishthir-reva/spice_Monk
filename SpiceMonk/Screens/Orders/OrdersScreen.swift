@@ -9,6 +9,7 @@ struct OrdersScreen: View {
     
     @StateObject private var viewModel = OrdersViewModel()
     @Environment(\.dismiss) private var dismiss
+    @State private var showCart = false
     
     private let statusFilters = [
         ("", "All"),
@@ -32,7 +33,7 @@ struct OrdersScreen: View {
                             viewModel.selectedStatusFilter = filter.0
                         } label: {
                             Text(filter.1)
-                                .font(.system(size: 13, weight: isSelected ? .bold : .medium))
+                                .font(.appFont(size: 13, weight: isSelected ? .bold : .medium))
                                 .foregroundStyle(isSelected ? .white : AppTheme.textSecondary)
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 8)
@@ -62,13 +63,13 @@ struct OrdersScreen: View {
                 } else if let error = viewModel.loadError, viewModel.orders.isEmpty {
                     VStack(spacing: 16) {
                         Text(error)
-                            .font(.system(size: 14))
+                            .font(.appFont(size: 14))
                             .foregroundStyle(AppTheme.textSecondary)
                             .multilineTextAlignment(.center)
                         Button("Retry") {
                             viewModel.loadFirstPage()
                         }
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.appFont(size: 14, weight: .bold))
                         .foregroundStyle(AppTheme.brandGreen)
                     }
                     .padding(32)
@@ -76,13 +77,13 @@ struct OrdersScreen: View {
                 } else if viewModel.orders.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "bag.badge.questionmark")
-                            .font(.system(size: 40))
+                            .font(.appFont(size: 40))
                             .foregroundStyle(AppTheme.textMuted)
                         Text("No Orders Found")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.appFont(size: 16, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
                         Text("You haven't placed any orders matching this filter yet.")
-                            .font(.system(size: 13))
+                            .font(.appFont(size: 13))
                             .foregroundStyle(AppTheme.textSecondary)
                             .multilineTextAlignment(.center)
                     }
@@ -109,8 +110,15 @@ struct OrdersScreen: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(hex: "F5F5F5"))
+
+            FloatingCartBar {
+                showCart = true
+            }
         }
         .spiceNavigationBar(title: "Your orders")
+        .navigationDestination(isPresented: $showCart) {
+            CartScreen()
+        }
         .onAppear {
             viewModel.loadFirstPage()
         }
@@ -127,10 +135,10 @@ struct OrdersScreen: View {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(order.orderNo)
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.appFont(size: 15, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
                         Text(order.date)
-                            .font(.system(size: 11))
+                            .font(.appFont(size: 11))
                             .foregroundStyle(AppTheme.textMuted)
                     }
                     
@@ -138,7 +146,7 @@ struct OrdersScreen: View {
                     
                     // Status Badge
                     Text(order.status.label)
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.appFont(size: 11, weight: .bold))
                         .foregroundStyle(statusColor)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
@@ -165,7 +173,7 @@ struct OrdersScreen: View {
                         
                         if order.productImages.count > 3 {
                             Text("+\(order.productImages.count - 3)")
-                                .font(.system(size: 11, weight: .bold))
+                                .font(.appFont(size: 11, weight: .bold))
                                 .foregroundStyle(AppTheme.textSecondary)
                                 .frame(width: 44, height: 44)
                                 .background(Color(hex: "E4E4E7"))
@@ -183,10 +191,10 @@ struct OrdersScreen: View {
                     // Prices
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(order.totalAmountLabel)
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.appFont(size: 16, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
                         Text("\(order.itemsCount) \(order.itemsCount == 1 ? "item" : "items") · \(order.paymentLabel)")
-                            .font(.system(size: 11))
+                            .font(.appFont(size: 11))
                             .foregroundStyle(AppTheme.textSecondary)
                     }
                 }
@@ -202,7 +210,7 @@ struct OrdersScreen: View {
                         .frame(width: 6, height: 6)
                     
                     Text("\(order.expectedDate.label) \(order.expectedDate.date)")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.appFont(size: 12, weight: .semibold))
                         .foregroundStyle(AppTheme.textPrimary)
                 }
                 .padding(.horizontal, 12)
@@ -214,10 +222,10 @@ struct OrdersScreen: View {
                 // Footer Link
                 HStack {
                     Text("View details")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.appFont(size: 13, weight: .bold))
                         .foregroundStyle(AppTheme.brandGreen)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.appFont(size: 10, weight: .bold))
                         .foregroundStyle(AppTheme.brandGreen)
                 }
                 .padding(.top, 4)
@@ -265,7 +273,7 @@ struct OrdersScreen: View {
                             
                             if isActive {
                                 Image(systemName: "checkmark")
-                                    .font(.system(size: 7, weight: .bold))
+                                    .font(.appFont(size: 7, weight: .bold))
                                     .foregroundStyle(.white)
                             }
                         }
@@ -277,7 +285,7 @@ struct OrdersScreen: View {
                 HStack(spacing: 0) {
                     ForEach(Array(timeline.enumerated()), id: \.element.id) { index, step in
                         Text(step.label)
-                            .font(.system(size: 10, weight: step.completed ? .bold : .medium))
+                            .font(.appFont(size: 10, weight: step.completed ? .bold : .medium))
                             .foregroundStyle(step.completed ? AppTheme.textPrimary : AppTheme.textMuted)
                             .frame(maxWidth: .infinity, alignment: index == 0 ? .leading : (index == timeline.count - 1 ? .trailing : .center))
                     }

@@ -26,7 +26,7 @@ struct PaymentSimulationSheet: View {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundStyle(.white)
                         Text(error)
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.appFont(size: 13, weight: .medium))
                             .foregroundStyle(.white)
                         Spacer()
                         Button {
@@ -72,7 +72,7 @@ struct PaymentSimulationSheet: View {
                         Button("Verify") {
                             verifyPayment()
                         }
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.appFont(size: 15, weight: .bold))
                         .foregroundStyle(AppTheme.brandGreen)
                     }
                 }

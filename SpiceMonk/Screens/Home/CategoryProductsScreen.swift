@@ -28,22 +28,66 @@ struct CategoryProductsScreen: View {
         )
     }
 
+    @Environment(\.dismiss) private var dismiss
+    @State private var showCart: Bool = false
+
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            if viewModel.showsRail {
-                CategoryRail(
-                    categories: viewModel.siblings,
-                    selectedId: viewModel.selectedId,
-                    onSelect: viewModel.select
-                )
+        VStack(spacing: 0) {
+            // Aurora Header with Back Button and Category Title
+            HStack(spacing: 12) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.appFont(size: 16, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 38, height: 38)
+                        .background(Color.white.opacity(0.18))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+
+                Text(viewModel.title)
+                    .font(.appFont(size: 18, weight: .bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+
+                Spacer()
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 12)
+            .padding(.top, (UIApplication.shared.keyWindow?.safeAreaInsets.top ?? 50) + 6)
+            .background {
+                HomeHeaderAuroraCanvas()
+                    .ignoresSafeArea(edges: .top)
             }
 
-            pane
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            // Products list with sidebar rail
+            HStack(alignment: .top, spacing: 0) {
+                if viewModel.showsRail {
+                    CategoryRail(
+                        categories: viewModel.siblings,
+                        selectedId: viewModel.selectedId,
+                        onSelect: viewModel.select
+                    )
+                }
+
+                pane
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+            FloatingCartBar {
+                showCart = true
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.white)
-        .spiceNavigationBar(title: viewModel.title)
+        .navigationBarHidden(true)
+        .ignoresSafeArea(edges: .top)
+        .navigationDestination(isPresented: $showCart) {
+            CartScreen()
+        }
         .onAppear {
             if viewModel.products.isEmpty && viewModel.loadError == nil {
                 viewModel.loadFirstPage()
@@ -99,10 +143,10 @@ struct CategoryProductsScreen: View {
     private var emptyState: some View {
         VStack(spacing: 8) {
             Text("No products")
-                .font(.system(size: 18, weight: .bold))
+                .font(.appFont(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
             Text("This category has no products yet.")
-                .font(.system(size: 14))
+                .font(.appFont(size: 14))
                 .foregroundStyle(AppTheme.textSecondary)
                 .multilineTextAlignment(.center)
         }
@@ -160,7 +204,7 @@ private struct CategoryRail: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                     Text(category.name)
-                        .font(.system(size: 10, weight: selected ? .bold : .medium))
+                        .font(.appFont(size: 10, weight: selected ? .bold : .medium))
                         .foregroundStyle(selected ? AppTheme.accentRed : AppTheme.textSecondary)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
