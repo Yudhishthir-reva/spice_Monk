@@ -20,9 +20,12 @@ class AddressFormViewModel: ObservableObject {
     @Published var houseFlatNo = ""
     @Published var landmark = ""
     @Published var isDefault = false
+    @Published var resolvedLocationInfo: ResolvedLocationInfo?
+    @Published var suggestedAreas: [String] = []
 
     @Published private(set) var isLookingUpPincode = false
     @Published private(set) var didResolvePincode = false
+    @Published private(set) var isDeliverable = false
     @Published private(set) var pincodeError: String?
 
     @Published private(set) var isSaving = false
@@ -44,54 +47,89 @@ class AddressFormViewModel: ObservableObject {
         }
 
         lookupCancellable?.cancel()
-        didResolvePincode = false
         pincodeError = nil
 
         guard digits.count == Self.pinCodeLength else {
             isLookingUpPincode = false
+            didResolvePincode = false
+            isDeliverable = false
             return
         }
 
         isLookingUpPincode = true
+        print("📮 [Pincode API] Requesting PIN Code Lookup for: '\(digits)'")
+
         lookupCancellable = serviceManagable.lookupPincode(digits)
             .receive(on: RunLoop.main)
             .sink { [weak self] completion in
                 guard let self else { return }
                 self.isLookingUpPincode = false
                 if case .failure(let error) = completion {
-                    self.pincodeError = (error as? RequestError)?.errorString ?? error.localizedDescription
+                    self.didResolvePincode = false
+                    self.isDeliverable = false
+                    self.district = ""
+                    self.state = ""
+                    self.suggestedAreas = []
+                    let errStr = (error as? RequestError)?.errorString ?? error.localizedDescription
+                    self.pincodeError = errStr
+                    print("❌ [Pincode API] Lookup Network/HTTP Failure: \(errStr)")
                 }
             } receiveValue: { [weak self] response in
                 guard let self else { return }
                 self.isLookingUpPincode = false
 
-                if let location = response.location, location.isUsable {
+                print("📮 [Pincode API] Response -> Status: \(response.status ?? false), Message: \(response.message ?? "nil")")
+
+                if response.status == true, let location = response.location, location.isUsable {
                     // The PIN is authoritative, so a fresh result replaces anything typed before.
                     self.state = location.state
                     self.district = location.district
                     self.didResolvePincode = true
+                    self.isDeliverable = true
+                    self.pincodeError = nil
+
+                    print("✅ [Pincode API] Deliverable -> District: '\(location.district)', State: '\(location.state)', Areas: \(location.areas)")
+
+                    if !location.areas.isEmpty {
+                        self.suggestedAreas = location.areas
+                        if self.area.isEmpty, let first = location.areas.first {
+                            self.area = first
+                        }
+                    }
                 } else {
-                    self.pincodeError = response.message ?? "Couldn't find this PIN code — please fill in the city and state."
+                    self.didResolvePincode = false
+                    self.isDeliverable = false
+                    self.district = ""
+                    self.state = ""
+                    self.suggestedAreas = []
+                    let errMsg = response.message ?? "Sorry, we do not deliver to this PIN code yet."
+                    self.pincodeError = errMsg
+                    print("⚠️ [Pincode API] Not Deliverable / Failed: \(errMsg)")
                 }
             }
     }
 
     /// Auto-fills form values from map location picker
     func applyPickedLocation(_ info: ResolvedLocationInfo) {
-        if !info.postalCode.isEmpty {
-            self.pinCode = info.postalCode
-            self.pinCodeChanged()
+        self.resolvedLocationInfo = info
+
+        // 1. Street / House No.
+        if !info.street.isEmpty {
+            self.houseFlatNo = info.street
         }
+
+        // 2. Area / Locality
         if !info.area.isEmpty {
             self.area = info.area
         }
-        if !info.street.isEmpty && self.houseFlatNo.isEmpty {
-            self.houseFlatNo = info.street
-        }
-        if !info.city.isEmpty {
+
+        // 3. Pincode + Trigger Live API Lookup
+        if !info.postalCode.isEmpty {
+            let digits = String(info.postalCode.filter(\.isNumber).prefix(6))
+            self.pinCode = digits
+            self.pinCodeChanged()
+        } else {
             self.district = info.city
-        }
-        if !info.state.isEmpty {
             self.state = info.state
         }
     }
@@ -116,6 +154,9 @@ class AddressFormViewModel: ObservableObject {
         }
         if pinCode.count != Self.pinCodeLength {
             return "Please enter a 6-digit PIN code."
+        }
+        if !isDeliverable && !didResolvePincode {
+            return pincodeError ?? "Sorry, we do not deliver to this PIN code yet."
         }
         if houseFlatNo.trim.isEmptyString {
             return "Please enter your house or flat number."

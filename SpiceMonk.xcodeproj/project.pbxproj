@@ -24,6 +24,8 @@
 		C5784A55303A000300C60492 /* GoogleMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A54303A000300C60492 /* GoogleMapView.swift */; };
 		C5784A57303A000400C60492 /* LocationPickerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A56303A000400C60492 /* LocationPickerScreen.swift */; };
 		C58CD04C303C4F5F0038A272 /* SavedAddressesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58CD04B303C4F5F0038A272 /* SavedAddressesScreen.swift */; };
+		C5B2E70E30400C2A00107F9B /* AppStatusManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B2E70C30400C2A00107F9B /* AppStatusManager.swift */; };
+		C5B2E71030400D7100107F9B /* AppStatusDialogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B2E70F30400D7100107F9B /* AppStatusDialogs.swift */; };
 		C5F10F68303D79F100525CC1 /* AuthSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5F10F67303D79F100525CC1 /* AuthSessionManager.swift */; };
 		DD2F2278302F29FD0025FC97 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD2F2274302F29FD0025FC97 /* Assets.xcassets */; };
 		DD2F2279302F29FD0025FC97 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DD2F2275302F29FD0025FC97 /* LaunchScreen.storyboard */; };
@@ -102,8 +104,10 @@
 		C5784A52303A000200C60492 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
 		C5784A54303A000300C60492 /* GoogleMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleMapView.swift; sourceTree = "<group>"; };
 		C5784A56303A000400C60492 /* LocationPickerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPickerScreen.swift; sourceTree = "<group>"; };
-		C58CD04B303C4F5F0038A272 /* SavedAddressesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedAddressesScreen.swift; sourceTree = "<group>"; };
 		C5784A58303A000500C60492 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C58CD04B303C4F5F0038A272 /* SavedAddressesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedAddressesScreen.swift; sourceTree = "<group>"; };
+		C5B2E70C30400C2A00107F9B /* AppStatusManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStatusManager.swift; sourceTree = "<group>"; };
+		C5B2E70F30400D7100107F9B /* AppStatusDialogs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStatusDialogs.swift; sourceTree = "<group>"; };
 		C5F10F67303D79F100525CC1 /* AuthSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSessionManager.swift; sourceTree = "<group>"; };
 		DD2F21A1302F20850025FC97 /* SpiceMonk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpiceMonk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD2F2256302F29FD0025FC97 /* NetworkServiceManagable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkServiceManagable.swift; sourceTree = "<group>"; };
@@ -206,6 +210,15 @@
 			path = Orders;
 			sourceTree = "<group>";
 		};
+		C5B2E70D30400C2A00107F9B /* AppStatus */ = {
+			isa = PBXGroup;
+			children = (
+				C5B2E70C30400C2A00107F9B /* AppStatusManager.swift */,
+				C5B2E70F30400D7100107F9B /* AppStatusDialogs.swift */,
+			);
+			path = AppStatus;
+			sourceTree = "<group>";
+		};
 		DD2F2198302F20850025FC97 = {
 			isa = PBXGroup;
 			children = (
@@ -247,6 +260,7 @@
 		DD2F2260302F29FD0025FC97 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				C5B2E70D30400C2A00107F9B /* AppStatus */,
 				DD2F2259302F29FD0025FC97 /* Network */,
 				DD2F225C302F29FD0025FC97 /* Router */,
 				DD2F225D302F29FD0025FC97 /* AppRootManager.swift */,
@@ -512,6 +526,7 @@
 				C5784A403039F03C00C60492 /* OrderServiceManager.swift in Sources */,
 				C5784A413039F03C00C60492 /* OrdersScreen.swift in Sources */,
 				C5784A423039F03C00C60492 /* OrdersViewModel.swift in Sources */,
+				C5B2E71030400D7100107F9B /* AppStatusDialogs.swift in Sources */,
 				DD2F227B302F29FD0025FC97 /* NetworkServiceManager.swift in Sources */,
 				DD2F227C302F29FD0025FC97 /* RequestConstant.swift in Sources */,
 				DD2F229F302F5C010025FC97 /* LenientDecoding.swift in Sources */,
@@ -540,6 +555,7 @@
 				C5784A463039F6A800C60492 /* OrderDetailScreen.swift in Sources */,
 				DD2F22D7302FC0010025FC97 /* CategoryProductsScreen.swift in Sources */,
 				DD2F22D9302FD0010025FC97 /* ProductDetailViewModel.swift in Sources */,
+				C5B2E70E30400C2A00107F9B /* AppStatusManager.swift in Sources */,
 				DD2F22DB302FD0010025FC97 /* ProductDetailScreen.swift in Sources */,
 				DD2F22DD302FE0010025FC97 /* SearchViewModel.swift in Sources */,
 				DD2F22DF302FE0010025FC97 /* SearchSuggestionsPane.swift in Sources */,

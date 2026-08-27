@@ -16,6 +16,9 @@ class UserDefaultManager {
         case authToken
         case refreshToken
         case tokenExpiry
+        case whatsappNumber
+        case googleMapKey
+        case codEnabled
     }
 
     func setUserDefaultsString(value: String, key: PersistenceKeys) {
@@ -34,6 +37,22 @@ class UserDefaultManager {
 
     func getUserDefaultsBool(key: PersistenceKeys) -> Bool {
         UserDefaults.standard.value(forKey: key.rawValue) as? Bool ?? false
+    }
+
+    var whatsappNumber: String {
+        let stored = getUserDefaultsString(key: .whatsappNumber)
+        return stored.isEmptyString ? "919999999999" : stored
+    }
+
+    var googleMapKey: String {
+        getUserDefaultsString(key: .googleMapKey)
+    }
+
+    var isCodEnabled: Bool {
+        if UserDefaults.standard.object(forKey: PersistenceKeys.codEnabled.rawValue) == nil {
+            return true
+        }
+        return getUserDefaultsBool(key: .codEnabled)
     }
 
     /// Stores when the access token stops being usable, derived from the `expires_in` seconds the

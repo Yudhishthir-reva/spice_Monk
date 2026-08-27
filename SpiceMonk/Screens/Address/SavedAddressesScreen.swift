@@ -10,6 +10,8 @@ struct SavedAddressesScreen: View {
     @ObservedObject var viewModel: AddressViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var isAddingAddress = false
+    @State private var showLocationPicker = false
+    @State private var pickedLocation: ResolvedLocationInfo? = nil
     @State private var editingAddress: Address?
     @State private var addressToDelete: Address?
 
@@ -38,7 +40,7 @@ struct SavedAddressesScreen: View {
                 // Bottom Add Address Button
                 VStack(spacing: 0) {
                     Button {
-                        isAddingAddress = true
+                        showLocationPicker = true
                     } label: {
                         HStack(spacing: 8) {
                             Text("Add a new address")
@@ -71,13 +73,20 @@ struct SavedAddressesScreen: View {
         .onAppear {
             viewModel.load()
         }
+        .sheet(isPresented: $showLocationPicker) {
+            LocationPickerScreen { info in
+                pickedLocation = info
+                showLocationPicker = false
+                isAddingAddress = true
+            }
+        }
         .sheet(isPresented: $isAddingAddress) {
-            AddressFormScreen { _ in
+            AddressFormScreen(initialInfo: pickedLocation) { _ in
                 viewModel.load()
             }
         }
         .sheet(item: $editingAddress) { address in
-            AddressFormScreen { _ in
+            AddressFormScreen(editing: address) { _ in
                 viewModel.load()
             }
         }

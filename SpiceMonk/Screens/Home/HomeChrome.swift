@@ -15,14 +15,15 @@ import Combine
 struct HomeTopBar: View {
 
     let address: Address?
-    /// 1 at rest, 0 once the address has scrolled through the status-bar height.
+    /// 1 at rest, 0 once the address has scrolled through the threshold.
     let addressOpacity: CGFloat
     let safeAreaTop: CGFloat
     var searchActive: Bool = false
     var searchQuery: Binding<String>? = nil
     var searchPlaceholders: [String] = []
     let onAddressTap: () -> Void
-    let onProfileTap: () -> Void
+    var onProfileTap: (() -> Void)? = nil
+    var onNotificationTap: (() -> Void)? = nil
     var onSearchTap: (() -> Void)?
     var onSearchBack: (() -> Void)?
     var onSearchClear: (() -> Void)?
@@ -30,12 +31,9 @@ struct HomeTopBar: View {
     var onSearchMic: (() -> Void)?
 
     var body: some View {
-        VStack(spacing: searchActive ? 0 : 16) {
+        VStack(spacing: searchActive ? 0 : 10) {
             addressRow
-                .opacity(addressOpacity)
-                .frame(height: 52 * addressOpacity, alignment: .bottom)
-                .clipped()
-                .allowsHitTesting(addressOpacity > 0.4)
+                .opacity(searchActive ? 0 : addressOpacity)
 
             SpiceSearchBar(
                 query: searchQuery,
@@ -49,14 +47,36 @@ struct HomeTopBar: View {
             )
         }
         .padding(.horizontal, 16)
-        .padding(.bottom, 8)
+        .padding(.bottom, 10)
         .padding(.top, safeAreaTop + 8)
         .background {
-            LinearGradient(
-                colors: [AppTheme.homeHeaderTop, AppTheme.homeHeaderBottom],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        AppTheme.homeHeaderTop,
+                        Color(hex: "13683B"),
+                        AppTheme.homeHeaderBottom
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+
+                // Emerald mint glow (top-leading)
+                RadialGradient(
+                    colors: [AppTheme.homeHeaderGlowCool.opacity(0.22), Color.clear],
+                    center: .topLeading,
+                    startRadius: 10,
+                    endRadius: 180
+                )
+
+                // Saffron glow (top-trailing)
+                RadialGradient(
+                    colors: [AppTheme.homeHeaderGlowWarm.opacity(0.18), Color.clear],
+                    center: .topTrailing,
+                    startRadius: 10,
+                    endRadius: 160
+                )
+            }
             .ignoresSafeArea(edges: .top)
         }
     }
@@ -70,17 +90,17 @@ struct HomeTopBar: View {
                             .font(.system(size: 11))
                             .foregroundStyle(.white)
                         Text("Delivering to")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.white.opacity(0.85))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.9))
 
                         // Pincode/city chip
-                        if let city = address?.cityName {
+                        if let city = address?.cityName, !city.isEmptyString {
                             Text(city.uppercased())
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 7)
                                 .padding(.vertical, 2)
-                                .background(Color.white.opacity(0.2))
+                                .background(Color.white.opacity(0.22))
                                 .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                         }
                     }
@@ -93,7 +113,7 @@ struct HomeTopBar: View {
                             .foregroundStyle(.white)
                             .lineLimit(1)
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(size: 11, weight: .bold))
                             .foregroundStyle(.white)
                     }
                 }
@@ -102,21 +122,27 @@ struct HomeTopBar: View {
 
             Spacer()
 
-            Button(action: onProfileTap) {
+            Button {
+                if let onNotificationTap {
+                    onNotificationTap()
+                } else if let onProfileTap {
+                    onProfileTap()
+                }
+            } label: {
                 ZStack(alignment: .topTrailing) {
                     Circle()
-                        .fill(Color.white.opacity(0.2))
+                        .fill(Color.white.opacity(0.18))
                         .frame(width: 40, height: 40)
 
                     Image(systemName: "bell.fill")
-                        .font(.system(size: 17))
+                        .font(.system(size: 16))
                         .foregroundStyle(.white)
                         .frame(width: 40, height: 40)
 
                     Circle()
                         .fill(Color(hex: "FFC53D"))
-                        .frame(width: 9, height: 9)
-                        .offset(x: -2, y: 2)
+                        .frame(width: 8.5, height: 8.5)
+                        .offset(x: -2.5, y: 2.5)
                 }
             }
         }
@@ -157,10 +183,10 @@ struct SpiceSearchBar: View {
         }
         .padding(.leading, 8)
         .padding(.trailing, 6)
-        .frame(height: 52)
+        .frame(height: 48)
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .shadow(color: .black.opacity(0.08), radius: 6, y: 3)
         .onChange(of: isActive) { _, active in
             isFocused = active
         }
@@ -186,14 +212,14 @@ struct SpiceSearchBar: View {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(AppTheme.textPrimary)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 38, height: 38)
             }
             .buttonStyle(.plain)
         } else {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(AppTheme.accentRed)
-                .frame(width: 40, height: 40)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(AppTheme.brandGreen)
+                .frame(width: 38, height: 38)
                 .contentShape(Rectangle())
                 .onTapGesture { onTap?() }
         }
@@ -212,7 +238,7 @@ struct SpiceSearchBar: View {
                 .onSubmit { onSubmit?() }
         } else {
             Text(currentPlaceholder)
-                .font(.system(size: 14))
+                .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(AppTheme.textMuted)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -234,25 +260,105 @@ struct SpiceSearchBar: View {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 18))
                     .foregroundStyle(AppTheme.textMuted)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 38, height: 38)
             }
             .buttonStyle(.plain)
         } else {
             HStack(spacing: 0) {
                 Rectangle()
                     .fill(AppTheme.fieldDivider)
-                    .frame(width: 1, height: 22)
+                    .frame(width: 1, height: 20)
 
                 Button {
                     onMic?()
                 } label: {
                     Image(systemName: "mic.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(AppTheme.accentRed)
-                        .frame(width: 40, height: 40)
+                        .font(.system(size: 15))
+                        .foregroundStyle(AppTheme.brandGreen)
+                        .frame(width: 38, height: 38)
                 }
                 .buttonStyle(.plain)
             }
+        }
+    }
+}
+
+/// Dedicated, compact top bar for search mode with back button outside the input field.
+struct SearchTopBar: View {
+    @Binding var query: String
+    var placeholder: String = "Search spices, masala, oils…"
+    let safeAreaTop: CGFloat
+    let onBack: () -> Void
+    let onClear: () -> Void
+    let onSubmit: () -> Void
+
+    @FocusState private var isFieldFocused: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            // Back button outside search field
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                onBack()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 38, height: 38)
+                    .background(Color.white.opacity(0.18))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+
+            // Search input field capsule
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(AppTheme.brandGreen)
+                    .frame(width: 20, height: 20)
+
+                TextField(placeholder, text: $query)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .focused($isFieldFocused)
+                    .submitLabel(.search)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .onSubmit { onSubmit() }
+
+                if !query.isEmpty {
+                    Button(action: onClear) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 17))
+                            .foregroundStyle(AppTheme.textMuted)
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 44)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .shadow(color: .black.opacity(0.06), radius: 4, y: 2)
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 10)
+        .padding(.top, safeAreaTop + 6)
+        .background {
+            LinearGradient(
+                colors: [
+                    AppTheme.homeHeaderTop,
+                    Color(hex: "13683B"),
+                    AppTheme.homeHeaderBottom
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea(edges: .top)
+        }
+        .onAppear {
+            isFieldFocused = true
         }
     }
 }
@@ -262,20 +368,17 @@ struct SpiceSearchBar: View {
 struct FloatingWhatsAppButton: View {
     var body: some View {
         Button {
-            if let url = URL(string: "https://wa.me/") {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            if let url = AppStatusManager.shared.whatsappURL {
                 UIApplication.shared.open(url)
             }
         } label: {
-            ZStack {
-                Circle()
-                    .fill(Color(hex: "25D366"))
-                    .frame(width: 48, height: 48)
-                    .shadow(color: Color(hex: "25D366").opacity(0.4), radius: 6, y: 3)
-
-                Image(systemName: "message.fill")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(.white)
-            }
+            Image("whatsapp")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 50, height: 50)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .shadow(color: Color(hex: "25D366").opacity(0.35), radius: 8, y: 3)
         }
         .buttonStyle(.plain)
     }
@@ -315,7 +418,7 @@ struct FloatingCartBar: View {
                             if savings > 0 {
                                 Text("Saved ₹\(Int(savings.rounded())) on MRP")
                                     .font(.system(size: 11, weight: .bold))
-                                    .foregroundStyle(.white.opacity(0.85))
+                                    .foregroundStyle(.white.opacity(0.9))
                             }
                         }
                     }
@@ -332,9 +435,9 @@ struct FloatingCartBar: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(AppTheme.brandRed)
+                .background(AppTheme.ctaGradient)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .shadow(color: AppTheme.brandRed.opacity(0.35), radius: 8, y: 3)
+                .shadow(color: AppTheme.brandGreen.opacity(0.35), radius: 10, y: 4)
                 .padding(.horizontal, 14)
                 .padding(.bottom, 6)
             }
@@ -407,16 +510,16 @@ struct HomeBottomBar: View {
             }
         }
         .padding(.horizontal, 6)
-        .padding(.top, 12)
+        .padding(.top, 10)
         .padding(.bottom, 8)
         .background {
             UnevenRoundedRectangle(
-                topLeadingRadius: 26,
-                topTrailingRadius: 26,
+                topLeadingRadius: 24,
+                topTrailingRadius: 24,
                 style: .continuous
             )
             .fill(Color.white)
-            .shadow(color: .black.opacity(0.08), radius: 10, y: -2)
+            .shadow(color: .black.opacity(0.06), radius: 10, y: -3)
             .ignoresSafeArea(edges: .bottom)
         }
     }
@@ -432,41 +535,42 @@ struct HomeSkeleton: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
-            block(height: 172)
+            block(height: 180)
                 .padding(.horizontal, 16)
 
             HStack(spacing: 14) {
-                ForEach(0..<5, id: \.self) { _ in
-                    block(width: 66, height: 66)
+                ForEach(0..<4, id: \.self) { _ in
+                    block(width: 70, height: 70)
                 }
             }
             .padding(.horizontal, 16)
 
             VStack(alignment: .leading, spacing: 12) {
                 block(width: 160, height: 18)
-                HStack(spacing: 12) {
+                    .padding(.horizontal, 16)
+
+                HStack(spacing: 10) {
                     ForEach(0..<3, id: \.self) { _ in
-                        block(width: 140, height: 210)
+                        block(height: 210)
+                            .frame(maxWidth: .infinity)
                     }
                 }
+                .padding(.horizontal, 16)
             }
-            .padding(.horizontal, 16)
         }
         .padding(.top, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear {
-            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
                 shimmer = true
             }
         }
     }
 
     private func block(width: CGFloat? = nil, height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(AppTheme.imageTile)
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .fill(Color.black.opacity(shimmer ? 0.05 : 0.09))
             .frame(width: width, height: height)
             .frame(maxWidth: width == nil ? .infinity : nil)
-            .opacity(shimmer ? 0.45 : 1)
     }
 }
 

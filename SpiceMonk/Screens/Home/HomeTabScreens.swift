@@ -140,6 +140,8 @@ struct AccountTabScreen: View {
     @State private var isPickingAddress = false
     @State private var isPickingPayment = false
     @State private var isConfirmingLogout = false
+    @State private var isConfirmingDeleteAccount = false
+    @State private var isShowDeleteSuccessAlert = false
 
     private var userMobile: String {
         let mobile = UserDefaultManager.shared.getUserDefaultsString(key: .userMobile)
@@ -253,12 +255,14 @@ struct AccountTabScreen: View {
                             .padding(.leading, 4)
 
                         Button {
-                            if let url = URL(string: "https://wa.me/") {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            if let url = AppStatusManager.shared.whatsappURL {
                                 UIApplication.shared.open(url)
                             }
                         } label: {
                             accountRow(
-                                icon: "message.fill",
+                                icon: "whatsapp",
+                                isAsset: true,
                                 title: "Help & support",
                                 subtitle: "Chat with us on WhatsApp"
                             )
@@ -289,12 +293,29 @@ struct AccountTabScreen: View {
                     .buttonStyle(.plain)
                     .padding(.top, 4)
 
+                    // Delete Account Button
+                    Button {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        isConfirmingDeleteAccount = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 13, weight: .medium))
+                            Text("Delete account")
+                                .font(.system(size: 13.5, weight: .medium))
+                        }
+                        .foregroundStyle(Color(hex: "9CA3AF"))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                    }
+                    .buttonStyle(.plain)
+
                     // Footer Tagline
                     Text("Freshly ground, straight from the monks.")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(Color(hex: "8FA196"))
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 8)
+                        .padding(.top, 4)
                         .padding(.bottom, 36)
                 }
                 .padding(.horizontal, 16)
@@ -314,6 +335,21 @@ struct AccountTabScreen: View {
             )
             .presentationDetents([.fraction(0.38), .medium])
             .presentationDragIndicator(.visible)
+        }
+        .alert("Delete Account", isPresented: $isConfirmingDeleteAccount) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                isShowDeleteSuccessAlert = true
+            }
+        } message: {
+            Text("Are you sure you want to delete your account? This action cannot be undone.")
+        }
+        .alert("Request Received", isPresented: $isShowDeleteSuccessAlert) {
+            Button("OK") {
+                onLogout()
+            }
+        } message: {
+            Text("Our team will connect with you soon regarding your account deletion request.")
         }
         .toast(isPresenting: $addressViewModel.isShowToastView, duration: 1.8, offsetY: 10, alert: {
             AlertToast(displayMode: .banner(.pop), type: .regular, title: addressViewModel.toastMessage)
@@ -357,16 +393,24 @@ struct AccountTabScreen: View {
 
     // MARK: - Account Row Component
 
-    private func accountRow(icon: String, title: String, subtitle: String) -> some View {
+    private func accountRow(icon: String, isAsset: Bool = false, title: String, subtitle: String) -> some View {
         HStack(spacing: 14) {
             ZStack {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(Color(hex: "EBF6EE"))
                     .frame(width: 44, height: 44)
 
-                Image(systemName: icon)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Color(hex: "1F6335"))
+                if isAsset {
+                    Image(icon)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 26, height: 26)
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                } else {
+                    Image(systemName: icon)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color(hex: "1F6335"))
+                }
             }
 
             VStack(alignment: .leading, spacing: 3) {

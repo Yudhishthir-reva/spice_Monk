@@ -45,25 +45,27 @@ enum AppTheme {
 
     // MARK: - Home
 
-    static let homeCanvas = Color.white
-    static let homeHeaderTop = Color(hex: "1D8750")
-    static let homeHeaderBottom = Color(hex: "0E4A28")
+    static let homeCanvas = Color(hex: "FAFAFA")
+    static let homeHeaderTop = Color(hex: "177343")
+    static let homeHeaderBottom = Color(hex: "0D4525")
     static let homeHeaderSurface = Color(hex: "167444")
+    static let homeHeaderGlowWarm = Color(hex: "FFC53D")   // saffron glow
+    static let homeHeaderGlowCool = Color(hex: "34D399")   // emerald mint glow
 
-    static let accentSoft = Color(hex: "E8F5EE")
+    static let accentSoft = Color(hex: "EBF6EE")
     static let discountBadge = Color(hex: "167444")
     static let newBadgeBackground = Color(hex: "E0F2FE")
     static let newBadgeText = Color(hex: "0369A1")
 
-    static let cardBorder = Color.black.opacity(0.08)
-    static let imageTile = Color(hex: "F4F4F5")
+    static let cardBorder = Color.black.opacity(0.06)
+    static let imageTile = Color(hex: "F7F8FA")
 
     /// Backdrop for the `black_lazy_row` product rail, matching Android's featured carousel.
-    static let blackCard = Color(hex: "1C1C1E")
+    static let blackCard = Color(hex: "18181B")
     static let blackCardMuted = Color(hex: "9CA3AF")
 
     /// Soft green wash behind category sections.
-    static let categoryPanel = Color(hex: "F0FDF4")
+    static let categoryPanel = Color(hex: "F2FAF4")
     static let categoryRail = Color(hex: "F7F7F8")
     static let heroTile = Color(hex: "F6F5F3")
     static let cardSoft = Color(hex: "F4F7F5")

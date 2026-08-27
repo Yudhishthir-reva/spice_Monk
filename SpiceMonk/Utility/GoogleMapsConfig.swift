@@ -8,9 +8,12 @@ import GoogleMaps
 import GooglePlaces
 
 enum GoogleMapsConfig {
-    /// Reads Google Maps API Key from Info.plist / Bundle infoDictionary.
-    /// Supported Info.plist keys: "GoogleMapsAPIKey", "GMSApiKey", "GOOGLE_MAPS_API_KEY"
+    /// Reads Google Maps API Key from UserDefaultManager (check-status API) or Info.plist fallback.
     static var apiKey: String {
+        let stored = UserDefaultManager.shared.googleMapKey
+        if !stored.isEmptyString {
+            return stored
+        }
         let keys = ["GoogleMapsAPIKey", "GMSApiKey", "GOOGLE_MAPS_API_KEY"]
         for key in keys {
             if let value = Bundle.main.object(forInfoDictionaryKey: key) as? String {
@@ -23,15 +26,22 @@ enum GoogleMapsConfig {
         return ""
     }
 
+    private static var isInitialized = false
+
     static func setup() {
         let key = apiKey
         guard !key.isEmpty else {
-            print("⚠️ [GoogleMapsConfig] Google Maps API key is not configured in Info.plist (Key: GoogleMapsAPIKey).")
+            print("⚠️ [GoogleMapsConfig] Google Maps API key is not configured.")
             return
         }
+        provideAPIKey(key)
+    }
 
+    static func provideAPIKey(_ key: String) {
+        guard !key.isEmpty else { return }
         GMSServices.provideAPIKey(key)
         GMSPlacesClient.provideAPIKey(key)
-        print("✅ [GoogleMapsConfig] Google Maps & Places initialized successfully from Info.plist.")
+        isInitialized = true
+        print("✅ [GoogleMapsConfig] Google Maps & Places initialized successfully with key: \(key.prefix(8))...")
     }
 }

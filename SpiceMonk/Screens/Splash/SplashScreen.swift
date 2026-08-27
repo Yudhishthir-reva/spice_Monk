@@ -195,6 +195,8 @@ struct SplashScreen: View {
     }
 
     private func runEntrance() {
+        AppStatusManager.shared.checkStatus()
+
         withAnimation(.spring(response: 0.65, dampingFraction: 0.62)) {
             logoEntrance = 1
         }

@@ -10,9 +10,11 @@ struct HomeScreen: View {
     @StateObject var viewModel = HomeViewModel()
     @StateObject private var addressViewModel = AddressViewModel()
     @StateObject private var searchViewModel = SearchViewModel()
+    @ObservedObject private var cartStore = CartStore.shared
     @State private var selectedTab: HomeTab = .home
     @State private var cartDestination: HomeTabDestination?
     @State private var searchBarOffset: CGFloat = 0
+    @State private var topHeaderOffset: CGFloat = 0
     @State private var isConfirmingLogout = false
     @State private var isPickingAddress = false
     @State private var isSearchActive = false
@@ -70,21 +72,14 @@ struct HomeScreen: View {
             )
         }
         .overlay(alignment: .bottomTrailing) {
-            if !isSearchActive {
+            if !isSearchActive && cartStore.summary.totalItems == 0 {
                 FloatingWhatsAppButton()
                     .padding(.trailing, 16)
                     .padding(.bottom, 68)
+                    .transition(.scale.combined(with: .opacity))
             }
         }
-        .overlay(alignment: .top) {
-            if selectedTab == .home {
-                Color.clear
-                    .frame(height: 0)
-                    .frame(maxWidth: .infinity)
-                    .background(AppTheme.homeHeaderTop.ignoresSafeArea(edges: .top))
-                    .allowsHitTesting(false)
-            }
-        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: cartStore.summary.totalItems == 0)
         .onAppear {
             if !viewModel.hasContent {
                 viewModel.loadHome()
@@ -127,11 +122,17 @@ struct HomeScreen: View {
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 0) {
-                        header(safeAreaTop: topInset)
-                            .zIndex(2)
+                        VStack(spacing: 0) {
+                            header(safeAreaTop: topInset)
+                                .zIndex(1000003)
+                        }
+                        .zIndex(1000001)
+                        .visualEffect { content, proxy in
+                            content.offset(y: offsetYFullHeader(proxy))
+                        }
 
                         feedBody
-                            .zIndex(1)
+                            .zIndex(1000000)
                     }
                 }
                 .ignoresSafeArea(edges: .top)
@@ -158,25 +159,41 @@ struct HomeScreen: View {
         )
     }
 
+    private let addressScrollThreshold: CGFloat = 44
+
+    private var addressOpacity: CGFloat {
+        let clamped = min(max(searchBarOffset, -addressScrollThreshold), 0)
+        return max(0, min(1, 1.0 - (clamped / -addressScrollThreshold)))
+    }
+
     // MARK: - Header & Feed
 
     private func header(safeAreaTop: CGFloat) -> some View {
         HomeTopBar(
             address: addressViewModel.defaultAddress,
-            addressOpacity: addressOpacity(safeAreaTop: safeAreaTop),
+            addressOpacity: addressOpacity,
             safeAreaTop: safeAreaTop,
             searchPlaceholders: viewModel.searchPlaceholders,
             onAddressTap: { isPickingAddress = true },
-            onProfileTap: { isConfirmingLogout = true },
+            onNotificationTap: {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                viewModel.toastMessage = "Notifications coming soon!"
+                viewModel.isShowToastView = true
+            },
             onSearchTap: enterSearch,
             onSearchMic: enterSearch
         )
         .visualEffect { content, proxy in
-            content.offset(y: offsetYSearchBar(proxy, safeAreaTop: safeAreaTop))
+            let minY = proxy.frame(in: .scrollView(axis: .vertical)).minY
+            Task { @MainActor in
+                if self.searchBarOffset != minY {
+                    self.searchBarOffset = minY
+                }
+            }
+            let offset = minY > -addressScrollThreshold ? 0 : -(minY + addressScrollThreshold)
+            return content.offset(y: offset)
         }
-        .visualEffect { content, proxy in
-            content.offset(y: offsetYFullHeader(proxy))
-        }
+        .zIndex(1000003)
     }
 
     @ViewBuilder
@@ -201,22 +218,16 @@ struct HomeScreen: View {
 
     private func searchMode(safeAreaTop: CGFloat) -> some View {
         VStack(spacing: 0) {
-            HomeTopBar(
-                address: addressViewModel.defaultAddress,
-                addressOpacity: 0,
-                safeAreaTop: safeAreaTop,
-                searchActive: true,
-                searchQuery: Binding(
+            SearchTopBar(
+                query: Binding(
                     get: { searchViewModel.query },
                     set: { searchViewModel.updateQuery($0) }
                 ),
-                searchPlaceholders: viewModel.searchPlaceholders,
-                onAddressTap: {},
-                onProfileTap: {},
-                onSearchBack: exitSearch,
-                onSearchClear: { searchViewModel.clear() },
-                onSearchSubmit: { searchViewModel.submit() },
-                onSearchMic: {}
+                placeholder: viewModel.searchPlaceholders.first ?? "Search spices, masala, oils…",
+                safeAreaTop: safeAreaTop,
+                onBack: exitSearch,
+                onClear: { searchViewModel.clear() },
+                onSubmit: { searchViewModel.submit() }
             )
 
             SearchSuggestionsPane(viewModel: searchViewModel)
@@ -238,21 +249,6 @@ struct HomeScreen: View {
     nonisolated private func offsetYFullHeader(_ proxy: GeometryProxy) -> CGFloat {
         let minY = proxy.frame(in: .scrollView(axis: .vertical)).minY
         return minY > 0 ? -minY : 0
-    }
-
-    nonisolated private func offsetYSearchBar(_ proxy: GeometryProxy, safeAreaTop: CGFloat) -> CGFloat {
-        let minY = proxy.frame(in: .scrollView(axis: .vertical)).minY
-        Task { @MainActor in
-            searchBarOffset = minY
-        }
-        _ = safeAreaTop
-        return minY > 0 ? 0 : -minY
-    }
-
-    private func addressOpacity(safeAreaTop: CGFloat) -> CGFloat {
-        let inset = max(safeAreaTop, 1)
-        let clamped = min(max(searchBarOffset, -inset), 0)
-        return min(max(1 - (clamped / -inset), 0), 1)
     }
 
     private func resolvedTopInset(_ fromGeometry: CGFloat) -> CGFloat {

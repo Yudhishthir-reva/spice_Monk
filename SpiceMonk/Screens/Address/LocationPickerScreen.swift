@@ -2,12 +2,16 @@
 //  LocationPickerScreen.swift
 //  SpiceMonk
 //
+//
 
 import SwiftUI
 import CoreLocation
 import GoogleMaps
 import GooglePlaces
 
+/// Interactive Google Map Location Picker matching the screenshot:
+/// Top floating back button & search bar, center delivery pin,
+/// floating "Use my current location" capsule pill, and bottom "DELIVERING YOUR ORDER TO" card with "Confirm location" CTA.
 struct LocationPickerScreen: View {
 
     @Environment(\.dismiss) private var dismiss
@@ -25,6 +29,7 @@ struct LocationPickerScreen: View {
     @State private var isSearching: Bool = false
     @State private var showSearchResults: Bool = false
 
+    var initialCoordinate: CLLocationCoordinate2D? = nil
     let onLocationSelected: (ResolvedLocationInfo) -> Void
 
     struct PlaceSearchResult: Identifiable {
@@ -34,138 +39,270 @@ struct LocationPickerScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                // 1. Google Map View
-                GoogleMapView(
-                    centerCoordinate: $centerCoordinate,
-                    zoomLevel: 16.0,
-                    isMyLocationEnabled: true,
-                    showsMyLocationButton: false,
-                    showsCompass: true,
-                    onCameraIdle: { newCoord in
-                        isDraggingMap = false
-                        resolveAddress(for: newCoord)
-                    },
-                    onCameraMoveStarted: { gesture in
-                        if gesture {
-                            isDraggingMap = true
-                        }
+        ZStack(alignment: .top) {
+            // 1. Google Map Fullscreen
+            GoogleMapView(
+                centerCoordinate: $centerCoordinate,
+                zoomLevel: 16.5,
+                isMyLocationEnabled: true,
+                showsMyLocationButton: false,
+                showsCompass: false,
+                onCameraIdle: { newCoord in
+                    isDraggingMap = false
+                    resolveAddress(for: newCoord)
+                },
+                onCameraMoveStarted: { gesture in
+                    if gesture {
+                        isDraggingMap = true
+                        showSearchResults = false
                     }
-                )
-                .ignoresSafeArea(edges: .bottom)
+                }
+            )
+            .ignoresSafeArea()
 
-                // 2. Center Location Pin (Interactive Bouncing Pin)
-                centerPinView
+            // 2. Center Location Pin
+            centerPinView
 
-                // 3. Floating Controls & Top Search Bar
-                VStack(spacing: 0) {
-                    searchBarView
+            // 3. Floating Overlay Controls
+            VStack(spacing: 0) {
+                // Top Search Bar & Back Button
+                topFloatingBar
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+
+                // Search Predictions Dropdown
+                if showSearchResults && !searchResults.isEmpty {
+                    searchResultsList
                         .padding(.horizontal, 16)
                         .padding(.top, 8)
+                }
 
-                    if showSearchResults && !searchResults.isEmpty {
-                        searchResultsList
-                            .padding(.horizontal, 16)
-                            .padding(.top, 8)
-                    }
+                Spacer()
+
+                // Floating "Use my current location" Pill
+                HStack {
+                    useCurrentLocationPill
+                        .padding(.leading, 16)
+                        .padding(.bottom, 12)
 
                     Spacer()
+                }
 
-                    HStack {
-                        Spacer()
-                        myLocationFloatingButton
-                            .padding(.trailing, 16)
-                            .padding(.bottom, 12)
-                    }
-
-                    // 4. Bottom Location Card
-                    bottomAddressCard
-                }
+                // 4. Bottom "DELIVERING YOUR ORDER TO" Card
+                bottomAddressCard
             }
-            .navigationTitle("Select location")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .foregroundStyle(AppTheme.textSecondary)
-                }
-            }
-            .onAppear {
-                setupInitialLocation()
-            }
-            .onChange(of: locationManager.currentLocation) { _, newLoc in
-                if let loc = newLoc {
-                    centerCoordinate = loc.coordinate
-                }
-            }
+        }
+        .navigationBarHidden(true)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .onAppear {
+            setupInitialLocation()
         }
     }
 
     // MARK: - Center Pin
+
     private var centerPinView: some View {
         VStack(spacing: 0) {
-            Image(systemName: "mappin.circle.fill")
-                .font(.system(size: 38))
-                .foregroundStyle(AppTheme.brandGreen)
-                .background(
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 28, height: 28)
-                )
-                .shadow(color: Color.black.opacity(0.25), radius: 6, x: 0, y: 4)
-                .offset(y: isDraggingMap ? -16 : 0)
-                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isDraggingMap)
+            ZStack {
+                // Custom green teardrop pin
+                Image(systemName: "mappin.circle.fill")
+                    .font(.system(size: 42, weight: .bold))
+                    .foregroundStyle(Color(hex: "13683B"))
+                    .background(
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 24, height: 24)
+                    )
+                    .shadow(color: Color.black.opacity(0.3), radius: 6, x: 0, y: 4)
+            }
+            .offset(y: isDraggingMap ? -16 : 0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isDraggingMap)
 
             // Pin Shadow / Ground Anchor
             Ellipse()
-                .fill(Color.black.opacity(isDraggingMap ? 0.15 : 0.3))
+                .fill(Color.black.opacity(isDraggingMap ? 0.12 : 0.28))
                 .frame(width: isDraggingMap ? 8 : 12, height: isDraggingMap ? 4 : 6)
                 .offset(y: -4)
                 .animation(.easeInOut(duration: 0.2), value: isDraggingMap)
         }
         .allowsHitTesting(false)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 
-    // MARK: - Search Bar
-    private var searchBarView: some View {
+    // MARK: - Top Floating Bar (Back + Search)
+
+    private var topFloatingBar: some View {
         HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(AppTheme.brandGreen)
-                .font(.system(size: 16, weight: .semibold))
+            // Circular Back Button
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "arrow.left")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(Color(hex: "1F2937"))
+                    .frame(width: 48, height: 48)
+                    .background(Color.white)
+                    .clipShape(Circle())
+                    .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
+            }
+            .buttonStyle(.plain)
 
-            TextField("Search area, landmark or street...", text: $searchQuery)
-                .font(.system(size: 15))
-                .foregroundStyle(AppTheme.textPrimary)
-                .autocorrectionDisabled()
-                .onChange(of: searchQuery) { _, query in
-                    handleSearchQueryChange(query)
-                }
+            // Search Bar
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color(hex: "13683B"))
 
-            if isSearching {
-                ProgressView()
-                    .scaleEffect(0.8)
-            } else if !searchQuery.isEmpty {
-                Button {
-                    searchQuery = ""
-                    searchResults = []
-                    showSearchResults = false
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(AppTheme.textMuted)
+                TextField("Search for area, street or landmark", text: $searchQuery)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .autocorrectionDisabled()
+                    .onChange(of: searchQuery) { _, query in
+                        handleSearchQueryChange(query)
+                    }
+
+                if isSearching {
+                    ProgressView()
+                        .scaleEffect(0.75)
+                } else if !searchQuery.isEmpty {
+                    Button {
+                        searchQuery = ""
+                        searchResults = []
+                        showSearchResults = false
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundStyle(Color(hex: "9CA3AF"))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
+            .padding(.horizontal, 14)
+            .frame(height: 48)
+            .background(Color.white)
+            .clipShape(Capsule())
+            .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
         }
-        .padding(.horizontal, 14)
-        .frame(height: 48)
+    }
+
+    // MARK: - Floating "Use my current location" Pill
+
+    private var useCurrentLocationPill: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            moveToCurrentLocation()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "scope")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(AppTheme.brandGreen)
+
+                Text("Use my current location")
+                    .font(.system(size: 13.5, weight: .bold))
+                    .foregroundStyle(AppTheme.brandGreen)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color.white)
+            .clipShape(Capsule())
+            .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Bottom Address Card
+
+    private var bottomAddressCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            // Small Section Title
+            Text("DELIVERING YOUR ORDER TO")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Color(hex: "6B7280"))
+                .tracking(0.5)
+
+            // Location details row
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "mappin.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(AppTheme.brandGreen)
+                    .padding(.top, 2)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(displayAreaTitle)
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(Color(hex: "1F2937"))
+
+                    if isResolving {
+                        Text("Fetching address...")
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(Color(hex: "6B7280"))
+                    } else {
+                        Text(displaySubtitle)
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(Color(hex: "4B5563"))
+                            .lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                Spacer(minLength: 0)
+            }
+
+            // Confirm Location Button
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                if let info = resolvedInfo {
+                    onLocationSelected(info)
+                    dismiss()
+                } else {
+                    let fallback = ResolvedLocationInfo(coordinate: centerCoordinate)
+                    onLocationSelected(fallback)
+                    dismiss()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Text("Confirm location")
+                        .font(.system(size: 16, weight: .bold))
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(AppTheme.brandGreen)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .shadow(color: AppTheme.brandGreen.opacity(0.25), radius: 8, y: 3)
+            }
+            .disabled(isResolving)
+            .buttonStyle(.plain)
+            .padding(.top, 4)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+        .padding(.bottom, 28)
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 3)
+        .clipShape(RoundedCornerShape(radius: 24, corners: [.topLeft, .topRight]))
+        .shadow(color: Color.black.opacity(0.14), radius: 16, y: -4)
+    }
+
+    private var displayAreaTitle: String {
+        if isDraggingMap { return "Locating..." }
+        if let info = resolvedInfo, !info.area.isEmpty {
+            return info.area
+        }
+        if let info = resolvedInfo, !info.city.isEmpty {
+            return info.city
+        }
+        return "Selected location"
+    }
+
+    private var displaySubtitle: String {
+        if let info = resolvedInfo, !info.formattedAddress.isEmpty {
+            return info.formattedAddress
+        }
+        return "Move pin to your exact delivery location"
     }
 
     // MARK: - Search Results Dropdown
+
     private var searchResultsList: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(searchResults) { result in
@@ -173,9 +310,9 @@ struct LocationPickerScreen: View {
                     selectSearchResult(result)
                 } label: {
                     HStack(spacing: 12) {
-                        Image(systemName: "mappin.and.ellipse")
+                        Image(systemName: "mappin.circle.fill")
                             .foregroundStyle(AppTheme.brandGreen)
-                            .font(.system(size: 16))
+                            .font(.system(size: 17))
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(result.title)
@@ -192,169 +329,67 @@ struct LocationPickerScreen: View {
                         }
                         Spacer()
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
                 }
                 .buttonStyle(.plain)
 
                 if result.id != searchResults.last?.id {
                     Divider()
-                        .padding(.leading, 40)
+                        .padding(.leading, 44)
                 }
             }
         }
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 4)
-        .frame(maxHeight: 220)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: Color.black.opacity(0.18), radius: 12, x: 0, y: 4)
+        .frame(maxHeight: 240)
     }
 
-    // MARK: - My Location Button
-    private var myLocationFloatingButton: some View {
-        Button {
-            moveToCurrentLocation()
-        } label: {
-            ZStack {
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 48, height: 48)
-                    .shadow(color: Color.black.opacity(0.18), radius: 6, x: 0, y: 3)
+    // MARK: - Location & Geocoding Logic
 
-                if locationManager.isLocating {
-                    ProgressView()
-                } else {
-                    Image(systemName: "location.fill")
-                        .font(.system(size: 20))
-                        .foregroundStyle(AppTheme.brandGreen)
-                }
-            }
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - Bottom Address Card
-    private var bottomAddressCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
-                Image(systemName: "mappin.circle.fill")
-                    .font(.system(size: 22))
-                    .foregroundStyle(AppTheme.brandGreen)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(isDraggingMap ? "Locating..." : (resolvedInfo?.area.isEmpty == false ? resolvedInfo!.area : "Selected Location"))
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
-
-                    if isResolving {
-                        Text("Fetching address...")
-                            .font(.system(size: 13))
-                            .foregroundStyle(AppTheme.textSecondary)
-                    } else if let info = resolvedInfo, !info.formattedAddress.isEmpty {
-                        Text(info.formattedAddress)
-                            .font(.system(size: 13))
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .lineLimit(2)
-                    } else {
-                        Text("Move pin to your exact delivery location")
-                            .font(.system(size: 13))
-                            .foregroundStyle(AppTheme.textMuted)
-                    }
-                }
-
-                Spacer()
-
-                if isResolving {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                }
-            }
-
-            if let info = resolvedInfo, (!info.city.isEmpty || !info.postalCode.isEmpty) {
-                HStack(spacing: 8) {
-                    if !info.postalCode.isEmpty {
-                        Text("PIN: \(info.postalCode)")
-                            .font(.system(size: 12, weight: .semibold))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(AppTheme.accentSoft)
-                            .foregroundStyle(AppTheme.brandGreen)
-                            .clipShape(Capsule())
-                    }
-
-                    if !info.city.isEmpty {
-                        Text(info.city)
-                            .font(.system(size: 12, weight: .medium))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(AppTheme.brandBackgroundMid)
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .clipShape(Capsule())
-                    }
-                }
-            }
-
-            // Confirm Location Action Button
-            Button {
-                if let info = resolvedInfo {
-                    onLocationSelected(info)
-                    dismiss()
-                } else {
-                    let fallback = ResolvedLocationInfo(coordinate: centerCoordinate)
-                    onLocationSelected(fallback)
-                    dismiss()
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                    Text("Confirm location")
-                        .font(.system(size: 16, weight: .semibold))
-                }
-                .foregroundStyle(Color.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(AppTheme.ctaGradient)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .shadow(color: AppTheme.brandGreen.opacity(0.3), radius: 8, x: 0, y: 4)
-            }
-            .disabled(isResolving)
-        }
-        .padding(20)
-        .background(
-            Color.white
-                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: -4)
-        )
-    }
-
-    // MARK: - Actions & Geocoding
     private func setupInitialLocation() {
-        if let current = locationManager.currentLocation {
+        if let coord = initialCoordinate {
+            centerCoordinate = coord
+            resolveAddress(for: coord)
+        } else if let current = locationManager.currentLocation {
             centerCoordinate = current.coordinate
             resolveAddress(for: current.coordinate)
         } else {
-            locationManager.requestCurrentLocation()
-            resolveAddress(for: centerCoordinate)
+            locationManager.fetchCurrentLocationAndResolve { info in
+                if let info {
+                    self.centerCoordinate = info.coordinate
+                    self.resolvedInfo = info
+                } else {
+                    self.resolveAddress(for: self.centerCoordinate)
+                }
+            }
         }
     }
 
     private func moveToCurrentLocation() {
-        locationManager.requestCurrentLocation()
-        if let current = locationManager.currentLocation {
-            centerCoordinate = current.coordinate
-            resolveAddress(for: current.coordinate)
+        if let loc = locationManager.currentLocation {
+            centerCoordinate = loc.coordinate
+            resolveAddress(for: loc.coordinate)
+        } else {
+            locationManager.requestCurrentLocation()
+            locationManager.fetchCurrentLocationAndResolve { info in
+                if let info {
+                    self.centerCoordinate = info.coordinate
+                    self.resolvedInfo = info
+                }
+            }
         }
     }
 
     private func resolveAddress(for coordinate: CLLocationCoordinate2D) {
         geocodeTask?.cancel()
         isResolving = true
-        geocodeTask = Task {
-            try? await Task.sleep(nanoseconds: 300_000_000) // 300ms debounce
-            if Task.isCancelled { return }
 
+        geocodeTask = Task {
             let info = await locationManager.reverseGeocode(coordinate: coordinate)
-            if !Task.isCancelled {
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
                 self.resolvedInfo = info
                 self.isResolving = false
             }
@@ -363,7 +398,7 @@ struct LocationPickerScreen: View {
 
     private func handleSearchQueryChange(_ query: String) {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed.count >= 3 else {
+        guard trimmed.count >= 2 else {
             searchResults = []
             showSearchResults = false
             return
@@ -373,7 +408,7 @@ struct LocationPickerScreen: View {
         showSearchResults = true
 
         let filter = GMSAutocompleteFilter()
-        filter.countries = ["IN"]
+        filter.country = "IN"
 
         GMSPlacesClient.shared().findAutocompletePredictions(
             fromQuery: trimmed,
@@ -391,7 +426,6 @@ struct LocationPickerScreen: View {
                         )
                     }
                 } else {
-                    // Fallback to CLGeocoder search
                     searchWithAppleGeocoder(query: trimmed)
                 }
             }
@@ -420,7 +454,6 @@ struct LocationPickerScreen: View {
         showSearchResults = false
         searchQuery = result.title
 
-        // Fetch place details from GMSPlacesClient
         let fields: GMSPlaceField = [.coordinate, .formattedAddress, .addressComponents, .name]
         GMSPlacesClient.shared().fetchPlace(
             fromPlaceID: result.id,
@@ -432,7 +465,6 @@ struct LocationPickerScreen: View {
                     self.centerCoordinate = place.coordinate
                     self.resolveAddress(for: place.coordinate)
                 } else {
-                    // Fallback with geocoding text
                     let geocoder = CLGeocoder()
                     geocoder.geocodeAddressString("\(result.title), \(result.subtitle)") { placemarks, _ in
                         if let coord = placemarks?.first?.location?.coordinate {
@@ -445,5 +477,21 @@ struct LocationPickerScreen: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Rounded Corner Shape Helper
+
+struct RoundedCornerShape: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: corners,
+            cornerRadii: CGSize(width: radius, height: radius)
+        )
+        return Path(path.cgPath)
     }
 }

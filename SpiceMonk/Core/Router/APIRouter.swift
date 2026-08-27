@@ -38,9 +38,12 @@ enum APIRouter: RouterManagable {
     case orderPlace
     case paymentInitiate
     case paymentVerify
+    case checkStatus
 
     var endPointUrl: String {
         switch self {
+        case .checkStatus:
+            return "customer/app/check-status"
         case .sendOTP:
             return "customer/auth/send-otp"
         case .verifyOTP:
@@ -60,7 +63,7 @@ enum APIRouter: RouterManagable {
         case .storeAddress:
             return "customer/address"
         case .cityByPincode:
-            return "customer/address/by-pincode"
+            return "customer/address/pincode"
         case .widgetProducts:
             return "customer/widget/products"
         case .categoryProducts:

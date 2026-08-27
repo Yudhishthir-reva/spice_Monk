@@ -11,10 +11,12 @@ struct WidgetProductsScreen: View {
 
     @StateObject var viewModel: WidgetProductsViewModel
 
-    private let columns = Array(
-        repeating: GridItem(.flexible(), spacing: 12, alignment: .topLeading),
-        count: 3
-    )
+    private var columns: [GridItem] {
+        Array(
+            repeating: GridItem(.flexible(), spacing: 10, alignment: .topLeading),
+            count: HomeMetrics.productColumns
+        )
+    }
 
     init(widgetId: Int, title: String) {
         _viewModel = StateObject(

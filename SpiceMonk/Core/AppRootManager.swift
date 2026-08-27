@@ -17,7 +17,11 @@ final class AppRootManager {
         let targetWindow = window ?? UIApplication.shared.keyWindow
         guard let targetWindow else { return }
 
-        targetWindow.rootViewController = UIHostingController(rootView: view.handleNoInternet())
+        targetWindow.rootViewController = UIHostingController(
+            rootView: view
+                .handleNoInternet()
+                .handleAppStatusOverlays()
+        )
         UIView.transition(
             with: targetWindow,
             duration: 0.3,

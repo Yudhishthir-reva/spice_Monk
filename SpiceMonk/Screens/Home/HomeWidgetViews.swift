@@ -6,13 +6,32 @@
 import SwiftUI
 import Combine
 
-private enum HomeMetrics {
+enum HomeMetrics {
     static let gutter: CGFloat = 16
-    static let railSpacing: CGFloat = 12
-    static let chipSpacing: CGFloat = 14
-    static let cardWidth: CGFloat = 140
-    static let productColumns = 3
-    static let categoryColumns = 4
+    static let railSpacing: CGFloat = 10
+    static let chipSpacing: CGFloat = 12
+    static let cardWidth: CGFloat = 142
+
+    static var screenWidth: CGFloat {
+        (UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }.first?.bounds.width) ?? UIScreen.main.bounds.width
+    }
+
+    /// Dynamically scales columns (3 on phone portrait, 4-5 on larger screens/iPads) maintaining optimal card size.
+    static var productColumns: Int {
+        let width = screenWidth
+        if width >= 1000 { return 6 }
+        if width >= 700 { return 5 }
+        if width >= 500 { return 4 }
+        return 3
+    }
+
+    static var categoryColumns: Int {
+        let width = screenWidth
+        if width >= 1000 { return 8 }
+        if width >= 700 { return 6 }
+        if width >= 500 { return 5 }
+        return 4
+    }
 }
 
 // MARK: - Widget dispatch
@@ -104,7 +123,11 @@ struct CategorySectionPanel<Content: View>: View {
             .padding(.bottom, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(AppTheme.categoryPanel)
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(Color.black.opacity(0.03), lineWidth: 1)
+            }
             .padding(.horizontal, 8)
     }
 }
@@ -121,11 +144,15 @@ struct BrandCategoryBlock: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 RemoteImage(url: group.brandImageUrl)
-                    .frame(width: 30, height: 30)
+                    .frame(width: 32, height: 32)
                     .clipShape(Circle())
+                    .overlay {
+                        Circle()
+                            .stroke(Color.black.opacity(0.08), lineWidth: 1)
+                    }
 
                 Text(group.title)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
             }
             .padding(.horizontal, HomeMetrics.gutter)
@@ -148,9 +175,9 @@ struct SectionHeader: View {
     var widgetId: Int = 0
 
     var body: some View {
-        HStack {
+        HStack(alignment: .center) {
             Text(title)
-                .font(.system(size: 17, weight: .heavy))
+                .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 
             Spacer()
@@ -159,16 +186,15 @@ struct SectionHeader: View {
                 NavigationLink {
                     WidgetProductsScreen(widgetId: widgetId, title: title)
                 } label: {
-                    HStack(spacing: 2) {
+                    HStack(spacing: 3) {
                         Text("View all")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: 12, weight: .bold))
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(size: 9, weight: .heavy))
                     }
-                    .foregroundStyle(AppTheme.accentRed)
-                    .padding(.leading, 10)
-                    .padding(.trailing, 6)
-                    .padding(.vertical, 4)
+                    .foregroundStyle(AppTheme.brandGreen)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
                     .background(AppTheme.accentSoft)
                     .clipShape(Capsule())
                 }
@@ -200,8 +226,13 @@ struct BannerCarousel: View {
                 } label: {
                     RemoteImage(url: item.imageUrl)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 172)
-                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .frame(height: 180)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(Color.black.opacity(0.04), lineWidth: 1)
+                        }
+                        .shadow(color: .black.opacity(0.06), radius: 6, y: 3)
                         .padding(.horizontal, HomeMetrics.gutter)
                 }
                 .buttonStyle(.plain)
@@ -209,11 +240,11 @@ struct BannerCarousel: View {
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
-        .frame(height: 172)
+        .frame(height: 180)
         .overlay(alignment: .bottom) {
             if items.count > 1 {
                 pageIndicator
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 10)
             }
         }
         .simultaneousGesture(
@@ -233,8 +264,9 @@ struct BannerCarousel: View {
         HStack(spacing: 5) {
             ForEach(items.indices, id: \.self) { index in
                 Capsule()
-                    .fill(Color.white.opacity(index == selection ? 1 : 0.5))
-                    .frame(width: index == selection ? 20 : 6, height: 6)
+                    .fill(Color.white.opacity(index == selection ? 1 : 0.45))
+                    .frame(width: index == selection ? 20 : 6, height: 5.5)
+                    .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
             }
         }
         .animation(.easeInOut(duration: 0.25), value: selection)
@@ -252,18 +284,22 @@ struct CategoryChip: View {
     var body: some View {
         VStack(spacing: 6) {
             RemoteImage(url: item.imageUrl, contentMode: .fit)
-                .padding(6)
-                .frame(width: 66, height: 66)
+                .padding(7)
+                .frame(width: 68, height: 68)
                 .background(AppTheme.imageTile)
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.black.opacity(0.04), lineWidth: 1)
+                }
 
             Text(item.name)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 11.5, weight: .semibold))
                 .foregroundStyle(AppTheme.textPrimary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
         }
-        .frame(width: 74)
+        .frame(width: 76)
     }
 }
 
@@ -417,16 +453,19 @@ private struct BlackProductCard: View {
                     seedImageUrl: product.imageUrl
                 )
             } label: {
-                RemoteImage(url: product.imageUrl, contentMode: .fit)
-                    .padding(6)
-                    .aspectRatio(1, contentMode: .fit)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.white)
-                    .overlay(alignment: .center) {
-                        if !product.inStock {
-                            outOfStockOverlay
-                        }
+                ZStack(alignment: .center) {
+                    Color.white
+
+                    RemoteImage(url: product.imageUrl, contentMode: .fit)
+                        .padding(6)
+                }
+                .frame(height: 104)
+                .frame(maxWidth: .infinity)
+                .overlay(alignment: .center) {
+                    if !product.inStock {
+                        outOfStockOverlay
                     }
+                }
             }
             .buttonStyle(.plain)
 

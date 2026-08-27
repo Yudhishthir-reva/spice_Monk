@@ -159,11 +159,14 @@ struct AddressDetailResponse: Decodable {
 /// these as plain names, so no ids are needed. The backend has spelled the pair several ways while the
 /// address API changed, and each spelling is accepted rather than betting on one.
 struct PincodeLocation: Decodable {
+    let pinCode: String?
     let state: String
     let district: String
+    let areas: [String]
 
     enum CodingKeys: String, CodingKey {
-        case state, district, city
+        case state, district, city, areas
+        case pinCode = "pin_code"
         case stateName = "state_name"
         case districtName = "district_name"
         case cityName = "city_name"
@@ -171,6 +174,7 @@ struct PincodeLocation: Decodable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        pinCode = container.decodeStringLeniently(forKey: .pinCode)
         state = container.decodeStringLeniently(forKey: .state)
             ?? container.decodeStringLeniently(forKey: .stateName)
             ?? ""
@@ -179,6 +183,8 @@ struct PincodeLocation: Decodable {
             ?? container.decodeStringLeniently(forKey: .cityName)
             ?? container.decodeStringLeniently(forKey: .city)
             ?? ""
+        let rawAreas = (try? container.decodeIfPresent([String].self, forKey: .areas)) ?? []
+        areas = rawAreas.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
     }
 
     var isUsable: Bool {

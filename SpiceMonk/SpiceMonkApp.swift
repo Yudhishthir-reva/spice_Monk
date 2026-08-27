@@ -14,6 +14,7 @@ struct SpiceMonkApp: App {
         WindowGroup {
             SplashScreen()
                 .handleNoInternet()
+                .handleAppStatusOverlays()
         }
     }
 }
