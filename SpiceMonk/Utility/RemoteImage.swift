@@ -83,6 +83,7 @@ struct RemoteImage: View {
     var contentMode: ContentMode = .fill
 
     @State private var image: UIImage?
+    @State private var hasFailed = false
 
     private var resolvedURL: URL? {
         guard let url, !url.isEmptyString else { return nil }
@@ -102,46 +103,88 @@ struct RemoteImage: View {
             Image(uiImage: image)
                 .resizable()
                 .aspectRatio(contentMode: contentMode)
+                .transition(.opacity)
+        } else if resolvedURL != nil && !hasFailed {
+            ImageShimmerView()
         } else {
-            imagePlaceholder
+            fallbackPlaceholder
         }
     }
 
-    /// Shown while loading, when the URL is missing, and when the download fails — so list tiles
-    /// never sit empty.
-    private var imagePlaceholder: some View {
+    /// Shown only when URL is missing or download fails.
+    private var fallbackPlaceholder: some View {
         ZStack {
-            AppTheme.imageTile
-            GeometryReader { geo in
-                let side = min(geo.size.width, geo.size.height)
-                Image("AppLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: side * 0.62, height: side * 0.62)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+            Color(hex: "F3F4F6")
+            Image(systemName: "photo")
+                .font(.system(size: 22, weight: .light))
+                .foregroundStyle(Color.black.opacity(0.18))
         }
     }
 
     private func load() async {
         guard let resolvedURL else {
             image = nil
+            hasFailed = false
             return
         }
 
         // A cache hit is shown without a placeholder frame in between, so recycled rows don't flash.
         if let hit = ImageLoader.shared.cached(resolvedURL) {
             image = hit
+            hasFailed = false
             return
         }
 
+        hasFailed = false
+
         do {
-            image = try await ImageLoader.shared.image(for: resolvedURL)
+            let loaded = try await ImageLoader.shared.image(for: resolvedURL)
+            withAnimation(.easeInOut(duration: 0.22)) {
+                self.image = loaded
+                self.hasFailed = false
+            }
         } catch {
-            // Being recycled is not a failed image; leave the placeholder so the retry on reappear
-            // can still succeed.
+            // Being recycled is not a failed image; leave the shimmer so retry on reappear can succeed.
             if !Task.isCancelled {
-                image = nil
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    self.image = nil
+                    self.hasFailed = true
+                }
+            }
+        }
+    }
+}
+
+/// Smooth diagonal gradient shimmer for image loading states.
+struct ImageShimmerView: View {
+    @State private var isAnimating = false
+
+    var body: some View {
+        GeometryReader { geo in
+            let width = max(geo.size.width, 100)
+            ZStack {
+                Color(hex: "F3F4F6")
+
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.white.opacity(0.0),
+                        Color.white.opacity(0.7),
+                        Color.white.opacity(0.0)
+                    ]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(width: width * 1.5)
+                .offset(x: isAnimating ? width * 1.5 : -width * 1.5)
+            }
+            .clipped()
+            .onAppear {
+                withAnimation(
+                    .linear(duration: 1.2)
+                    .repeatForever(autoreverses: false)
+                ) {
+                    isAnimating = true
+                }
             }
         }
     }

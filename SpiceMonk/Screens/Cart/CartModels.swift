@@ -20,6 +20,8 @@ struct CartItem: Decodable, Identifiable {
     let discountPercent: Double
     var subtotal: Double
     var availableQty: Int
+    let minOrderQty: Int?
+    let maxOrderQty: Int?
 
     var id: Int { cartId > 0 ? cartId : productId * 10_000 + variantId }
 
@@ -50,6 +52,8 @@ struct CartItem: Decodable, Identifiable {
         case saveAmount = "save_amount"
         case discountPercent = "discount_percent"
         case availableQty = "avl_qty"
+        case minOrderQty = "min_order_qty"
+        case maxOrderQty = "max_order_qty"
     }
 
     init(
@@ -65,7 +69,9 @@ struct CartItem: Decodable, Identifiable {
         saveAmount: Double,
         discountPercent: Double,
         subtotal: Double,
-        availableQty: Int
+        availableQty: Int,
+        minOrderQty: Int? = 1,
+        maxOrderQty: Int? = nil
     ) {
         self.cartId = cartId
         self.productId = productId
@@ -80,6 +86,8 @@ struct CartItem: Decodable, Identifiable {
         self.discountPercent = discountPercent
         self.subtotal = subtotal
         self.availableQty = availableQty
+        self.minOrderQty = minOrderQty
+        self.maxOrderQty = maxOrderQty
     }
 
     init(from added: CartAddItem, productName: String = "", productImage: String? = nil, variantName: String = "") {
@@ -96,7 +104,9 @@ struct CartItem: Decodable, Identifiable {
             saveAmount: max(added.mrp - added.customerPrice, 0),
             discountPercent: 0,
             subtotal: added.customerPrice * Double(max(added.qty, 0)),
-            availableQty: added.availableQty
+            availableQty: added.availableQty,
+            minOrderQty: added.minOrderQty,
+            maxOrderQty: added.maxOrderQty
         )
     }
 
@@ -116,6 +126,8 @@ struct CartItem: Decodable, Identifiable {
         discountPercent = container.decodeDoubleLeniently(forKey: .discountPercent) ?? 0
         subtotal = container.decodeDoubleLeniently(forKey: .subtotal) ?? 0
         availableQty = container.decodeIntLeniently(forKey: .availableQty) ?? 0
+        minOrderQty = container.decodeIntLeniently(forKey: .minOrderQty)
+        maxOrderQty = container.decodeIntLeniently(forKey: .maxOrderQty)
     }
 
     static func money(_ value: Double) -> String {
@@ -139,6 +151,60 @@ struct CartItem: Decodable, Identifiable {
     mutating func setQty(_ newQty: Int) {
         qty = max(newQty, 0)
         subtotal = customerPrice * Double(qty)
+    }
+}
+
+struct CartCharge: Decodable, Identifiable {
+    let title: String
+    let amount: Double
+    let isFree: Bool
+    let freeAbove: String?
+
+    var id: String { title }
+
+    var formattedAmount: String {
+        isFree ? "FREE" : CartItem.rupees(amount)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case title, amount
+        case isFree = "is_free"
+        case freeAbove = "free_above"
+    }
+
+    init(title: String, amount: Double, isFree: Bool = false, freeAbove: String? = nil) {
+        self.title = title
+        self.amount = amount
+        self.isFree = isFree
+        self.freeAbove = freeAbove
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        title = container.decodeStringLeniently(forKey: .title) ?? ""
+        amount = container.decodeDoubleLeniently(forKey: .amount) ?? 0
+        isFree = container.decodeBoolLeniently(forKey: .isFree) ?? false
+        freeAbove = container.decodeStringLeniently(forKey: .freeAbove)
+    }
+}
+
+struct CartDeliveryInfo: Decodable {
+    let title: String
+    let description: String
+
+    enum CodingKeys: String, CodingKey {
+        case title, description
+    }
+
+    init(title: String, description: String) {
+        self.title = title
+        self.description = description
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        title = container.decodeStringLeniently(forKey: .title) ?? ""
+        description = container.decodeStringLeniently(forKey: .description) ?? ""
     }
 }
 
@@ -187,9 +253,17 @@ struct CartResponse: Decodable {
     let message: String?
     let items: [CartItem]
     let summary: CartSummary
+    let charges: [CartCharge]
+    let coupon: AppliedCouponData?
+    let couponDiscount: Double
+    let deliveryInfo: CartDeliveryInfo?
+    let grandTotal: Double
 
     enum CodingKeys: String, CodingKey {
-        case status, message, data, summary
+        case status, message, data, summary, charges, coupon
+        case couponDiscount = "coupon_discount"
+        case deliveryInfo = "delivery_info"
+        case grandTotal = "grand_total"
     }
 
     init(from decoder: Decoder) throws {
@@ -198,6 +272,11 @@ struct CartResponse: Decodable {
         message = container.decodeStringLeniently(forKey: .message)
         items = (try? container.decode([CartItem].self, forKey: .data)) ?? []
         summary = (try? container.decode(CartSummary.self, forKey: .summary)) ?? .empty
+        charges = (try? container.decode([CartCharge].self, forKey: .charges)) ?? []
+        coupon = try? container.decodeIfPresent(AppliedCouponData.self, forKey: .coupon)
+        couponDiscount = container.decodeDoubleLeniently(forKey: .couponDiscount) ?? 0
+        deliveryInfo = try? container.decodeIfPresent(CartDeliveryInfo.self, forKey: .deliveryInfo)
+        grandTotal = container.decodeDoubleLeniently(forKey: .grandTotal) ?? 0
     }
 }
 
@@ -227,6 +306,8 @@ struct CartAddItem: Decodable {
     let mrp: Double
     let customerPrice: Double
     let availableQty: Int
+    let minOrderQty: Int?
+    let maxOrderQty: Int?
 
     enum CodingKeys: String, CodingKey {
         case qty, mrp
@@ -235,6 +316,8 @@ struct CartAddItem: Decodable {
         case variantId = "variant_id"
         case customerPrice = "customer_price"
         case availableQty = "avl_qty"
+        case minOrderQty = "min_order_qty"
+        case maxOrderQty = "max_order_qty"
     }
 
     init(from decoder: Decoder) throws {
@@ -247,6 +330,8 @@ struct CartAddItem: Decodable {
         mrp = container.decodeDoubleLeniently(forKey: .mrp) ?? 0
         customerPrice = container.decodeDoubleLeniently(forKey: .customerPrice) ?? 0
         availableQty = container.decodeIntLeniently(forKey: .availableQty) ?? 0
+        minOrderQty = container.decodeIntLeniently(forKey: .minOrderQty)
+        maxOrderQty = container.decodeIntLeniently(forKey: .maxOrderQty)
     }
 }
 

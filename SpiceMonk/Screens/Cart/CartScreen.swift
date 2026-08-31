@@ -31,6 +31,9 @@ struct CartScreen: View {
     }
 
     private var couponDiscount: Double {
+        if cart.couponDiscount > 0 {
+            return cart.couponDiscount
+        }
         guard let coupon = cart.appliedCoupon else { return 0 }
         if coupon.discountAmount > 0 {
             return coupon.discountAmount
@@ -45,9 +48,20 @@ struct CartScreen: View {
     }
 
     private var grandTotalAmount: Double {
+        if cart.grandTotal > 0 {
+            return cart.grandTotal
+        }
         let itemsCustomerPrice = max(cart.summary.totalMrp - cart.summary.totalSavings, 0)
         let discount = couponDiscount
-        return max(itemsCustomerPrice - discount + 70 + 10 + 20, 0)
+        let totalCharges: Double
+        if !cart.charges.isEmpty {
+            totalCharges = cart.charges.reduce(0) { sum, charge in
+                sum + (charge.isFree ? 0 : charge.amount)
+            }
+        } else {
+            totalCharges = 70 + 10 + 20
+        }
+        return max(itemsCustomerPrice - discount + totalCharges, 0)
     }
 
     var body: some View {
@@ -278,7 +292,10 @@ struct CartScreen: View {
     }
 
     private var deliverySlaBanner: some View {
-        HStack(spacing: 10) {
+        let title = cart.deliveryInfo?.title.isEmptyString == false ? cart.deliveryInfo!.title : "Delivery in 2 - 7 Days"
+        let description = cart.deliveryInfo?.description.isEmptyString == false ? cart.deliveryInfo!.description : "Shipment packed & dispatched from your nearest SpiceMonk hub ( Same day Delivery in Jaipur )"
+
+        return HStack(spacing: 10) {
             Image(systemName: "bolt.fill")
                 .font(.appFont(size: 13, weight: .bold))
                 .foregroundStyle(AppTheme.brandGreen)
@@ -287,10 +304,10 @@ struct CartScreen: View {
                 .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 1) {
-                Text("Delivery in 7 - 10 Days")
+                Text(title)
                     .font(.appFont(size: 13, weight: .bold))
                     .foregroundStyle(AppTheme.brandGreen)
-                Text("Shipment packed & dispatched from your nearest SpiceMonk hub")
+                Text(description)
                     .font(.appFont(size: 11))
                     .foregroundStyle(AppTheme.textSecondary)
             }
@@ -465,9 +482,28 @@ struct CartScreen: View {
                 )
             }
 
-            billRow(label: "Delivery Charges", value: "₹70", color: AppTheme.textSecondary)
-            billRow(label: "Handling Charges", value: "₹10", color: AppTheme.textSecondary)
-            billRow(label: "Packing Charges", value: "₹20", color: AppTheme.textSecondary)
+            if !cart.charges.isEmpty {
+                ForEach(cart.charges) { charge in
+                    if charge.isFree {
+                        billRow(
+                            label: charge.title,
+                            value: "FREE",
+                            strike: charge.amount > 0 ? CartItem.rupees(charge.amount) : nil,
+                            color: AppTheme.brandGreen
+                        )
+                    } else {
+                        billRow(
+                            label: charge.title,
+                            value: CartItem.rupees(charge.amount),
+                            color: AppTheme.textSecondary
+                        )
+                    }
+                }
+            } else {
+                billRow(label: "Delivery Charges", value: "₹70", color: AppTheme.textSecondary)
+                billRow(label: "Handling Charges", value: "₹10", color: AppTheme.textSecondary)
+                billRow(label: "Packing Charges", value: "₹20", color: AppTheme.textSecondary)
+            }
 
             Divider()
 

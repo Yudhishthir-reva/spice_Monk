@@ -14,6 +14,10 @@ final class CartStore: ObservableObject {
 
     @Published var items: [CartItem] = []
     @Published var summary: CartSummary = .empty
+    @Published var charges: [CartCharge] = []
+    @Published var couponDiscount: Double = 0
+    @Published var deliveryInfo: CartDeliveryInfo? = nil
+    @Published var grandTotal: Double = 0
     @Published var appliedCoupon: AppliedCouponData? = nil
     @Published var paymentMethod: PaymentMethod = .cod
     @Published var isLoading = false
@@ -92,6 +96,10 @@ final class CartStore: ObservableObject {
         pendingAfterLoad.removeAll()
         items = []
         summary = .empty
+        charges = []
+        couponDiscount = 0
+        deliveryInfo = nil
+        grandTotal = 0
         appliedCoupon = nil
         paymentMethod = .cod
         isLoading = false
@@ -184,6 +192,10 @@ final class CartStore: ObservableObject {
     func clearCartAfterPrepaidSuccess() {
         self.items = []
         self.summary = .empty
+        self.charges = []
+        self.couponDiscount = 0
+        self.deliveryInfo = nil
+        self.grandTotal = 0
         self.appliedCoupon = nil
         self.paymentMethod = .cod
     }
@@ -249,6 +261,11 @@ final class CartStore: ObservableObject {
         }
         if item.availableQty > 0, next > item.availableQty {
             toastMessage = "Only \(item.availableQty) units available in stock."
+            isShowToastView = true
+            return
+        }
+        if let maxQty = item.maxOrderQty, maxQty > 0, next > maxQty {
+            toastMessage = "Maximum limit for this item is \(maxQty) units."
             isShowToastView = true
             return
         }
@@ -344,6 +361,10 @@ final class CartStore: ObservableObject {
                 if response.status == true {
                     self.items = []
                     self.summary = .empty
+                    self.charges = []
+                    self.couponDiscount = 0
+                    self.deliveryInfo = nil
+                    self.grandTotal = 0
                     self.appliedCoupon = nil
                     self.paymentMethod = .cod
                     self.toastMessage = response.message ?? "Cart cleared successfully."
@@ -376,11 +397,11 @@ final class CartStore: ObservableObject {
         if let item = line(productId: productId, variantId: variantId), item.cartId > 0 {
             updateQty(item, qty: target)
         } else {
-            add(productId: productId, variantId: variantId, qty: max(target, 1), announce: current == 0)
+            add(productId: productId, variantId: variantId, qty: max(target, 1))
         }
     }
 
-    private func add(productId: Int, variantId: Int, qty: Int, announce: Bool) {
+    private func add(productId: Int, variantId: Int, qty: Int) {
         let key = Self.key(productId: productId, variantId: variantId)
         guard !addingKeys.contains(key) else { return }
         addingKeys.insert(key)
@@ -402,10 +423,6 @@ final class CartStore: ObservableObject {
                 if response.status == true {
                     if let added = response.item {
                         self.upsert(added)
-                    }
-                    if announce {
-                        self.toastMessage = response.message ?? "Added to cart."
-                        self.isShowToastView = true
                     }
                     self.refresh()
                 } else {
@@ -511,6 +528,13 @@ final class CartStore: ObservableObject {
                 self.didLoadOnce = true
                 self.items = response.items.filter { $0.productId > 0 }
                 self.summary = response.summary
+                self.charges = response.charges
+                self.couponDiscount = response.couponDiscount
+                self.deliveryInfo = response.deliveryInfo
+                self.grandTotal = response.grandTotal
+                if let coupon = response.coupon {
+                    self.appliedCoupon = coupon
+                }
                 self.loadError = nil
                 if self.appliedCoupon != nil {
                     self.validateAppliedCoupon()
