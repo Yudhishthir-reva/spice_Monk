@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import UIKit
 
 class UserDefaultManager {
 
@@ -20,6 +21,7 @@ class UserDefaultManager {
         case googleMapKey
         case codEnabled
         case fcmToken
+        case deviceId
     }
 
     func setUserDefaultsString(value: String, key: PersistenceKeys) {
@@ -59,6 +61,46 @@ class UserDefaultManager {
     var fcmToken: String {
         get { getUserDefaultsString(key: .fcmToken) }
         set { setUserDefaultsString(value: newValue, key: .fcmToken) }
+    }
+
+    var deviceModel: String {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        let machineMirror = Mirror(reflecting: systemInfo.machine)
+        let identifier = machineMirror.children.reduce("") { identifier, element in
+            guard let value = element.value as? Int8, value != 0 else { return identifier }
+            return identifier + String(UnicodeScalar(UInt8(value)))
+        }
+        if !identifier.isEmpty {
+            return identifier
+        }
+        return UIDevice.current.model
+    }
+
+    var deviceId: String {
+        let storedFcm = fcmToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !storedFcm.isEmpty {
+            return storedFcm
+        }
+        let storedId = getUserDefaultsString(key: .deviceId)
+        if !storedId.isEmpty {
+            return storedId
+        }
+        let newId = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
+        setUserDefaultsString(value: newId, key: .deviceId)
+        return newId
+    }
+
+    var deviceInfoJSONString: String {
+        let dict: [String: String] = [
+            "deviceId": deviceId,
+            "deviceModel": deviceModel
+        ]
+        if let data = try? JSONSerialization.data(withJSONObject: dict, options: []),
+           let json = String(data: data, encoding: .utf8) {
+            return json
+        }
+        return "{\"deviceId\":\"\(deviceId)\",\"deviceModel\":\"\(deviceModel)\"}"
     }
 
     /// Stores when the access token stops being usable, derived from the `expires_in` seconds the

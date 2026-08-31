@@ -67,12 +67,16 @@ class OTPVerifyViewModel: ObservableObject {
 
         isShowProcessing = true
 
-        let params = [
+        let params: [String: Any] = [
             "mobile": mobile,
-            "otp": otp
+            "otp": otp,
+            "device_info": UserDefaultManager.shared.deviceInfoJSONString
         ]
 
-        serviceManagable.verifyOTP(params: params, headers: [:])
+        var headers = UserDefaultManager.shared.authHeader
+        headers["Accept"] = "application/json"
+
+        serviceManagable.verifyOTP(params: params, headers: headers)
             .receive(on: RunLoop.main)
             .sink { completion in
                 switch completion {

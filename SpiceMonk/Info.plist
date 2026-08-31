@@ -4,16 +4,6 @@
 <dict>
 	<key>GoogleMapsAPIKey</key>
 	<string>AIzaSyDJkNce6YTS2hfX4GmkWUmycbYh1dkdEMA</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>SpiceMonk needs your location to help you select delivery addresses accurately and show nearby stores.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>SpiceMonk uses your location to provide accurate address selection and delivery tracking.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>SpiceMonk needs access to your microphone to let you search products by voice.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>SpiceMonk uses speech recognition to convert your voice into search queries for spices and groceries.</string>
-	<key>UIUserInterfaceStyle</key>
-	<string>Light</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>DMSans-Regular.ttf</string>

@@ -174,7 +174,15 @@ class NetworkServiceManager: NetworkServiceManagable {
     private static func fields(from params: RequestConstants.Param) -> [(key: String, value: String)] {
         guard let dictionary = params as? [String: Any] else { return [] }
         return dictionary
-            .map { (key: $0.key, value: String(describing: $0.value)) }
+            .compactMap { key, value -> (key: String, value: String)? in
+                if let dict = value as? [String: Any] {
+                    if let data = try? JSONSerialization.data(withJSONObject: dict, options: []),
+                       let jsonString = String(data: data, encoding: .utf8) {
+                        return (key: key, value: jsonString)
+                    }
+                }
+                return (key: key, value: String(describing: value))
+            }
             .sorted { $0.key < $1.key }
     }
 }
