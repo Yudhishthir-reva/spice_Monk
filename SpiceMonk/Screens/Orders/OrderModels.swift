@@ -238,7 +238,7 @@ struct OrderDetailResponse: Decodable {
 
 // MARK: - Order Placement Models
 
-struct OrderPlaceData: Decodable, Identifiable {
+struct OrderPlaceData: Decodable, Identifiable, Equatable {
     var id: Int { orderId }
     let orderId: Int
     let orderNo: String

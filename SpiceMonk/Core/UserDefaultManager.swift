@@ -19,6 +19,7 @@ class UserDefaultManager {
         case whatsappNumber
         case googleMapKey
         case codEnabled
+        case fcmToken
     }
 
     func setUserDefaultsString(value: String, key: PersistenceKeys) {
@@ -53,6 +54,11 @@ class UserDefaultManager {
             return true
         }
         return getUserDefaultsBool(key: .codEnabled)
+    }
+
+    var fcmToken: String {
+        get { getUserDefaultsString(key: .fcmToken) }
+        set { setUserDefaultsString(value: newValue, key: .fcmToken) }
     }
 
     /// Stores when the access token stops being usable, derived from the `expires_in` seconds the

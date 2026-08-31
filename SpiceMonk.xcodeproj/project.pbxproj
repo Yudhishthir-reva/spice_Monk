@@ -23,7 +23,14 @@
 		C5784A53303A000200C60492 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A52303A000200C60492 /* LocationManager.swift */; };
 		C5784A55303A000300C60492 /* GoogleMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A54303A000300C60492 /* GoogleMapView.swift */; };
 		C5784A57303A000400C60492 /* LocationPickerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A56303A000400C60492 /* LocationPickerScreen.swift */; };
+		C5784A60303A000600C60492 /* AppFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A61303A000600C60492 /* AppFont.swift */; };
+		C5784A62303A000700C60492 /* DMSans-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C5784A63303A000700C60492 /* DMSans-Regular.ttf */; };
+		C5784A64303A000800C60492 /* DMSans-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C5784A65303A000800C60492 /* DMSans-Medium.ttf */; };
+		C5784A66303A000900C60492 /* DMSans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C5784A67303A000900C60492 /* DMSans-Bold.ttf */; };
+		C5784A68303A000A00C60492 /* DMSans-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C5784A69303A000A00C60492 /* DMSans-Italic.ttf */; };
+		C5784A6A303A000B00C60492 /* DMSans-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C5784A6B303A000B00C60492 /* DMSans-BoldItalic.ttf */; };
 		C58CD04C303C4F5F0038A272 /* SavedAddressesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58CD04B303C4F5F0038A272 /* SavedAddressesScreen.swift */; };
+		C59C00913045596400A44298 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = C59C00903045596400A44298 /* GoogleService-Info.plist */; };
 		C5B2E70E30400C2A00107F9B /* AppStatusManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B2E70C30400C2A00107F9B /* AppStatusManager.swift */; };
 		C5B2E71030400D7100107F9B /* AppStatusDialogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B2E70F30400D7100107F9B /* AppStatusDialogs.swift */; };
 		C5F10F68303D79F100525CC1 /* AuthSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5F10F67303D79F100525CC1 /* AuthSessionManager.swift */; };
@@ -51,12 +58,6 @@
 		DD2F228D302F29FD0025FC97 /* AppConstant.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2271302F29FD0025FC97 /* AppConstant.swift */; };
 		DD2F228E302F29FD0025FC97 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2273302F29FD0025FC97 /* AppDelegate.swift */; };
 		DD2F228F302F29FD0025FC97 /* SpiceMonkApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2276302F29FD0025FC97 /* SpiceMonkApp.swift */; };
-		C5784A60303A000600C60492 /* AppFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A61303A000600C60492 /* AppFont.swift */; };
-		C5784A62303A000700C60492 /* DMSans-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C5784A63303A000700C60492 /* DMSans-Regular.ttf */; };
-		C5784A64303A000800C60492 /* DMSans-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C5784A65303A000800C60492 /* DMSans-Medium.ttf */; };
-		C5784A66303A000900C60492 /* DMSans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C5784A67303A000900C60492 /* DMSans-Bold.ttf */; };
-		C5784A68303A000A00C60492 /* DMSans-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C5784A69303A000A00C60492 /* DMSans-Italic.ttf */; };
-		C5784A6A303A000B00C60492 /* DMSans-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C5784A6B303A000B00C60492 /* DMSans-BoldItalic.ttf */; };
 		DD2F2294302F3A010025FC97 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2290302F3A010025FC97 /* AppTheme.swift */; };
 		DD2F2295302F3A010025FC97 /* SpiceDecorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2291302F3A010025FC97 /* SpiceDecorView.swift */; };
 		DD2F2296302F3A010025FC97 /* OTPVerifyScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2292302F3A010025FC97 /* OTPVerifyScreen.swift */; };
@@ -112,7 +113,14 @@
 		C5784A54303A000300C60492 /* GoogleMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleMapView.swift; sourceTree = "<group>"; };
 		C5784A56303A000400C60492 /* LocationPickerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPickerScreen.swift; sourceTree = "<group>"; };
 		C5784A58303A000500C60492 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C5784A61303A000600C60492 /* AppFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFont.swift; sourceTree = "<group>"; };
+		C5784A63303A000700C60492 /* DMSans-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Regular.ttf"; sourceTree = "<group>"; };
+		C5784A65303A000800C60492 /* DMSans-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Medium.ttf"; sourceTree = "<group>"; };
+		C5784A67303A000900C60492 /* DMSans-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Bold.ttf"; sourceTree = "<group>"; };
+		C5784A69303A000A00C60492 /* DMSans-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Italic.ttf"; sourceTree = "<group>"; };
+		C5784A6B303A000B00C60492 /* DMSans-BoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-BoldItalic.ttf"; sourceTree = "<group>"; };
 		C58CD04B303C4F5F0038A272 /* SavedAddressesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedAddressesScreen.swift; sourceTree = "<group>"; };
+		C59C00903045596400A44298 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		C5B2E70C30400C2A00107F9B /* AppStatusManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStatusManager.swift; sourceTree = "<group>"; };
 		C5B2E70F30400D7100107F9B /* AppStatusDialogs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStatusDialogs.swift; sourceTree = "<group>"; };
 		C5F10F67303D79F100525CC1 /* AuthSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSessionManager.swift; sourceTree = "<group>"; };
@@ -141,12 +149,6 @@
 		DD2F2274302F29FD0025FC97 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DD2F2275302F29FD0025FC97 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		DD2F2276302F29FD0025FC97 /* SpiceMonkApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpiceMonkApp.swift; sourceTree = "<group>"; };
-		C5784A61303A000600C60492 /* AppFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFont.swift; sourceTree = "<group>"; };
-		C5784A63303A000700C60492 /* DMSans-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Regular.ttf"; sourceTree = "<group>"; };
-		C5784A65303A000800C60492 /* DMSans-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Medium.ttf"; sourceTree = "<group>"; };
-		C5784A67303A000900C60492 /* DMSans-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Bold.ttf"; sourceTree = "<group>"; };
-		C5784A69303A000A00C60492 /* DMSans-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Italic.ttf"; sourceTree = "<group>"; };
-		C5784A6B303A000B00C60492 /* DMSans-BoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-BoldItalic.ttf"; sourceTree = "<group>"; };
 		DD2F2290302F3A010025FC97 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		DD2F2291302F3A010025FC97 /* SpiceDecorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpiceDecorView.swift; sourceTree = "<group>"; };
 		DD2F2292302F3A010025FC97 /* OTPVerifyScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTPVerifyScreen.swift; sourceTree = "<group>"; };
@@ -222,6 +224,26 @@
 				C5784A443039F6A800C60492 /* OrderDetailViewModel.swift */,
 			);
 			path = Orders;
+			sourceTree = "<group>";
+		};
+		C5784A6C303A000C00C60492 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				C5784A63303A000700C60492 /* DMSans-Regular.ttf */,
+				C5784A65303A000800C60492 /* DMSans-Medium.ttf */,
+				C5784A67303A000900C60492 /* DMSans-Bold.ttf */,
+				C5784A69303A000A00C60492 /* DMSans-Italic.ttf */,
+				C5784A6B303A000B00C60492 /* DMSans-BoldItalic.ttf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
+		C5784A6D303A000D00C60492 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				C5784A6C303A000C00C60492 /* Fonts */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		C5B2E70D30400C2A00107F9B /* AppStatus */ = {
@@ -371,26 +393,6 @@
 			path = Utility;
 			sourceTree = "<group>";
 		};
-		C5784A6C303A000C00C60492 /* Fonts */ = {
-			isa = PBXGroup;
-			children = (
-				C5784A63303A000700C60492 /* DMSans-Regular.ttf */,
-				C5784A65303A000800C60492 /* DMSans-Medium.ttf */,
-				C5784A67303A000900C60492 /* DMSans-Bold.ttf */,
-				C5784A69303A000A00C60492 /* DMSans-Italic.ttf */,
-				C5784A6B303A000B00C60492 /* DMSans-BoldItalic.ttf */,
-			);
-			path = Fonts;
-			sourceTree = "<group>";
-		};
-		C5784A6D303A000D00C60492 /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				C5784A6C303A000C00C60492 /* Fonts */,
-			);
-			path = Resources;
-			sourceTree = "<group>";
-		};
 		DD2F2277302F29FD0025FC97 /* SpiceMonk */ = {
 			isa = PBXGroup;
 			children = (
@@ -404,6 +406,7 @@
 				DD2F2274302F29FD0025FC97 /* Assets.xcassets */,
 				DD2F2275302F29FD0025FC97 /* LaunchScreen.storyboard */,
 				DD2F2276302F29FD0025FC97 /* SpiceMonkApp.swift */,
+				C59C00903045596400A44298 /* GoogleService-Info.plist */,
 			);
 			path = SpiceMonk;
 			sourceTree = "<group>";
@@ -451,6 +454,7 @@
 				DD2F219E302F20850025FC97 /* Frameworks */,
 				DD2F219F302F20850025FC97 /* Resources */,
 				5DECDCC3D3CAB1C117A0A62A /* [CP] Copy Pods Resources */,
+				A10E47789A9605D993DE7599 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -501,6 +505,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DD2F2278302F29FD0025FC97 /* Assets.xcassets in Resources */,
+				C59C00913045596400A44298 /* GoogleService-Info.plist in Resources */,
 				DD2F2279302F29FD0025FC97 /* LaunchScreen.storyboard in Resources */,
 				C5784A62303A000700C60492 /* DMSans-Regular.ttf in Resources */,
 				C5784A64303A000800C60492 /* DMSans-Medium.ttf in Resources */,
@@ -532,6 +537,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		A10E47789A9605D993DE7599 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		B5CDCFD748F5783BAA6D43DD /* [CP] Check Pods Manifest.lock */ = {

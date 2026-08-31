@@ -8,4 +8,6 @@ target 'SpiceMonk' do
   # Pods for SpiceMonk
   pod 'GoogleMaps'
   pod 'GooglePlaces'
+  pod 'FirebaseCore'
+  pod 'FirebaseMessaging'
 end

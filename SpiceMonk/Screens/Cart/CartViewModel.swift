@@ -204,9 +204,11 @@ final class CartStore: ObservableObject {
             self.pendingAddTapCount[key, default: 0] += 1
             let tapCount = self.pendingAddTapCount[key]!
 
-            // Optimistically bump local state now (per tap)
+            // Optimistically bump local state by 1 for this tap only.
+            // `current` already includes previous optimistic bumps, so adding
+            // the full cumulative `tapCount` would double-count.
             let current = self.quantity(productId: productId, variantId: variantId)
-            let optimisticQty = current + tapCount
+            let optimisticQty = current + 1
             if let item = self.line(productId: productId, variantId: variantId), item.cartId > 0 {
                 self.patch(cartId: item.cartId) { $0.setQty(optimisticQty) }
                 self.bump()
@@ -356,22 +358,25 @@ final class CartStore: ObservableObject {
     }
 
     private func performAddOrIncrement(productId: Int, variantId: Int, availableQty: Int, tapCount: Int = 1) {
+        // `current` already reflects the optimistic qty bumps applied per-tap
+        // in addOrIncrement, so we send it directly to the API rather than
+        // adding tapCount again (which would double-count).
         let current = quantity(productId: productId, variantId: variantId)
-        let next = current + tapCount
-        if availableQty > 0, next > availableQty {
+        let target = current == 0 ? tapCount : current   // first add when nothing in cart
+        if availableQty > 0, target > availableQty {
             toastMessage = "Only \(availableQty) units available in stock."
             isShowToastView = true
             // Roll back optimistic UI to actual qty
             if let item = line(productId: productId, variantId: variantId), item.cartId > 0 {
-                patch(cartId: item.cartId) { $0.setQty(current) }
+                patch(cartId: item.cartId) { $0.setQty(min(current, availableQty)) }
                 bump()
             }
             return
         }
         if let item = line(productId: productId, variantId: variantId), item.cartId > 0 {
-            updateQty(item, qty: next)
+            updateQty(item, qty: target)
         } else {
-            add(productId: productId, variantId: variantId, qty: max(next, 1), announce: current == 0)
+            add(productId: productId, variantId: variantId, qty: max(target, 1), announce: current == 0)
         }
     }
 
