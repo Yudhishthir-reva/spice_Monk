@@ -30,6 +30,7 @@ final class CartStore: ObservableObject {
     @Published private var mutationTick = 0
 
     private var didLoadOnce = false
+    private var pendingCartCouponQuery: CartCouponQuery = .default
     private var pendingAfterLoad: [() -> Void] = []
     private var removingIds = Set<Int>()
     private var updatingIds = Set<Int>()
@@ -128,10 +129,63 @@ final class CartStore: ObservableObject {
         fetch()
     }
 
-    func refresh() {
+    func refresh(clearingCoupon: Bool = false) {
+        if clearingCoupon {
+            pendingCartCouponQuery = .cleared
+        } else if let coupon = appliedCoupon, coupon.couponId > 0 {
+            pendingCartCouponQuery = .couponId(coupon.couponId)
+        } else {
+            pendingCartCouponQuery = .default
+        }
         guard !isRefreshing else { return }
         isRefreshing = true
         fetch()
+    }
+
+    /// Validate `coupon_id` then sync cart via `GET customer/cart?coupon_id=`.
+    func syncAppliedCoupon(
+        _ data: AppliedCouponData,
+        completion: @escaping (_ coupon: AppliedCouponData?, _ errorMessage: String?) -> Void
+    ) {
+        appliedCoupon = data
+        couponDiscount = data.discountAmount
+        if data.finalTotal > 0 {
+            grandTotal = data.finalTotal
+        }
+
+        serviceManagable.validateCoupon(couponId: data.couponId)
+            .flatMap { [weak self] validateResponse -> AnyPublisher<(AppliedCouponData, CartResponse), Error> in
+                guard let self else {
+                    return Fail(error: RequestError.unknownError).eraseToAnyPublisher()
+                }
+                guard validateResponse.status == true else {
+                    let message = validateResponse.message ?? "Coupon is not valid."
+                    return Fail(error: RequestError.apiMessage(message)).eraseToAnyPublisher()
+                }
+                let discount = validateResponse.discountAmount > 0
+                    ? validateResponse.discountAmount
+                    : data.discountAmount
+                let validated = data.updating(discountAmount: discount)
+                return self.serviceManagable.fetchCart(couponQuery: .couponId(data.couponId))
+                    .map { (validated, $0) }
+                    .eraseToAnyPublisher()
+            }
+            .receive(on: RunLoop.main)
+            .sink { [weak self] sinkCompletion in
+                if case .failure(let error) = sinkCompletion {
+                    self?.appliedCoupon = nil
+                    self?.couponDiscount = 0
+                    let message = (error as? RequestError)?.errorString ?? error.localizedDescription
+                    completion(nil, message)
+                }
+            } receiveValue: { [weak self] validated, response in
+                guard let self else { return }
+                self.appliedCoupon = validated
+                self.couponDiscount = validated.discountAmount
+                self.applyCartResponse(response, couponQuery: .couponId(data.couponId))
+                completion(self.appliedCoupon ?? validated, nil)
+            }
+            .store(in: &cancellables)
     }
 
     func reset() {
@@ -151,6 +205,7 @@ final class CartStore: ObservableObject {
         isClearing = false
         isRepeatingOrder = false
         didLoadOnce = false
+        pendingCartCouponQuery = .default
         removingIds.removeAll()
         updatingIds.removeAll()
         addingKeys.removeAll()
@@ -716,7 +771,9 @@ final class CartStore: ObservableObject {
     }
 
     private func fetch() {
-        serviceManagable.fetchCart()
+        let couponQuery = pendingCartCouponQuery
+        pendingCartCouponQuery = .default
+        serviceManagable.fetchCart(couponQuery: couponQuery)
             .receive(on: RunLoop.main)
             .sink { [weak self] completion in
                 guard let self else { return }
@@ -735,21 +792,8 @@ final class CartStore: ObservableObject {
                 self.isLoading = false
                 self.isRefreshing = false
                 self.didLoadOnce = true
-                self.items = response.items.filter { $0.productId > 0 }
-                self.summary = response.summary
-                self.charges = response.charges
-                self.couponDiscount = response.couponDiscount
-                self.deliveryInfo = response.deliveryInfo
-                self.grandTotal = response.grandTotal
-                if let coupon = response.coupon {
-                    self.appliedCoupon = coupon
-                } else {
-                    self.appliedCoupon = nil
-                }
+                self.applyCartResponse(response, couponQuery: couponQuery)
                 self.loadError = nil
-                if self.appliedCoupon != nil {
-                    self.validateAppliedCoupon()
-                }
                 let pending = self.pendingAfterLoad
                 self.pendingAfterLoad.removeAll()
                 pending.forEach { $0() }
@@ -757,56 +801,99 @@ final class CartStore: ObservableObject {
             .store(in: &cancellables)
     }
 
+    private func applyCartResponse(_ response: CartResponse, couponQuery: CartCouponQuery) {
+        items = response.items.filter { $0.productId > 0 }
+        summary = response.summary
+        charges = response.charges
+        deliveryInfo = response.deliveryInfo
+
+        switch couponQuery {
+        case .cleared:
+            appliedCoupon = nil
+            couponDiscount = response.couponDiscount
+            if response.grandTotal > 0 {
+                grandTotal = response.grandTotal
+            }
+            return
+        case .couponId:
+            if let coupon = response.coupon {
+                appliedCoupon = coupon
+                couponDiscount = response.couponDiscount > 0 ? response.couponDiscount : coupon.discountAmount
+            } else if response.couponDiscount > 0, let existing = appliedCoupon {
+                appliedCoupon = existing.updating(discountAmount: response.couponDiscount)
+                couponDiscount = response.couponDiscount
+            }
+            if response.grandTotal > 0 {
+                grandTotal = response.grandTotal
+            }
+            return
+        case .default:
+            break
+        }
+
+        if let coupon = response.coupon {
+            appliedCoupon = coupon
+            couponDiscount = response.couponDiscount > 0 ? response.couponDiscount : coupon.discountAmount
+        } else if response.couponDiscount > 0, let existing = appliedCoupon {
+            appliedCoupon = existing.updating(discountAmount: response.couponDiscount)
+            couponDiscount = response.couponDiscount
+        } else if appliedCoupon == nil {
+            couponDiscount = response.couponDiscount
+        }
+
+        if response.grandTotal > 0 {
+            let serverOmitsCoupon = response.coupon == nil && response.couponDiscount <= 0
+            if !(serverOmitsCoupon && appliedCoupon != nil) {
+                grandTotal = response.grandTotal
+            }
+        }
+    }
+
     func removeCoupon() {
         guard appliedCoupon != nil else { return }
-        serviceManagable.removeCoupon()
-            .receive(on: RunLoop.main)
-            .sink { [weak self] completion in
-                guard let self else { return }
-                if case .failure(let error) = completion {
-                    self.toastMessage = (error as? RequestError)?.errorString ?? error.localizedDescription
-                    self.isShowToastView = true
-                    self.refresh()
-                }
-            } receiveValue: { [weak self] response in
-                guard let self else { return }
-                if response.status == true {
-                    self.appliedCoupon = nil
-                    self.couponDiscount = 0
-                    self.toastMessage = response.message ?? "Coupon removed successfully."
-                    self.isShowToastView = true
-                    self.refresh()
-                } else {
-                    self.toastMessage = response.message ?? "Could not remove coupon."
-                    self.isShowToastView = true
-                    self.refresh()
-                }
-            }
-            .store(in: &cancellables)
+        appliedCoupon = nil
+        couponDiscount = 0
+        refresh(clearingCoupon: true)
     }
 
     func validateAppliedCoupon() {
         guard let coupon = appliedCoupon else { return }
         serviceManagable.validateCoupon(couponId: coupon.couponId)
+            .flatMap { [weak self] validateResponse -> AnyPublisher<CartResponse, Error> in
+                guard let self else {
+                    return Fail(error: RequestError.unknownError).eraseToAnyPublisher()
+                }
+                guard validateResponse.status == true else {
+                    let message = validateResponse.message ?? "Coupon is no longer valid for your updated cart."
+                    return Fail(error: RequestError.apiMessage(message)).eraseToAnyPublisher()
+                }
+                let validated = coupon.updating(
+                    discountAmount: validateResponse.discountAmount > 0
+                        ? validateResponse.discountAmount
+                        : coupon.discountAmount
+                )
+                self.appliedCoupon = validated
+                self.couponDiscount = validated.discountAmount
+                return self.serviceManagable.fetchCart(couponQuery: .couponId(coupon.couponId))
+            }
             .receive(on: RunLoop.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    // If network fails during background validation, retain existing state
-                    #if DEBUG
-                    print("Coupon validation failed: \(error)")
-                    #endif
+                    if case RequestError.apiMessage(let message) = error {
+                        self?.appliedCoupon = nil
+                        self?.couponDiscount = 0
+                        self?.toastMessage = message
+                        self?.isShowToastView = true
+                        self?.refresh(clearingCoupon: true)
+                    } else {
+                        #if DEBUG
+                        print("Coupon validation failed: \(error)")
+                        #endif
+                    }
                 }
             } receiveValue: { [weak self] response in
-                guard let self else { return }
-                if response.status == true {
-                    if response.discountAmount != coupon.discountAmount {
-                        self.appliedCoupon = coupon.updating(discountAmount: response.discountAmount)
-                    }
-                } else {
-                    self.appliedCoupon = nil
-                    self.toastMessage = response.message ?? "Coupon is no longer valid for your updated cart."
-                    self.isShowToastView = true
-                }
+                guard let self, let coupon = self.appliedCoupon else { return }
+                self.applyCartResponse(response, couponQuery: .couponId(coupon.couponId))
             }
             .store(in: &cancellables)
     }

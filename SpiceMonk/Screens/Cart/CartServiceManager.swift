@@ -6,6 +6,15 @@
 import Foundation
 import Combine
 
+enum CartCouponQuery: Equatable {
+    /// No `coupon_id` query param.
+    case `default`
+    /// `GET customer/cart?coupon_id=` — clears coupon on server.
+    case cleared
+    /// `GET customer/cart?coupon_id={id}` — cart totals with coupon applied.
+    case couponId(Int)
+}
+
 class CartServiceManager {
 
     var networkService: NetworkServiceManagable
@@ -14,10 +23,19 @@ class CartServiceManager {
         self.networkService = networkService
     }
 
-    func fetchCart() -> AnyPublisher<CartResponse, Error> {
-        networkService.request(
+    func fetchCart(couponQuery: CartCouponQuery = .default) -> AnyPublisher<CartResponse, Error> {
+        var params: [String: Any] = [:]
+        switch couponQuery {
+        case .default:
+            break
+        case .cleared:
+            params["coupon_id"] = ""
+        case .couponId(let id):
+            params["coupon_id"] = id
+        }
+        return networkService.request(
             APIRouter.cart,
-            params: [String: Any](),
+            params: params,
             headers: UserDefaultManager.shared.authHeader
         )
     }
@@ -73,14 +91,6 @@ class CartServiceManager {
         networkService.request(
             APIRouter.couponApply,
             params: ["code": code],
-            headers: UserDefaultManager.shared.authHeader
-        )
-    }
-
-    func removeCoupon() -> AnyPublisher<StatusResponse, Error> {
-        networkService.request(
-            APIRouter.couponRemove,
-            params: [String: Any](),
             headers: UserDefaultManager.shared.authHeader
         )
     }

@@ -9,7 +9,6 @@ import Combine
 struct ApplyCouponSheet: View {
 
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject var cart = CartStore.shared
     var onCouponApplied: ((AppliedCouponData) -> Void)? = nil
 
     @State private var coupons: [Coupon] = []
@@ -250,20 +249,23 @@ struct ApplyCouponSheet: View {
         service.applyCoupon(code: code)
             .receive(on: RunLoop.main)
             .sink { completion in
-                applyingCode = nil
                 if case .failure(let error) = completion {
+                    applyingCode = nil
                     applyError = (error as? RequestError)?.errorString ?? error.localizedDescription
                 }
             } receiveValue: { response in
-                applyingCode = nil
                 if response.status == true, let appliedData = response.data {
-                    cart.appliedCoupon = appliedData
-                    cart.couponDiscount = appliedData.discountAmount
-                    cart.grandTotal = appliedData.finalTotal
-                    cart.refresh()
-                    dismiss()
-                    onCouponApplied?(appliedData)
+                    CartStore.shared.syncAppliedCoupon(appliedData) { coupon, errorMessage in
+                        applyingCode = nil
+                        if let coupon {
+                            dismiss()
+                            onCouponApplied?(coupon)
+                        } else {
+                            applyError = errorMessage ?? "Failed to apply coupon."
+                        }
+                    }
                 } else {
+                    applyingCode = nil
                     applyError = response.message ?? "Failed to apply coupon."
                 }
             }

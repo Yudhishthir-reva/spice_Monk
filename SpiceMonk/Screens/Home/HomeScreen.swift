@@ -135,6 +135,17 @@ struct HomeScreen: View {
                         VStack(spacing: 0) {
                             header(safeAreaTop: topInset)
                                 .zIndex(1000003)
+
+                            if topHeaderOffset > 0 || viewModel.isRefreshing {
+                                VStack {
+                                    ProgressView()
+                                        .progressViewStyle(.circular)
+                                        .controlSize(.large)
+                                        .tint(AppTheme.brandGreen)
+                                }
+                                .frame(height: refreshIndicatorHeight)
+                                .opacity(refreshIndicatorOpacity)
+                            }
                         }
                         .zIndex(1000001)
                         .visualEffect { content, proxy in
@@ -146,7 +157,11 @@ struct HomeScreen: View {
                     }
                 }
                 .ignoresSafeArea(edges: .top)
-                .refreshable { await refreshFeed() }
+                .onChange(of: topHeaderOffset) { _, newValue in
+                    if newValue > 80, !viewModel.isRefreshing {
+                        viewModel.refresh()
+                    }
+                }
             }
         }
         .ignoresSafeArea(edges: .top)
@@ -264,20 +279,29 @@ struct HomeScreen: View {
 
     // MARK: - Scroll helpers
 
+    private var refreshIndicatorHeight: CGFloat {
+        if viewModel.isRefreshing { return 56 }
+        return topHeaderOffset > 80 ? 80 : topHeaderOffset
+    }
+
+    private var refreshIndicatorOpacity: CGFloat {
+        if viewModel.isRefreshing { return 1 }
+        guard topHeaderOffset >= 10 else { return 0 }
+        if topHeaderOffset >= 20 { return 1 }
+        return (topHeaderOffset / 10.0) - 1.0
+    }
+
     nonisolated private func offsetYFullHeader(_ proxy: GeometryProxy) -> CGFloat {
         let minY = proxy.frame(in: .scrollView(axis: .vertical)).minY
+        Task { @MainActor in
+            self.topHeaderOffset = minY
+        }
         return minY > 0 ? -minY : 0
     }
 
     private func resolvedTopInset(_ fromGeometry: CGFloat) -> CGFloat {
         if fromGeometry > 0 { return fromGeometry }
         return UIApplication.shared.keyWindow?.safeAreaInsets.top ?? 59
-    }
-    private func refreshFeed() async {
-        viewModel.refresh()
-        while viewModel.isRefreshing {
-            try? await Task.sleep(for: .milliseconds(80))
-        }
     }
 }
 

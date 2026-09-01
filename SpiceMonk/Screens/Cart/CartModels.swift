@@ -261,6 +261,7 @@ struct CartResponse: Decodable {
 
     enum CodingKeys: String, CodingKey {
         case status, message, data, summary, charges, coupon
+        case appliedCoupon = "applied_coupon"
         case couponDiscount = "coupon_discount"
         case deliveryInfo = "delivery_info"
         case grandTotal = "grand_total"
@@ -273,7 +274,8 @@ struct CartResponse: Decodable {
         items = (try? container.decode([CartItem].self, forKey: .data)) ?? []
         summary = (try? container.decode(CartSummary.self, forKey: .summary)) ?? .empty
         charges = (try? container.decode([CartCharge].self, forKey: .charges)) ?? []
-        coupon = try? container.decodeIfPresent(AppliedCouponData.self, forKey: .coupon)
+        coupon = (try? container.decodeIfPresent(AppliedCouponData.self, forKey: .coupon))
+            ?? (try? container.decodeIfPresent(AppliedCouponData.self, forKey: .appliedCoupon))
         couponDiscount = container.decodeDoubleLeniently(forKey: .couponDiscount) ?? 0
         deliveryInfo = try? container.decodeIfPresent(CartDeliveryInfo.self, forKey: .deliveryInfo)
         grandTotal = container.decodeDoubleLeniently(forKey: .grandTotal) ?? 0
