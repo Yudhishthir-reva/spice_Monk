@@ -33,6 +33,7 @@ struct CartScreen: View {
     }
 
     private var couponDiscount: Double {
+        guard cart.isAppliedCouponValid else { return 0 }
         if cart.couponDiscount > 0 {
             return cart.couponDiscount
         }
@@ -415,6 +416,16 @@ struct CartScreen: View {
     // MARK: - Coupon
 
     private var couponCard: some View {
+        Group {
+            if let coupon = cart.appliedCoupon, !cart.isAppliedCouponValid {
+                invalidCouponBanner(coupon: coupon)
+            } else {
+                couponActionCard
+            }
+        }
+    }
+
+    private var couponActionCard: some View {
         Button {
             if cart.appliedCoupon != nil {
                 cart.removeCoupon()
@@ -467,6 +478,43 @@ struct CartScreen: View {
         .buttonStyle(.plain)
     }
 
+    private func invalidCouponBanner(coupon: AppliedCouponData) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "xmark.circle.fill")
+                .font(.appFont(size: 18, weight: .semibold))
+                .foregroundStyle(Color(hex: "D32F2F"))
+                .padding(.top, 1)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(coupon.code) is invalid")
+                    .font(.appFont(size: 14, weight: .bold))
+                    .foregroundStyle(Color(hex: "B71C1C"))
+
+                Text(cart.couponValidationMessage ?? "This coupon is not valid for your current cart.")
+                    .font(.appFont(size: 12))
+                    .foregroundStyle(Color(hex: "C62828"))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button {
+                cart.removeCoupon()
+            } label: {
+                Text("Remove")
+                    .font(.appFont(size: 14, weight: .bold))
+                    .foregroundStyle(Color(hex: "B71C1C"))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(14)
+        .background(Color(hex: "FDF0F1"))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color(hex: "F5C6CB"), lineWidth: 1)
+        }
+    }
+
     // MARK: - Bill
 
     private var billDetailsCard: some View {
@@ -491,9 +539,14 @@ struct CartScreen: View {
                     value: "-\(CartItem.rupees(summary.totalSavings))",
                     color: AppTheme.brandGreen
                 )
+                billRow(
+                    label: "Items Total",
+                    value: CartItem.rupees(summary.totalCustomerPrice),
+                    color: AppTheme.textSecondary
+                )
             }
 
-            if couponDiscount > 0 {
+            if couponDiscount > 0, cart.isAppliedCouponValid {
                 billRow(
                     label: "Coupon Discount",
                     value: "-\(CartItem.rupees(couponDiscount))",

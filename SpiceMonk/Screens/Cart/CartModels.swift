@@ -248,16 +248,62 @@ struct CartSummary: Decodable {
     }
 }
 
+struct CartCouponPayload: Decodable {
+    let isValid: Bool
+    let message: String?
+    let details: AppliedCouponData?
+
+    enum CodingKeys: String, CodingKey {
+        case isValid = "is_valid"
+        case message
+        case couponId = "coupon_id"
+        case code
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        message = container.decodeStringLeniently(forKey: .message)
+
+        if let isValid = container.decodeBoolLeniently(forKey: .isValid) {
+            self.isValid = isValid
+            if isValid {
+                details = try? AppliedCouponData(from: decoder)
+            } else {
+                details = nil
+            }
+        } else if container.decodeIntLeniently(forKey: .couponId) != nil
+                    || !(container.decodeStringLeniently(forKey: .code) ?? "").isEmpty {
+            isValid = true
+            details = try? AppliedCouponData(from: decoder)
+        } else {
+            isValid = true
+            details = nil
+        }
+    }
+}
+
 struct CartResponse: Decodable {
     let status: Bool?
     let message: String?
     let items: [CartItem]
     let summary: CartSummary
     let charges: [CartCharge]
-    let coupon: AppliedCouponData?
+    let couponPayload: CartCouponPayload?
     let couponDiscount: Double
     let deliveryInfo: CartDeliveryInfo?
     let grandTotal: Double
+
+    /// Valid applied coupon details when cart response includes them.
+    var coupon: AppliedCouponData? {
+        guard let payload = couponPayload, payload.isValid else { return nil }
+        return payload.details
+    }
+
+    /// Shown when a selected coupon is no longer valid for the current cart value.
+    var couponInvalidMessage: String? {
+        guard let payload = couponPayload, !payload.isValid else { return nil }
+        return payload.message
+    }
 
     enum CodingKeys: String, CodingKey {
         case status, message, data, summary, charges, coupon
@@ -274,8 +320,8 @@ struct CartResponse: Decodable {
         items = (try? container.decode([CartItem].self, forKey: .data)) ?? []
         summary = (try? container.decode(CartSummary.self, forKey: .summary)) ?? .empty
         charges = (try? container.decode([CartCharge].self, forKey: .charges)) ?? []
-        coupon = (try? container.decodeIfPresent(AppliedCouponData.self, forKey: .coupon))
-            ?? (try? container.decodeIfPresent(AppliedCouponData.self, forKey: .appliedCoupon))
+        couponPayload = (try? container.decodeIfPresent(CartCouponPayload.self, forKey: .coupon))
+            ?? (try? container.decodeIfPresent(CartCouponPayload.self, forKey: .appliedCoupon))
         couponDiscount = container.decodeDoubleLeniently(forKey: .couponDiscount) ?? 0
         deliveryInfo = try? container.decodeIfPresent(CartDeliveryInfo.self, forKey: .deliveryInfo)
         grandTotal = container.decodeDoubleLeniently(forKey: .grandTotal) ?? 0

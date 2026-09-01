@@ -19,6 +19,8 @@ final class CartStore: ObservableObject {
     @Published var deliveryInfo: CartDeliveryInfo? = nil
     @Published var grandTotal: Double = 0
     @Published var appliedCoupon: AppliedCouponData? = nil
+    @Published var isAppliedCouponValid = true
+    @Published var couponValidationMessage: String? = nil
     @Published var paymentMethod: PaymentMethod = .cod
     @Published var isLoading = false
     @Published var isRefreshing = false
@@ -142,6 +144,16 @@ final class CartStore: ObservableObject {
         fetch()
     }
 
+    /// Silent cart sync after add/update/remove — keeps bill details in sync with server.
+    private func syncCartAfterMutation() {
+        if let coupon = appliedCoupon, coupon.couponId > 0 {
+            pendingCartCouponQuery = .couponId(coupon.couponId)
+        } else {
+            pendingCartCouponQuery = .default
+        }
+        fetch()
+    }
+
     /// Validate `coupon_id` then sync cart via `GET customer/cart?coupon_id=`.
     func syncAppliedCoupon(
         _ data: AppliedCouponData,
@@ -149,6 +161,8 @@ final class CartStore: ObservableObject {
     ) {
         appliedCoupon = data
         couponDiscount = data.discountAmount
+        isAppliedCouponValid = true
+        couponValidationMessage = nil
         if data.finalTotal > 0 {
             grandTotal = data.finalTotal
         }
@@ -175,6 +189,8 @@ final class CartStore: ObservableObject {
                 if case .failure(let error) = sinkCompletion {
                     self?.appliedCoupon = nil
                     self?.couponDiscount = 0
+                    self?.isAppliedCouponValid = true
+                    self?.couponValidationMessage = nil
                     let message = (error as? RequestError)?.errorString ?? error.localizedDescription
                     completion(nil, message)
                 }
@@ -198,6 +214,8 @@ final class CartStore: ObservableObject {
         deliveryInfo = nil
         grandTotal = 0
         appliedCoupon = nil
+        isAppliedCouponValid = true
+        couponValidationMessage = nil
         paymentMethod = .cod
         isLoading = false
         isRefreshing = false
@@ -615,6 +633,7 @@ final class CartStore: ObservableObject {
                         variantId: item.variantId,
                         desiredQty: desiredQty
                     )
+                    self.syncCartAfterMutation()
                 } else {
                     self.items = snapshot
                     self.syncSummaryFromItems()
@@ -810,48 +829,71 @@ final class CartStore: ObservableObject {
         switch couponQuery {
         case .cleared:
             appliedCoupon = nil
+            isAppliedCouponValid = true
+            couponValidationMessage = nil
             couponDiscount = response.couponDiscount
             if response.grandTotal > 0 {
                 grandTotal = response.grandTotal
             }
             return
-        case .couponId:
-            if let coupon = response.coupon {
-                appliedCoupon = coupon
-                couponDiscount = response.couponDiscount > 0 ? response.couponDiscount : coupon.discountAmount
-            } else if response.couponDiscount > 0, let existing = appliedCoupon {
-                appliedCoupon = existing.updating(discountAmount: response.couponDiscount)
-                couponDiscount = response.couponDiscount
-            }
-            if response.grandTotal > 0 {
+        case .couponId, .default:
+            break
+        }
+
+        applyCouponState(from: response)
+
+        if response.grandTotal > 0 {
+            let serverOmitsCoupon = response.coupon == nil
+                && response.couponInvalidMessage == nil
+                && response.couponDiscount <= 0
+            if !(serverOmitsCoupon && appliedCoupon != nil && isAppliedCouponValid) {
                 grandTotal = response.grandTotal
             }
+        }
+    }
+
+    private func applyCouponState(from response: CartResponse) {
+        couponDiscount = response.couponDiscount
+
+        if let payload = response.couponPayload {
+            if payload.isValid, let details = payload.details {
+                appliedCoupon = details
+                isAppliedCouponValid = true
+                couponValidationMessage = nil
+                if response.couponDiscount > 0 {
+                    couponDiscount = response.couponDiscount
+                } else if details.discountAmount > 0 {
+                    couponDiscount = details.discountAmount
+                }
+            } else if !payload.isValid {
+                isAppliedCouponValid = false
+                couponValidationMessage = payload.message ?? "Coupon is not valid for this cart."
+                couponDiscount = response.couponDiscount
+            }
             return
-        case .default:
-            break
         }
 
         if let coupon = response.coupon {
             appliedCoupon = coupon
+            isAppliedCouponValid = true
+            couponValidationMessage = nil
             couponDiscount = response.couponDiscount > 0 ? response.couponDiscount : coupon.discountAmount
         } else if response.couponDiscount > 0, let existing = appliedCoupon {
             appliedCoupon = existing.updating(discountAmount: response.couponDiscount)
+            isAppliedCouponValid = true
+            couponValidationMessage = nil
             couponDiscount = response.couponDiscount
         } else if appliedCoupon == nil {
-            couponDiscount = response.couponDiscount
-        }
-
-        if response.grandTotal > 0 {
-            let serverOmitsCoupon = response.coupon == nil && response.couponDiscount <= 0
-            if !(serverOmitsCoupon && appliedCoupon != nil) {
-                grandTotal = response.grandTotal
-            }
+            isAppliedCouponValid = true
+            couponValidationMessage = nil
         }
     }
 
     func removeCoupon() {
         guard appliedCoupon != nil else { return }
         appliedCoupon = nil
+        isAppliedCouponValid = true
+        couponValidationMessage = nil
         couponDiscount = 0
         refresh(clearingCoupon: true)
     }
