@@ -16,6 +16,8 @@ struct CartScreen: View {
     @State private var isPickingAddress = false
     @State private var isAddingAddress = false
     @State private var isApplyingCoupon = false
+    @State private var showCelebrationModal = false
+    @State private var celebrationCoupon: AppliedCouponData? = nil
     @State private var isPickingPaymentMethod = false
     @State private var navigateToOrderId: Int? = nil
     @State private var placedOrderData: OrderPlaceData? = nil
@@ -204,7 +206,26 @@ struct CartScreen: View {
             }
         }
         .sheet(isPresented: $isApplyingCoupon) {
-            ApplyCouponSheet()
+            ApplyCouponSheet { applied in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    celebrationCoupon = applied
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        showCelebrationModal = true
+                    }
+                }
+            }
+        }
+        .overlay {
+            if showCelebrationModal, let coupon = celebrationCoupon {
+                CouponCelebrationModalView(coupon: coupon) {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        showCelebrationModal = false
+                        celebrationCoupon = nil
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(999)
+            }
         }
         .sheet(isPresented: $isPickingPaymentMethod) {
             PaymentMethodPickerSheet()
@@ -396,9 +417,7 @@ struct CartScreen: View {
     private var couponCard: some View {
         Button {
             if cart.appliedCoupon != nil {
-                cart.appliedCoupon = nil
-                cart.toastMessage = "Coupon removed successfully."
-                cart.isShowToastView = true
+                cart.removeCoupon()
             } else {
                 isApplyingCoupon = true
             }
@@ -753,7 +772,7 @@ private struct CartItemRow: View {
             CartQtyStepper(
                 qty: item.qty,
                 inStock: item.inStock,
-                canIncrement: item.inStock && item.qty < item.availableQty,
+                canIncrement: item.inStock && item.qty < incrementLimit,
                 isBusy: isBusy,
                 compact: true,
                 onIncrement: onIncrement,
@@ -762,6 +781,13 @@ private struct CartItemRow: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
+    }
+
+    private var incrementLimit: Int {
+        var limit = Int.max
+        if item.availableQty > 0 { limit = min(limit, item.availableQty) }
+        if let maxQty = item.maxOrderQty, maxQty > 0 { limit = min(limit, maxQty) }
+        return limit
     }
     
     private var image: some View {
@@ -854,30 +880,22 @@ struct CartQtyStepper: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             } else if qty == 0 {
                 Button(action: onIncrement) {
-                    HStack(spacing: 3) {
-                        if isBusy {
-                            ProgressView()
-                                .tint(AppTheme.brandGreen)
-                                .scaleEffect(0.75)
-                        } else {
-                            Text("ADD +")
-                                .font(.appFont(size: addFont, weight: .heavy))
-                                .tracking(0.4)
+                    Text("ADD +")
+                        .font(.appFont(size: addFont, weight: .heavy))
+                        .tracking(0.4)
+                        .foregroundStyle(AppTheme.brandGreen)
+                        .frame(maxWidth: fullWidth ? .infinity : nil)
+                        .frame(width: fullWidth ? nil : width, height: height)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: corner, style: .continuous)
+                                .stroke(AppTheme.brandGreen, lineWidth: listing ? 1.4 : 1.5)
                         }
-                    }
-                    .foregroundStyle(AppTheme.brandGreen)
-                    .frame(maxWidth: fullWidth ? .infinity : nil)
-                    .frame(width: fullWidth ? nil : width, height: height)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: corner, style: .continuous)
-                            .stroke(AppTheme.brandGreen, lineWidth: listing ? 1.4 : 1.5)
-                    }
-                    .shadow(color: .black.opacity(0.08), radius: 1, y: 1)
+                        .shadow(color: .black.opacity(0.08), radius: 1, y: 1)
                 }
                 .buttonStyle(.borderless)
-                .disabled(isBusy)
+                .disabled(!canIncrement)
             } else {
                 HStack(spacing: 0) {
                     Button(action: onDecrement) {
@@ -886,20 +904,11 @@ struct CartQtyStepper: View {
                             .foregroundStyle(.white)
                             .frame(width: hitSize, height: hitSize)
                     }
-                    .disabled(isBusy)
 
-                    Group {
-                        if isBusy {
-                            ProgressView()
-                                .tint(.white)
-                                .scaleEffect(0.7)
-                        } else {
-                            Text("\(qty)")
-                                .font(.appFont(size: listing ? 12 : (compact ? 13 : 14), weight: .heavy))
-                                .foregroundStyle(.white)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
+                    Text("\(qty)")
+                        .font(.appFont(size: listing ? 12 : (compact ? 13 : 14), weight: .heavy))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
 
                     Button(action: onIncrement) {
                         Image(systemName: "plus")
@@ -907,7 +916,7 @@ struct CartQtyStepper: View {
                             .foregroundStyle(.white)
                             .frame(width: hitSize, height: hitSize)
                     }
-                    .disabled(isBusy || !canIncrement)
+                    .disabled(!canIncrement)
                 }
                 .frame(maxWidth: fullWidth ? .infinity : nil)
                 .frame(width: fullWidth ? nil : width, height: height)
@@ -915,7 +924,6 @@ struct CartQtyStepper: View {
                 .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
                 .shadow(color: .black.opacity(0.12), radius: 2, y: 1)
                 .buttonStyle(.borderless)
-                .opacity(isBusy ? 0.85 : 1)
             }
         }
     }

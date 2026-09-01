@@ -411,15 +411,10 @@ struct ProductDetailScreen: View {
             } else {
                 Button(action: viewModel.addToCart) {
                     HStack(spacing: 8) {
-                        if busy {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Text("Add to cart")
-                                .font(.appFont(size: 16, weight: .semibold))
-                            Image(systemName: "cart.fill")
-                                .font(.appFont(size: 14, weight: .semibold))
-                        }
+                        Text("Add to cart")
+                            .font(.appFont(size: 16, weight: .semibold))
+                        Image(systemName: "cart.fill")
+                            .font(.appFont(size: 14, weight: .semibold))
                     }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -428,7 +423,7 @@ struct ProductDetailScreen: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .disabled(!variant.inStock || busy)
+                .disabled(!variant.inStock || !cart.canIncrement(productId: viewModel.productId, variantId: variant.id, availableQty: variant.availableQty))
                 .opacity(variant.inStock ? 1 : 0.45)
             }
         }
@@ -446,7 +441,6 @@ struct ProductDetailScreen: View {
                     .font(.appFont(size: 15, weight: .bold))
                     .frame(width: 52, height: 52)
             }
-            .disabled(isBusy)
 
             Text("\(qty)")
                 .font(.appFont(size: 18, weight: .heavy))
@@ -457,7 +451,7 @@ struct ProductDetailScreen: View {
                     .font(.appFont(size: 15, weight: .bold))
                     .frame(width: 52, height: 52)
             }
-            .disabled(isBusy || (variant.availableQty > 0 && qty >= variant.availableQty))
+            .disabled(!cart.canIncrement(productId: viewModel.productId, variantId: variant.id, availableQty: variant.availableQty))
         }
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity)
@@ -465,7 +459,6 @@ struct ProductDetailScreen: View {
         .background(AppTheme.ctaGradient)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .buttonStyle(.plain)
-        .opacity(isBusy ? 0.7 : 1)
     }
 
     private func heroBadge(_ title: String, fill: Color, foreground: Color) -> some View {

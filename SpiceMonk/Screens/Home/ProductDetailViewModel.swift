@@ -107,10 +107,11 @@ class ProductDetailViewModel: ObservableObject {
             return
         }
 
-        CartStore.shared.addOrIncrement(
+        CartStore.shared.incrementOrAdd(
             productId: productId,
             variantId: variant.id,
-            availableQty: variant.availableQty
+            availableQty: variant.availableQty,
+            maxOrderQty: CartStore.shared.line(productId: productId, variantId: variant.id)?.maxOrderQty
         )
     }
 

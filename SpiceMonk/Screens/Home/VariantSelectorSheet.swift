@@ -110,11 +110,17 @@ struct VariantSelectorSheet: View {
             CartQtyStepper(
                 qty: qty,
                 inStock: variant.inStock,
-                canIncrement: stock <= 0 || qty < stock,
+                canIncrement: cart.canIncrement(productId: product.id, variantId: variant.id, availableQty: stock),
                 isBusy: busy,
                 compact: true,
                 onIncrement: {
-                    cart.addOrIncrement(productId: product.id, variantId: variant.id, availableQty: stock)
+                    let maxQty = cart.line(productId: product.id, variantId: variant.id)?.maxOrderQty
+                    cart.incrementOrAdd(
+                        productId: product.id,
+                        variantId: variant.id,
+                        availableQty: stock,
+                        maxOrderQty: maxQty
+                    )
                 },
                 onDecrement: {
                     cart.decrement(productId: product.id, variantId: variant.id)

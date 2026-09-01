@@ -15,6 +15,7 @@ struct SpiceMonkApp: App {
             SplashScreen()
                 .font(.dmSans(14, weight: .regular))
                 .preferredColorScheme(.light)
+                .dynamicTypeSize(.large)
                 .handleNoInternet()
                 .handleAppStatusOverlays()
                 .onAppear {

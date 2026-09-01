@@ -12,6 +12,7 @@ struct OrderDetailScreen: View {
     @Environment(\.dismiss) private var dismiss
     @State private var isConfirmingCancel = false
     @State private var showCart = false
+    @State private var isRepeatingOrder = false
 
     var body: some View {
         Group {
@@ -413,15 +414,23 @@ struct OrderDetailScreen: View {
             Button {
                 repeatOrder(order)
             } label: {
-                Text("Order these again")
-                    .font(.appFont(size: 15, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(AppTheme.brandGreen)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                Group {
+                    if isRepeatingOrder {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text("Order these again")
+                            .font(.appFont(size: 15, weight: .bold))
+                    }
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 48)
+                .background(AppTheme.brandGreen)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             .buttonStyle(.plain)
+            .disabled(isRepeatingOrder)
 
             // Cancel button (only for pending or confirmed orders)
             if order.statusCode == 0 || order.statusCode == 1 {
@@ -444,22 +453,23 @@ struct OrderDetailScreen: View {
     // MARK: - CTAs Actions
 
     private func repeatOrder(_ order: OrderDetail) {
-        // Repeated orders add items directly to cart, matching expected behavior
-        CartStore.shared.isLoading = true
-        var completed = 0
-
-        for item in order.items {
-            CartStore.shared.addOrIncrement(
-                productId: item.productId,
-                variantId: item.variantId,
-                availableQty: 99 // Placeholder qty limit
-            )
-            completed += 1
+        let items = order.items.map {
+            CartStore.RepeatOrderItem(productId: $0.productId, variantId: $0.variantId, qty: $0.qty)
         }
+        guard !items.isEmpty else { return }
 
-        CartStore.shared.toastMessage = "Added \(completed) items to your cart!"
-        CartStore.shared.isShowToastView = true
-        dismiss()
+        isRepeatingOrder = true
+        CartStore.shared.repeatOrder(items: items) { added, _ in
+            isRepeatingOrder = false
+            if added > 0 {
+                CartStore.shared.toastMessage = "Added \(added) item\(added == 1 ? "" : "s") to your cart!"
+                CartStore.shared.isShowToastView = true
+                dismiss()
+            } else {
+                CartStore.shared.toastMessage = "Could not add items to your cart."
+                CartStore.shared.isShowToastView = true
+            }
+        }
     }
 
     private func cancelOrder(_ order: OrderDetail) {

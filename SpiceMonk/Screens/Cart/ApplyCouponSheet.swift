@@ -10,6 +10,7 @@ struct ApplyCouponSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var cart = CartStore.shared
+    var onCouponApplied: ((AppliedCouponData) -> Void)? = nil
 
     @State private var coupons: [Coupon] = []
     @State private var isLoading = false
@@ -257,9 +258,11 @@ struct ApplyCouponSheet: View {
                 applyingCode = nil
                 if response.status == true, let appliedData = response.data {
                     cart.appliedCoupon = appliedData
-                    cart.toastMessage = response.message ?? "Coupon \(appliedData.code) applied successfully!"
-                    cart.isShowToastView = true
+                    cart.couponDiscount = appliedData.discountAmount
+                    cart.grandTotal = appliedData.finalTotal
+                    cart.refresh()
                     dismiss()
+                    onCouponApplied?(appliedData)
                 } else {
                     applyError = response.message ?? "Failed to apply coupon."
                 }

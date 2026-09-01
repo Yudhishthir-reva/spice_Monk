@@ -10,6 +10,7 @@
 		9D9AADD0DA30E07F320071A3 /* Pods_SpiceMonk.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2B952BC166F1B3357A409EC /* Pods_SpiceMonk.framework */; };
 		C5784A353039E60000C60492 /* VariantSelectorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A343039E60000C60492 /* VariantSelectorSheet.swift */; };
 		C5784A373039EDC300C60492 /* ApplyCouponSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A363039EDC300C60492 /* ApplyCouponSheet.swift */; };
+		C5784A7130400CE00C60492 /* CouponCelebrationModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A7030400CE00C60492 /* CouponCelebrationModal.swift */; };
 		C5784A393039EEA200C60492 /* PaymentMethodPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A383039EEA200C60492 /* PaymentMethodPickerSheet.swift */; };
 		C5784A3F3039F03C00C60492 /* OrderModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A3A3039F03C00C60492 /* OrderModels.swift */; };
 		C5784A403039F03C00C60492 /* OrderServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A3B3039F03C00C60492 /* OrderServiceManager.swift */; };
@@ -99,6 +100,7 @@
 		B2B952BC166F1B3357A409EC /* Pods_SpiceMonk.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SpiceMonk.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C5784A343039E60000C60492 /* VariantSelectorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VariantSelectorSheet.swift; sourceTree = "<group>"; };
 		C5784A363039EDC300C60492 /* ApplyCouponSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplyCouponSheet.swift; sourceTree = "<group>"; };
+		C5784A7030400CE00C60492 /* CouponCelebrationModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CouponCelebrationModal.swift; sourceTree = "<group>"; };
 		C5784A383039EEA200C60492 /* PaymentMethodPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentMethodPickerSheet.swift; sourceTree = "<group>"; };
 		C5784A3A3039F03C00C60492 /* OrderModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderModels.swift; sourceTree = "<group>"; };
 		C5784A3B3039F03C00C60492 /* OrderServiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderServiceManager.swift; sourceTree = "<group>"; };
@@ -433,6 +435,7 @@
 			isa = PBXGroup;
 			children = (
 				C5784A363039EDC300C60492 /* ApplyCouponSheet.swift */,
+				C5784A7030400CE00C60492 /* CouponCelebrationModal.swift */,
 				DD2F22E2303000010025FC97 /* CartModels.swift */,
 				DD2F22E4303000010025FC97 /* CartServiceManager.swift */,
 				DD2F22E6303000010025FC97 /* CartViewModel.swift */,
@@ -610,6 +613,7 @@
 				C5784A393039EEA200C60492 /* PaymentMethodPickerSheet.swift in Sources */,
 				DD2F2283302F29FD0025FC97 /* String+Extension.swift in Sources */,
 				C5784A373039EDC300C60492 /* ApplyCouponSheet.swift in Sources */,
+				C5784A7130400CE00C60492 /* CouponCelebrationModal.swift in Sources */,
 				DD2F2284302F29FD0025FC97 /* View+NoInternet.swift in Sources */,
 				DD2F2285302F29FD0025FC97 /* HomeScreen.swift in Sources */,
 				DD2F22A4302F6D010025FC97 /* HomeModels.swift in Sources */,

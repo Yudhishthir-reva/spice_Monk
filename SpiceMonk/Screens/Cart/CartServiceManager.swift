@@ -77,6 +77,14 @@ class CartServiceManager {
         )
     }
 
+    func removeCoupon() -> AnyPublisher<StatusResponse, Error> {
+        networkService.request(
+            APIRouter.couponRemove,
+            params: [String: Any](),
+            headers: UserDefaultManager.shared.authHeader
+        )
+    }
+
     func validateCoupon(couponId: Int) -> AnyPublisher<CouponValidateResponse, Error> {
         networkService.request(
             APIRouter.couponValidate,

@@ -512,8 +512,8 @@ struct FloatingCartBar: View {
     let onTap: () -> Void
 
     var body: some View {
-        let itemsCount = cart.summary.totalItems
-        let totalPay = cart.summary.totalCustomerPrice
+        let itemsCount = cart.displayItemCount
+        let totalPay = cart.displayCustomerTotal > 0 ? cart.displayCustomerTotal : cart.summary.totalCustomerPrice
         let savings = cart.summary.totalSavings
 
         if itemsCount > 0 {
