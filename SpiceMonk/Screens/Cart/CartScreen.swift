@@ -11,6 +11,7 @@ struct CartScreen: View {
 
     @ObservedObject var cart = CartStore.shared
     @ObservedObject var addressViewModel: AddressViewModel
+    @ObservedObject private var loginGate = LoginGate.shared
     @Environment(\.dismiss) private var dismiss
     @State private var isConfirmingClear = false
     @State private var isPickingAddress = false
@@ -198,6 +199,11 @@ struct CartScreen: View {
             cart.load()
             addressViewModel.load()
         }
+        .onChange(of: loginGate.isLoggedIn) { _, loggedIn in
+            if loggedIn {
+                addressViewModel.load()
+            }
+        }
         .sheet(isPresented: $isPickingAddress) {
             AddressPickerSheet(viewModel: addressViewModel)
         }
@@ -295,10 +301,12 @@ struct CartScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Button(address == nil ? "Add" : "Change") {
-                if address == nil {
-                    isAddingAddress = true
-                } else {
-                    isPickingAddress = true
+                LoginGate.shared.requireLogin {
+                    if address == nil {
+                        isAddingAddress = true
+                    } else {
+                        isPickingAddress = true
+                    }
                 }
             }
             .font(.appFont(size: 14, weight: .bold))
@@ -354,7 +362,8 @@ struct CartScreen: View {
                     item: item,
                     isBusy: cart.isUpdating(item) || cart.isRemoving(item),
                     onIncrement: { cart.changeQty(item, by: 1) },
-                    onDecrement: { cart.changeQty(item, by: -1) }
+                    onDecrement: { cart.changeQty(item, by: -1) },
+                    onRemove: { cart.removeItem(item) }
                 )
                 .opacity(cart.isRemoving(item) ? 0.45 : 1)
 
@@ -430,7 +439,9 @@ struct CartScreen: View {
             if cart.appliedCoupon != nil {
                 cart.removeCoupon()
             } else {
-                isApplyingCoupon = true
+                LoginGate.shared.requireLogin {
+                    isApplyingCoupon = true
+                }
             }
         } label: {
             HStack(spacing: 12) {
@@ -669,10 +680,12 @@ struct CartScreen: View {
         VStack(spacing: 0) {
             // Address strip
             Button {
-                if addressViewModel.defaultAddress == nil {
-                    isAddingAddress = true
-                } else {
-                    isPickingAddress = true
+                LoginGate.shared.requireLogin {
+                    if addressViewModel.defaultAddress == nil {
+                        isAddingAddress = true
+                    } else {
+                        isPickingAddress = true
+                    }
                 }
             } label: {
                 HStack(spacing: 6) {
@@ -710,11 +723,13 @@ struct CartScreen: View {
                 }
 
                 Button {
-                    if let address = addressViewModel.defaultAddress {
-                        cart.placeOrder(addressId: address.id)
-                    } else {
-                        cart.toastMessage = "Please select a delivery address."
-                        cart.isShowToastView = true
+                    LoginGate.shared.requireLogin {
+                        if let address = addressViewModel.defaultAddress {
+                            cart.placeOrder(addressId: address.id)
+                        } else {
+                            cart.toastMessage = "Please select a delivery address."
+                            cart.isShowToastView = true
+                        }
                     }
                 } label: {
                     HStack(spacing: 8) {
@@ -804,6 +819,7 @@ private struct CartItemRow: View {
     var isBusy: Bool = false
     var onIncrement: () -> Void = {}
     var onDecrement: () -> Void = {}
+    var onRemove: () -> Void = {}
     
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
@@ -822,15 +838,30 @@ private struct CartItemRow: View {
             .buttonStyle(.plain)
             .navigationLinkIndicatorVisibility(.hidden)
             
-            CartQtyStepper(
-                qty: item.qty,
-                inStock: item.inStock,
-                canIncrement: item.inStock && item.qty < incrementLimit,
-                isBusy: isBusy,
-                compact: true,
-                onIncrement: onIncrement,
-                onDecrement: onDecrement
-            )
+            VStack(alignment: .trailing, spacing: 8) {
+                Button(action: onRemove) {
+                    Image(systemName: "trash")
+                        .font(.appFont(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.red.opacity(0.85))
+                        .frame(width: 28, height: 28)
+                        .background(Color.red.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .disabled(isBusy)
+                .opacity(isBusy ? 0.45 : 1)
+                .accessibilityLabel("Remove \(item.productName)")
+
+                CartQtyStepper(
+                    qty: item.qty,
+                    inStock: item.inStock,
+                    canIncrement: item.inStock && item.qty < incrementLimit,
+                    isBusy: isBusy,
+                    compact: true,
+                    onIncrement: onIncrement,
+                    onDecrement: onDecrement
+                )
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)

@@ -22,6 +22,8 @@ class UserDefaultManager {
         case codEnabled
         case fcmToken
         case deviceId
+        case guestToken
+        case guestTokenExpiry
     }
 
     func setUserDefaultsString(value: String, key: PersistenceKeys) {
@@ -124,10 +126,44 @@ class UserDefaultManager {
         !getUserDefaultsString(key: .authToken).isEmptyString
     }
 
+    var guestToken: String {
+        get { getUserDefaultsString(key: .guestToken) }
+        set { setUserDefaultsString(value: newValue, key: .guestToken) }
+    }
+
+    var hasValidGuestToken: Bool {
+        let token = guestToken
+        guard !token.isEmptyString else { return false }
+        let expiry = UserDefaults.standard.double(forKey: PersistenceKeys.guestTokenExpiry.rawValue)
+        if expiry > 0, Date().timeIntervalSince1970 >= expiry - 60 {
+            return false
+        }
+        return true
+    }
+
+    func saveGuestSession(token: String, expiresIn: Int?) {
+        guestToken = token
+        guard let expiresIn, expiresIn > 0 else {
+            UserDefaults.standard.removeObject(forKey: PersistenceKeys.guestTokenExpiry.rawValue)
+            return
+        }
+        let expiry = Date().addingTimeInterval(TimeInterval(expiresIn))
+        UserDefaults.standard.set(expiry.timeIntervalSince1970, forKey: PersistenceKeys.guestTokenExpiry.rawValue)
+    }
+
+    func clearGuestSession() {
+        UserDefaults.standard.removeObject(forKey: PersistenceKeys.guestToken.rawValue)
+        UserDefaults.standard.removeObject(forKey: PersistenceKeys.guestTokenExpiry.rawValue)
+    }
+
     var authHeader: RequestConstants.Header {
-        let token = getUserDefaultsString(key: .authToken)
-        guard !token.isEmptyString else { return [:] }
-        return ["Authorization": "Bearer \(token)"]
+        let userToken = getUserDefaultsString(key: .authToken)
+        if !userToken.isEmptyString {
+            return ["Authorization": "Bearer \(userToken)"]
+        }
+        let guest = guestToken
+        guard !guest.isEmptyString else { return [:] }
+        return ["Authorization": "Bearer \(guest)"]
     }
 
     func resetUserData() {

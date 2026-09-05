@@ -513,7 +513,12 @@ struct FloatingCartBar: View {
 
     var body: some View {
         let itemsCount = cart.displayItemCount
-        let totalPay = cart.displayCustomerTotal > 0 ? cart.displayCustomerTotal : cart.summary.totalCustomerPrice
+        let totalPay: Double = {
+            if cart.displayCustomerTotal > 0 { return cart.displayCustomerTotal }
+            if cart.summary.totalCustomerPrice > 0 { return cart.summary.totalCustomerPrice }
+            if cart.grandTotal > 0 { return cart.grandTotal }
+            return 0
+        }()
         let savings = cart.summary.totalSavings
 
         if itemsCount > 0 {

@@ -151,6 +151,7 @@ struct AccountTabScreen: View {
 
     @ObservedObject var addressViewModel: AddressViewModel
     @ObservedObject private var cart = CartStore.shared
+    @ObservedObject private var loginGate = LoginGate.shared
     var onLogout: () -> Void
 
     @State private var isPickingAddress = false
@@ -186,28 +187,25 @@ struct AccountTabScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header Bar
             HStack {
                 Text("Your account")
-                    .font(.appFont(size: 22, weight: .bold))
+                    .font(.appFont(size: 20, weight: .bold))
                     .foregroundStyle(.white)
+
                 Spacer()
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 14)
-            .padding(.bottom, 16)
-            .background(
-                LinearGradient(
-                    colors: [AppTheme.homeHeaderTop, AppTheme.homeHeaderBottom],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea(edges: .top)
-            )
+            .padding(.horizontal, 16)
+            .padding(.bottom, 14)
+            .padding(.top, (UIApplication.shared.keyWindow?.safeAreaInsets.top ?? 50) + 8)
+            .background {
+                HomeHeaderAuroraCanvas()
+                    .ignoresSafeArea(edges: .top)
+            }
 
             // Content
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 20) {
+                    if loginGate.isLoggedIn {
                     // Profile Card
                     profileCard
                         .padding(.top, 16)
@@ -333,11 +331,40 @@ struct AccountTabScreen: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.top, 4)
                         .padding(.bottom, 36)
+                    } else {
+                        guestLoginCard
+                            .padding(.top, 16)
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Support")
+                                .font(.appFont(size: 13, weight: .semibold))
+                                .foregroundStyle(Color(hex: "6A7B72"))
+                                .padding(.leading, 4)
+
+                            Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                if let url = AppStatusManager.shared.whatsappURL {
+                                    UIApplication.shared.open(url)
+                                }
+                            } label: {
+                                accountRow(
+                                    icon: "whatsapp",
+                                    isAsset: true,
+                                    title: "Help & support",
+                                    subtitle: "Chat with us on WhatsApp"
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.bottom, 36)
+                    }
                 }
                 .padding(.horizontal, 16)
             }
         }
-        .background(Color(hex: "F8FAF8").ignoresSafeArea())
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(hex: "F8FAF8"))
+        .ignoresSafeArea(edges: .top)
         .sheet(isPresented: $isPickingAddress) {
             AddressPickerSheet(viewModel: addressViewModel)
         }
@@ -373,6 +400,36 @@ struct AccountTabScreen: View {
     }
 
     // MARK: - Profile Card
+
+    private var guestLoginCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Log in to continue")
+                .font(.appFont(size: 18, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary)
+            Text("Sign in with your mobile number to save addresses, track orders, and checkout.")
+                .font(.appFont(size: 14))
+                .foregroundStyle(Color(hex: "5A6B62"))
+            Button {
+                LoginGate.shared.requireLogin()
+            } label: {
+                Text("Log in")
+                    .font(.appFont(size: 16, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(AppTheme.brandGreen)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+        }
+    }
 
     private var profileCard: some View {
         HStack(spacing: 16) {

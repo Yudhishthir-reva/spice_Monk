@@ -45,6 +45,7 @@ final class CartStore: ObservableObject {
     private let qtyDebounceInterval: TimeInterval = 0.35
     private let debounceQueue = DispatchQueue.main
     var serviceManagable = CartServiceManager()
+    private let catalogService = HomeServiceManager()
 
     var isEmpty: Bool { items.isEmpty && pendingOptimisticQty.isEmpty }
 
@@ -129,6 +130,18 @@ final class CartStore: ObservableObject {
         isLoading = true
         loadError = nil
         fetch()
+    }
+
+    /// OTP just replaced the guest Bearer with a user token. Drop in-flight guest hydrations
+    /// and pull `GET customer/cart`, which now includes the merged guest lines.
+    func reloadAfterLogin() {
+        cancellables.removeAll()
+        pendingAfterLoad.removeAll()
+        pendingQtyTimers.values.forEach { $0.cancel() }
+        pendingQtyTimers.removeAll()
+        isLoading = false
+        isRefreshing = false
+        load()
     }
 
     func refresh(clearingCoupon: Bool = false) {
@@ -423,6 +436,11 @@ final class CartStore: ObservableObject {
         debounceQueue.asyncAfter(deadline: .now() + qtyDebounceInterval, execute: workItem)
     }
 
+    /// Removes the whole line in one tap (guest → `guest/cart/remove`, logged-in → `cart/remove`).
+    func removeItem(_ item: CartItem) {
+        debouncedRemove(item)
+    }
+
     private func debouncedRemove(_ item: CartItem) {
         guard item.cartId > 0, !removingIds.contains(item.cartId) else { return }
 
@@ -436,6 +454,42 @@ final class CartStore: ObservableObject {
         let snapshot = items
         items.removeAll { $0.cartId == item.cartId }
         if items.isEmpty { summary = .empty }
+
+        if !UserDefaultManager.shared.isUserLoggedIn {
+            serviceManagable.removeGuestCart(productId: item.productId, variantId: item.variantId)
+                .receive(on: RunLoop.main)
+                .sink { [weak self] completion in
+                    guard let self else { return }
+                    self.removingIds.remove(item.cartId)
+                    self.bump()
+                    guard case .failure(let error) = completion else { return }
+                    self.items = snapshot
+                    self.toastMessage = (error as? RequestError)?.errorString ?? error.localizedDescription
+                    self.isShowToastView = true
+                    self.load()
+                } receiveValue: { [weak self] response in
+                    guard let self else { return }
+                    self.removingIds.remove(item.cartId)
+                    self.bump()
+                    if response.status == true {
+                        self.toastMessage = response.message ?? "Item removed from cart."
+                        self.isShowToastView = true
+                        if self.items.isEmpty {
+                            self.summary = .empty
+                            self.charges = []
+                            self.grandTotal = 0
+                        } else {
+                            self.fetch()
+                        }
+                    } else {
+                        self.items = snapshot
+                        self.toastMessage = response.message ?? "Could not remove this item."
+                        self.isShowToastView = true
+                    }
+                }
+                .store(in: &cancellables)
+            return
+        }
 
         serviceManagable.removeFromCart(cartId: item.cartId)
             .receive(on: RunLoop.main)
@@ -481,6 +535,37 @@ final class CartStore: ObservableObject {
         let snapshotSummary = summary
         items = []
         summary = .empty
+
+        if !UserDefaultManager.shared.isUserLoggedIn {
+            serviceManagable.clearGuestCart()
+                .receive(on: RunLoop.main)
+                .sink { [weak self] completion in
+                    guard let self else { return }
+                    self.isClearing = false
+                    guard case .failure(let error) = completion else { return }
+                    self.items = snapshot
+                    self.summary = snapshotSummary
+                    self.toastMessage = (error as? RequestError)?.errorString ?? error.localizedDescription
+                    self.isShowToastView = true
+                } receiveValue: { [weak self] response in
+                    guard let self else { return }
+                    self.isClearing = false
+                    if response.status == true {
+                        self.items = []
+                        self.summary = .empty
+                        self.charges = []
+                        self.grandTotal = 0
+                        self.toastMessage = response.message ?? "Cart cleared successfully."
+                    } else {
+                        self.items = snapshot
+                        self.summary = snapshotSummary
+                        self.toastMessage = response.message ?? "Could not clear the cart."
+                    }
+                    self.isShowToastView = true
+                }
+                .store(in: &cancellables)
+            return
+        }
 
         serviceManagable.clearCart()
             .receive(on: RunLoop.main)
@@ -563,6 +648,36 @@ final class CartStore: ObservableObject {
         addingKeys.insert(key)
         bump()
 
+        if !UserDefaultManager.shared.isUserLoggedIn {
+            serviceManagable.addGuestCart(productId: productId, variantId: variantId, qty: qty)
+                .receive(on: RunLoop.main)
+                .sink { [weak self] completion in
+                    guard let self else { return }
+                    self.addingKeys.remove(key)
+                    self.bump()
+                    guard case .failure(let error) = completion else { return }
+                    self.pendingOptimisticQty[key] = nil
+                    self.toastMessage = (error as? RequestError)?.errorString ?? error.localizedDescription
+                    self.isShowToastView = true
+                    self.load()
+                } receiveValue: { [weak self] response in
+                    guard let self else { return }
+                    self.addingKeys.remove(key)
+                    self.bump()
+                    if response.status == true {
+                        // Keep optimistic qty until `fetchGuestCart` applies priced `data`
+                        // so the floating bar does not flash empty (₹0 / hide).
+                        self.fetch()
+                    } else {
+                        self.pendingOptimisticQty[key] = nil
+                        self.toastMessage = response.message ?? "Unable to add this product."
+                        self.isShowToastView = true
+                    }
+                }
+                .store(in: &cancellables)
+            return
+        }
+
         serviceManagable.addToCart(productId: productId, variantId: variantId, qty: qty)
             .receive(on: RunLoop.main)
             .sink { [weak self] completion in
@@ -607,6 +722,36 @@ final class CartStore: ObservableObject {
         updatingIds.insert(item.cartId)
         bump()
         let snapshot = items
+
+        if !UserDefaultManager.shared.isUserLoggedIn {
+            serviceManagable.updateGuestCart(productId: item.productId, variantId: item.variantId, qty: qty)
+                .receive(on: RunLoop.main)
+                .sink { [weak self] completion in
+                    guard let self else { return }
+                    self.updatingIds.remove(item.cartId)
+                    self.bump()
+                    guard case .failure(let error) = completion else { return }
+                    self.items = snapshot
+                    self.syncSummaryFromItems()
+                    self.toastMessage = (error as? RequestError)?.errorString ?? error.localizedDescription
+                    self.isShowToastView = true
+                    self.load()
+                } receiveValue: { [weak self] response in
+                    guard let self else { return }
+                    self.updatingIds.remove(item.cartId)
+                    self.bump()
+                    if response.status == true {
+                        self.fetch()
+                    } else {
+                        self.items = snapshot
+                        self.syncSummaryFromItems()
+                        self.toastMessage = response.message ?? "Could not update quantity."
+                        self.isShowToastView = true
+                    }
+                }
+                .store(in: &cancellables)
+            return
+        }
 
         serviceManagable.updateCart(cartId: item.cartId, qty: qty)
             .receive(on: RunLoop.main)
@@ -671,6 +816,14 @@ final class CartStore: ObservableObject {
     }
 
     private func runWhenReady(_ action: @escaping () -> Void) {
+        if !UserDefaultManager.shared.isUserLoggedIn && !UserDefaultManager.shared.hasValidGuestToken {
+            GuestSessionManager.shared.ensureSession { [weak self] in
+                DispatchQueue.main.async {
+                    self?.runWhenReady(action)
+                }
+            }
+            return
+        }
         if didLoadOnce {
             action()
             return
@@ -792,6 +945,10 @@ final class CartStore: ObservableObject {
     private func fetch() {
         let couponQuery = pendingCartCouponQuery
         pendingCartCouponQuery = .default
+        if !UserDefaultManager.shared.isUserLoggedIn {
+            fetchGuestCart()
+            return
+        }
         serviceManagable.fetchCart(couponQuery: couponQuery)
             .receive(on: RunLoop.main)
             .sink { [weak self] completion in
@@ -818,6 +975,43 @@ final class CartStore: ObservableObject {
                 pending.forEach { $0() }
             }
             .store(in: &cancellables)
+    }
+
+    private func fetchGuestCart() {
+        serviceManagable.fetchGuestCart()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] completion in
+                guard let self else { return }
+                self.isLoading = false
+                self.isRefreshing = false
+                guard case .failure(let error) = completion else { return }
+                let message = (error as? RequestError)?.errorString ?? error.localizedDescription
+                if self.items.isEmpty {
+                    self.loadError = message
+                } else {
+                    self.toastMessage = message
+                    self.isShowToastView = true
+                }
+            } receiveValue: { [weak self] response in
+                guard let self else { return }
+                // Guest cart GET/POST returns priced `data`/`summary`/`grand_total` (same as logged-in).
+                self.applyCartResponse(response, couponQuery: .default)
+                self.finishGuestFetch()
+            }
+            .store(in: &cancellables)
+    }
+
+    private func finishGuestFetch() {
+        isLoading = false
+        isRefreshing = false
+        didLoadOnce = true
+        loadError = nil
+        pendingOptimisticQty.removeAll()
+        pendingAddKeys.removeAll()
+        bump()
+        let pending = pendingAfterLoad
+        pendingAfterLoad.removeAll()
+        pending.forEach { $0() }
     }
 
     private func applyCartResponse(_ response: CartResponse, couponQuery: CartCouponQuery) {

@@ -27,6 +27,18 @@ class LoginServiceManager {
     ) -> AnyPublisher<OTPVerifyModel, Error> {
         networkService.request(APIRouter.verifyOTP, params: params, headers: headers)
     }
+
+    func guestLogin() -> AnyPublisher<GuestLoginResponse, Error> {
+        networkService.request(APIRouter.guestLogin, params: [String: Any](), headers: [:])
+    }
+
+    func mergeGuestCart(guestToken: String) -> AnyPublisher<StatusResponse, Error> {
+        networkService.request(
+            APIRouter.mergeGuestCart,
+            params: ["guest_token": guestToken],
+            headers: UserDefaultManager.shared.authHeader
+        )
+    }
 }
 
 struct OTPSendModel: Decodable {
@@ -44,12 +56,6 @@ struct OTPSendModel: Decodable {
         status = container.decodeBoolLeniently(forKey: .status)
         message = container.decodeStringLeniently(forKey: .message)
         otp = container.decodeStringLeniently(forKey: .otp)
-    }
-
-    /// The echoed code, but only when it is a complete 6-digit OTP the boxes can actually hold.
-    static func usableOTP(from otp: String?) -> String {
-        let digits = otp?.filter(\.isNumber) ?? ""
-        return digits.count == 6 ? digits : ""
     }
 }
 
@@ -86,5 +92,27 @@ struct OTPVerifyModel: Decodable {
         mobile = container.decodeStringLeniently(forKey: .mobile)
         name = container.decodeStringLeniently(forKey: .name)
         isNew = container.decodeBoolLeniently(forKey: .isNew)
+    }
+}
+
+struct GuestLoginResponse: Decodable {
+    let status: Bool?
+    let isGuest: Bool?
+    let guestToken: String?
+    let expiresIn: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case status
+        case isGuest = "is_guest"
+        case guestToken = "guest_token"
+        case expiresIn = "expires_in"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        status = container.decodeBoolLeniently(forKey: .status)
+        isGuest = container.decodeBoolLeniently(forKey: .isGuest)
+        guestToken = container.decodeStringLeniently(forKey: .guestToken)
+        expiresIn = container.decodeIntLeniently(forKey: .expiresIn)
     }
 }

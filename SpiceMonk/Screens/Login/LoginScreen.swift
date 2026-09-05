@@ -9,6 +9,9 @@ struct LoginScreen: View {
 
     @StateObject var viewModel: LoginViewModel = .init()
     @FocusState private var isMobileFocused: Bool
+    @State private var didCheckAppStatus = false
+    @State private var isSkipping = false
+    var allowsDismiss: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -130,16 +133,44 @@ struct LoginScreen: View {
                         .frame(minHeight: geo.size.height)
                     }
                     .scrollDismissesKeyboard(.interactively)
+
+                    if allowsDismiss {
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Button {
+                                    LoginGate.shared.dismiss()
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.appFont(size: 14, weight: .bold))
+                                        .foregroundStyle(Color(hex: "1F6335"))
+                                        .frame(width: 36, height: 36)
+                                        .background(Color.white)
+                                        .clipShape(Circle())
+                                        .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.trailing, 18)
+                                .padding(.top, max(geo.safeAreaInsets.top, 12) + 8)
+                            }
+                            Spacer()
+                        }
+                    }
                 }
                 .animation(.easeInOut(duration: 0.35), value: isMobileFocused)
             }
             .ignoresSafeArea()
-            .navigationBarHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: $viewModel.goToOTP) {
                 OTPVerifyScreen(
-                    mobile: viewModel.mobile.trim,
-                    prefilledOTP: viewModel.echoedOTP
+                    mobile: viewModel.mobile.trim
                 )
+            }
+        }
+        .onAppear {
+            if !didCheckAppStatus {
+                didCheckAppStatus = true
+                AppStatusManager.shared.checkStatus()
             }
         }
         .toast(isPresenting: $viewModel.isShowToastView, duration: 1.8, offsetY: 10, alert: {
@@ -235,12 +266,48 @@ struct LoginScreen: View {
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
-            .disabled(viewModel.isShowProcessing)
+            .disabled(viewModel.isShowProcessing || isSkipping)
+
+            if !allowsDismiss {
+                Button {
+                    skipLogin()
+                } label: {
+                    if isSkipping {
+                        ProgressView()
+                            .tint(Color(hex: "1F6335"))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                    } else {
+                        Text("Skip login")
+                            .font(.appFont(size: 16, weight: .bold))
+                            .foregroundStyle(Color(hex: "1F6335"))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(viewModel.isShowProcessing || isSkipping)
+            }
         }
         .padding(18)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .shadow(color: Color.black.opacity(0.07), radius: 14, x: 0, y: 6)
+    }
+
+    private func skipLogin() {
+        guard !isSkipping else { return }
+        isMobileFocused = false
+        isSkipping = true
+        GuestSessionManager.shared.ensureSession {
+            isSkipping = false
+            if UserDefaultManager.shared.hasValidGuestToken {
+                AppRootManager.shared.setRootView(view: HomeScreen())
+            } else {
+                viewModel.toastMessage = "Unable to continue as guest. Please try again."
+                viewModel.isShowToastView = true
+            }
+        }
     }
 
     // MARK: - Feature Highlights

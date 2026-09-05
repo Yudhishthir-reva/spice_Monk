@@ -13,9 +13,6 @@ class LoginViewModel: ObservableObject {
     @Published var isShowToastView = false
     @Published var toastMessage = ""
     @Published var goToOTP = false
-    /// Staging echoes the OTP back on send, so the boxes can start filled instead of forcing a
-    /// detour through SMS while testing. Empty whenever the backend withholds it.
-    @Published var echoedOTP = ""
 
     private var cancellables = Set<AnyCancellable>()
     var serviceManagable = LoginServiceManager()
@@ -55,7 +52,6 @@ class LoginViewModel: ObservableObject {
                 guard let self else { return }
                 self.isShowProcessing = false
                 if model.status == true {
-                    self.echoedOTP = OTPSendModel.usableOTP(from: model.otp)
                     self.goToOTP = true
                 } else {
                     self.toastMessage = model.message ?? "Unable to send OTP."

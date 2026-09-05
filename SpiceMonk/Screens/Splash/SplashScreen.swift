@@ -208,7 +208,8 @@ struct SplashScreen: View {
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + minimumDwell) {
-            if UserDefaultManager.shared.isUserLoggedIn {
+            let defaults = UserDefaultManager.shared
+            if defaults.isUserLoggedIn || defaults.hasValidGuestToken {
                 AppRootManager.shared.setRootView(view: HomeScreen())
             } else {
                 AppRootManager.shared.setRootView(view: LoginScreen())

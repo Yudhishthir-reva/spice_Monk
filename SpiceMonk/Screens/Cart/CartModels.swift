@@ -112,12 +112,16 @@ struct CartItem: Decodable, Identifiable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        cartId = container.decodeIntLeniently(forKey: .cartId) ?? 0
         productId = container.decodeIntLeniently(forKey: .productId) ?? 0
         productName = container.decodeStringLeniently(forKey: .productName) ?? ""
         productImage = container.decodeStringLeniently(forKey: .productImage)
         variantId = container.decodeIntLeniently(forKey: .variantId) ?? 0
         variantName = container.decodeStringLeniently(forKey: .variantName) ?? ""
+        let decodedCartId = container.decodeIntLeniently(forKey: .cartId) ?? 0
+        // Guest cart lines often omit `cart_id` — keep a stable local id so steppers work.
+        cartId = decodedCartId > 0
+            ? decodedCartId
+            : GuestCartLine.lineId(productId: productId, variantId: variantId)
         qty = container.decodeIntLeniently(forKey: .qty)
             ?? Int(container.decodeDoubleLeniently(forKey: .qty) ?? 0)
         mrp = container.decodeDoubleLeniently(forKey: .mrp) ?? 0
@@ -327,6 +331,50 @@ struct CartResponse: Decodable {
         grandTotal = container.decodeDoubleLeniently(forKey: .grandTotal) ?? 0
     }
 }
+
+struct GuestCartLine: Decodable {
+    let productId: Int
+    let variantId: Int
+    let qty: Int
+
+    enum CodingKeys: String, CodingKey {
+        case qty
+        case productId = "product_id"
+        case variantId = "variant_id"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        productId = container.decodeIntLeniently(forKey: .productId) ?? 0
+        variantId = container.decodeIntLeniently(forKey: .variantId) ?? 0
+        qty = container.decodeIntLeniently(forKey: .qty)
+            ?? Int(container.decodeDoubleLeniently(forKey: .qty) ?? 0)
+    }
+
+    static func lineId(productId: Int, variantId: Int) -> Int {
+        productId * 100_000 + variantId
+    }
+}
+
+/// Guest `POST .../guest/cart/add` and `.../update` ack — slim `cart` lines only.
+struct GuestCartAddResponse: Decodable {
+    let status: Bool?
+    let message: String?
+    let cart: [GuestCartLine]
+
+    enum CodingKeys: String, CodingKey {
+        case status, message, cart
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        status = container.decodeBoolLeniently(forKey: .status)
+        message = container.decodeStringLeniently(forKey: .message)
+        cart = (try? container.decode([GuestCartLine].self, forKey: .cart)) ?? []
+    }
+}
+
+typealias GuestCartResponse = GuestCartAddResponse
 
 /// `POST customer/cart/add`. Failures may arrive as HTTP 4xx or as `status: false` on 200.
 struct CartAddResponse: Decodable {

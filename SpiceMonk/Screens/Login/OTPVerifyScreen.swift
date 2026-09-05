@@ -11,16 +11,15 @@ struct OTPVerifyScreen: View {
     @StateObject private var viewModel: OTPVerifyViewModel
     @FocusState private var isOTPFocused: Bool
 
-    init(mobile: String, prefilledOTP: String = "") {
+    init(mobile: String) {
         _viewModel = StateObject(
-            wrappedValue: OTPVerifyViewModel(mobile: mobile, prefilledOTP: prefilledOTP)
+            wrappedValue: OTPVerifyViewModel(mobile: mobile)
         )
     }
 
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .bottom) {
-                // Background Wash
                 LinearGradient(
                     colors: [
                         Color(hex: "EDF7EE"),
@@ -32,12 +31,10 @@ struct OTPVerifyScreen: View {
                 )
                 .ignoresSafeArea()
 
-                // Top Leaves Decoration (Only small animated drifting leaves)
                 TopLeavesDecor(showsBranches: false)
                     .ignoresSafeArea()
                     .allowsHitTesting(false)
 
-                // Bottom Spices & Mountains Illustration (flush to bottom edge)
                 Image("spices_mountains")
                     .resizable()
                     .scaledToFill()
@@ -47,41 +44,8 @@ struct OTPVerifyScreen: View {
                     .ignoresSafeArea(edges: .bottom)
                     .allowsHitTesting(false)
 
-                // Content
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 0) {
-                        Button {
-                            dismiss()
-                        } label: {
-                            Image(systemName: "chevron.left")
-                                .font(.appFont(size: 16, weight: .bold))
-                                .foregroundStyle(Color(hex: "1F6335"))
-                                .frame(width: 42, height: 42)
-                                .background(Color.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                .shadow(color: Color.black.opacity(0.06), radius: 6, y: 2)
-                        }
-                        .padding(.top, max(geo.safeAreaInsets.top, 12) + 8)
-
-                        Text("Verify your number")
-                            .font(.appFont(size: 28, weight: .heavy, design: .rounded))
-                            .foregroundStyle(Color(hex: "144E27"))
-                            .padding(.top, 24)
-
-                        // Subtle leaf divider
-                        HStack(spacing: 8) {
-                            Rectangle()
-                                .fill(Color(hex: "7CAE8B").opacity(0.6))
-                                .frame(width: 24, height: 1)
-                            Image(systemName: "leaf.fill")
-                                .font(.appFont(size: 9))
-                                .foregroundStyle(Color(hex: "3F8E4D"))
-                            Rectangle()
-                                .fill(Color(hex: "7CAE8B").opacity(0.6))
-                                .frame(width: 24, height: 1)
-                        }
-                        .padding(.top, 8)
-
                         HStack(spacing: 4) {
                             Text("OTP sent to +91 \(formattedMobile)")
                                 .font(.appFont(size: 15, weight: .medium))
@@ -92,9 +56,8 @@ struct OTPVerifyScreen: View {
                             .font(.appFont(size: 15, weight: .bold))
                             .foregroundStyle(Color(hex: "1F6335"))
                         }
-                        .padding(.top, 12)
+                        .padding(.top, 16)
 
-                        // OTP Verification Card
                         VStack(spacing: 20) {
                             otpBoxes
 
@@ -171,8 +134,13 @@ struct OTPVerifyScreen: View {
                 .scrollDismissesKeyboard(.interactively)
             }
         }
-        .ignoresSafeArea()
-        .navigationBarHidden(true)
+        .navigationTitle("Verify OTP")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarHidden(false)
+        .toolbar(.visible, for: .navigationBar)
+        .toolbarBackground(AppTheme.brandGreen, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .onAppear {
             isOTPFocused = true
         }
@@ -246,5 +214,7 @@ struct OTPVerifyScreen: View {
 }
 
 #Preview {
-    OTPVerifyScreen(mobile: "9876543210")
+    NavigationStack {
+        OTPVerifyScreen(mobile: "9876543210")
+    }
 }

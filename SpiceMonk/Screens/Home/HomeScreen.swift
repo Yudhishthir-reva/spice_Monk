@@ -11,6 +11,7 @@ struct HomeScreen: View {
     @StateObject private var addressViewModel = AddressViewModel()
     @StateObject private var searchViewModel = SearchViewModel()
     @ObservedObject private var cartStore = CartStore.shared
+    @ObservedObject private var loginGate = LoginGate.shared
     @State private var selectedTab: HomeTab = .home
     @State private var cartDestination: HomeTabDestination?
     @State private var searchBarOffset: CGFloat = 0
@@ -20,6 +21,7 @@ struct HomeScreen: View {
     @State private var isSearchActive = false
     @State private var isVoiceSearching = false
     @State private var selectedVariantProduct: ProductItem? = nil
+    @State private var didCheckAppStatus = false
 
     var body: some View {
         NavigationStack {
@@ -82,11 +84,22 @@ struct HomeScreen: View {
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: cartStore.summary.totalItems == 0)
         .onAppear {
-            if !viewModel.hasContent {
-                viewModel.loadHome()
+            GuestSessionManager.shared.ensureSession {
+                if !viewModel.hasContent {
+                    viewModel.loadHome()
+                }
+                addressViewModel.load()
+                CartStore.shared.loadIfNeeded()
             }
-            addressViewModel.load()
-            CartStore.shared.loadIfNeeded()
+            if !didCheckAppStatus {
+                didCheckAppStatus = true
+                AppStatusManager.shared.checkStatus()
+            }
+        }
+        .onChange(of: loginGate.isLoggedIn) { _, loggedIn in
+            if loggedIn {
+                addressViewModel.load()
+            }
         }
         .sheet(isPresented: $isPickingAddress) {
             AddressPickerSheet(viewModel: addressViewModel)
@@ -119,6 +132,9 @@ struct HomeScreen: View {
             AlertToast(displayMode: .banner(.pop), type: .regular, title: searchViewModel.toastMessage)
         }, onTap: nil, completion: nil)
         .cartStoreToast()
+        .fullScreenCover(isPresented: $loginGate.isPresented) {
+            LoginScreen(allowsDismiss: true)
+        }
     }
 
     // MARK: - Home Tab
@@ -199,7 +215,9 @@ struct HomeScreen: View {
             addressOpacity: addressOpacity,
             safeAreaTop: safeAreaTop,
             searchPlaceholders: viewModel.searchPlaceholders,
-            onAddressTap: { isPickingAddress = true },
+            onAddressTap: {
+                LoginGate.shared.requireLogin { isPickingAddress = true }
+            },
             onNotificationTap: {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 viewModel.toastMessage = "Notifications coming soon!"

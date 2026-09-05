@@ -7,6 +7,8 @@ enum APIRouter: RouterManagable {
 
     case sendOTP
     case verifyOTP
+    case guestLogin
+    case mergeGuestCart
     case refreshToken
     case home
     /// Shares its path with `storeAddress`; the two differ only by HTTP method.
@@ -27,6 +29,11 @@ enum APIRouter: RouterManagable {
     case productSearch
     case cart
     case cartAdd
+    case guestCart
+    case guestCartAdd
+    case guestCartUpdate
+    case guestCartRemove
+    case guestCartClear
     case cartRemove
     case cartClear
     case cartUpdate
@@ -49,6 +56,10 @@ enum APIRouter: RouterManagable {
             return "customer/auth/send-otp"
         case .verifyOTP:
             return "customer/auth/verify-otp"
+        case .guestLogin:
+            return "customer/auth/guest-login"
+        case .mergeGuestCart:
+            return "customer/auth/merge-guest-cart"
         case .refreshToken:
             return "customer/auth/refresh-token"
         case .home:
@@ -85,6 +96,16 @@ enum APIRouter: RouterManagable {
             return "customer/cart"
         case .cartAdd:
             return "customer/cart/add"
+        case .guestCart:
+            return "customer/guest/cart"
+        case .guestCartAdd:
+            return "customer/guest/cart/add"
+        case .guestCartUpdate:
+            return "customer/guest/cart/update"
+        case .guestCartRemove:
+            return "customer/guest/cart/remove"
+        case .guestCartClear:
+            return "customer/guest/cart/clear"
         case .cartRemove:
             return "customer/cart/remove"
         case .cartClear:

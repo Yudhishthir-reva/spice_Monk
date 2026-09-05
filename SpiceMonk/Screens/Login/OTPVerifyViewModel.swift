@@ -25,9 +25,8 @@ class OTPVerifyViewModel: ObservableObject {
 
     var canResend: Bool { secondsRemaining <= 0 }
 
-    init(mobile: String, prefilledOTP: String = "") {
+    init(mobile: String) {
         self.mobile = mobile.replacingOccurrences(of: " ", with: "")
-        self.otp = prefilledOTP
         startTimer()
     }
 
@@ -93,7 +92,6 @@ class OTPVerifyViewModel: ObservableObject {
                 }
             } receiveValue: { [weak self] model in
                 guard let self else { return }
-                self.isShowProcessing = false
 
                 if model.status == true, let token = model.accessToken, !token.isEmpty {
                     let defaults = UserDefaultManager.shared
@@ -103,8 +101,17 @@ class OTPVerifyViewModel: ObservableObject {
                     defaults.setUserDefaultsString(value: model.mobile ?? self.mobile, key: .userMobile)
                     defaults.setUserDefaultsString(value: model.name ?? "", key: .userName)
                     defaults.setTokenExpiry(secondsFromNow: model.expiresIn)
-                    AppRootManager.shared.setRootView(view: HomeScreen())
+                    self.isShowProcessing = true
+                    GuestSessionManager.shared.mergeGuestCartThen {
+                        self.isShowProcessing = false
+                        let fromHomeCover = LoginGate.shared.isPresented
+                        LoginGate.shared.markLoggedIn()
+                        if !fromHomeCover {
+                            AppRootManager.shared.setRootView(view: HomeScreen())
+                        }
+                    }
                 } else {
+                    self.isShowProcessing = false
                     self.toastMessage = model.message ?? "Invalid OTP."
                     self.isShowToastView = true
                 }
@@ -134,7 +141,7 @@ class OTPVerifyViewModel: ObservableObject {
             } receiveValue: { [weak self] model in
                 guard let self else { return }
                 if model.status == true {
-                    self.otp = OTPSendModel.usableOTP(from: model.otp)
+                    self.otp = ""
                     self.startTimer()
                     self.toastMessage = model.message ?? "OTP sent successfully."
                     self.isShowToastView = true

@@ -52,6 +52,67 @@ class CartServiceManager {
         )
     }
 
+    /// Guest GET `customer/guest/cart` — same priced payload as logged-in cart (`data`/`summary`/`grand_total`).
+    func fetchGuestCart() -> AnyPublisher<CartResponse, Error> {
+        networkService.request(
+            APIRouter.guestCart,
+            params: guestTokenParams(),
+            headers: UserDefaultManager.shared.authHeader
+        )
+    }
+
+    /// Guest POST `customer/guest/cart/add` — slim `{ cart: [...] }` ack, then refresh via `fetchGuestCart()`.
+    func addGuestCart(productId: Int, variantId: Int, qty: Int) -> AnyPublisher<GuestCartAddResponse, Error> {
+        var params = guestTokenParams()
+        params["product_id"] = productId
+        params["variant_id"] = variantId
+        params["qty"] = qty
+        return networkService.request(
+            APIRouter.guestCartAdd,
+            params: params,
+            headers: UserDefaultManager.shared.authHeader
+        )
+    }
+
+    /// Guest POST `customer/guest/cart/update` — `{ status, message }` only (then refresh cart).
+    func updateGuestCart(productId: Int, variantId: Int, qty: Int) -> AnyPublisher<StatusResponse, Error> {
+        var params = guestTokenParams()
+        params["product_id"] = productId
+        params["variant_id"] = variantId
+        params["qty"] = qty
+        return networkService.request(
+            APIRouter.guestCartUpdate,
+            params: params,
+            headers: UserDefaultManager.shared.authHeader
+        )
+    }
+
+    /// Guest POST `customer/guest/cart/remove` — `{ status, message }`.
+    func removeGuestCart(productId: Int, variantId: Int) -> AnyPublisher<StatusResponse, Error> {
+        var params = guestTokenParams()
+        params["product_id"] = productId
+        params["variant_id"] = variantId
+        return networkService.request(
+            APIRouter.guestCartRemove,
+            params: params,
+            headers: UserDefaultManager.shared.authHeader
+        )
+    }
+
+    /// Guest POST `customer/guest/cart/clear` — clears entire guest cart.
+    func clearGuestCart() -> AnyPublisher<StatusResponse, Error> {
+        networkService.request(
+            APIRouter.guestCartClear,
+            params: guestTokenParams(),
+            headers: UserDefaultManager.shared.authHeader
+        )
+    }
+
+    private func guestTokenParams() -> [String: Any] {
+        let token = UserDefaultManager.shared.guestToken
+        return token.isEmptyString ? [:] : ["guest_token": token]
+    }
+
     func removeFromCart(cartId: Int) -> AnyPublisher<StatusResponse, Error> {
         networkService.request(
             APIRouter.cartRemove,

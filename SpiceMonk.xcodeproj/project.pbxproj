@@ -10,7 +10,6 @@
 		9D9AADD0DA30E07F320071A3 /* Pods_SpiceMonk.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2B952BC166F1B3357A409EC /* Pods_SpiceMonk.framework */; };
 		C5784A353039E60000C60492 /* VariantSelectorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A343039E60000C60492 /* VariantSelectorSheet.swift */; };
 		C5784A373039EDC300C60492 /* ApplyCouponSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A363039EDC300C60492 /* ApplyCouponSheet.swift */; };
-		C5784A7130400CE00C60492 /* CouponCelebrationModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A7030400CE00C60492 /* CouponCelebrationModal.swift */; };
 		C5784A393039EEA200C60492 /* PaymentMethodPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A383039EEA200C60492 /* PaymentMethodPickerSheet.swift */; };
 		C5784A3F3039F03C00C60492 /* OrderModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A3A3039F03C00C60492 /* OrderModels.swift */; };
 		C5784A403039F03C00C60492 /* OrderServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A3B3039F03C00C60492 /* OrderServiceManager.swift */; };
@@ -30,8 +29,9 @@
 		C5784A66303A000900C60492 /* DMSans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C5784A67303A000900C60492 /* DMSans-Bold.ttf */; };
 		C5784A68303A000A00C60492 /* DMSans-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C5784A69303A000A00C60492 /* DMSans-Italic.ttf */; };
 		C5784A6A303A000B00C60492 /* DMSans-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C5784A6B303A000B00C60492 /* DMSans-BoldItalic.ttf */; };
+		C5784A7130400CE00C60492 /* CouponCelebrationModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A7030400CE00C60492 /* CouponCelebrationModal.swift */; };
 		C58CD04C303C4F5F0038A272 /* SavedAddressesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58CD04B303C4F5F0038A272 /* SavedAddressesScreen.swift */; };
-		C59C00913045596400A44298 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = C59C00903045596400A44298 /* GoogleService-Info.plist */; };
+		C5A4D82E30499BAA00754433 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = C5A4D82D30499BAA00754433 /* GoogleService-Info.plist */; };
 		C5B2E70E30400C2A00107F9B /* AppStatusManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B2E70C30400C2A00107F9B /* AppStatusManager.swift */; };
 		C5B2E71030400D7100107F9B /* AppStatusDialogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B2E70F30400D7100107F9B /* AppStatusDialogs.swift */; };
 		C5F10F68303D79F100525CC1 /* AuthSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5F10F67303D79F100525CC1 /* AuthSessionManager.swift */; };
@@ -100,7 +100,6 @@
 		B2B952BC166F1B3357A409EC /* Pods_SpiceMonk.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SpiceMonk.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C5784A343039E60000C60492 /* VariantSelectorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VariantSelectorSheet.swift; sourceTree = "<group>"; };
 		C5784A363039EDC300C60492 /* ApplyCouponSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplyCouponSheet.swift; sourceTree = "<group>"; };
-		C5784A7030400CE00C60492 /* CouponCelebrationModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CouponCelebrationModal.swift; sourceTree = "<group>"; };
 		C5784A383039EEA200C60492 /* PaymentMethodPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentMethodPickerSheet.swift; sourceTree = "<group>"; };
 		C5784A3A3039F03C00C60492 /* OrderModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderModels.swift; sourceTree = "<group>"; };
 		C5784A3B3039F03C00C60492 /* OrderServiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderServiceManager.swift; sourceTree = "<group>"; };
@@ -121,9 +120,10 @@
 		C5784A67303A000900C60492 /* DMSans-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Bold.ttf"; sourceTree = "<group>"; };
 		C5784A69303A000A00C60492 /* DMSans-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Italic.ttf"; sourceTree = "<group>"; };
 		C5784A6B303A000B00C60492 /* DMSans-BoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-BoldItalic.ttf"; sourceTree = "<group>"; };
+		C5784A7030400CE00C60492 /* CouponCelebrationModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CouponCelebrationModal.swift; sourceTree = "<group>"; };
 		C58CD04B303C4F5F0038A272 /* SavedAddressesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedAddressesScreen.swift; sourceTree = "<group>"; };
-		C59C00903045596400A44298 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		C59C009C3045AF6500A44298 /* SpiceMonk.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SpiceMonk.entitlements; sourceTree = "<group>"; };
+		C5A4D82D30499BAA00754433 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		C5B2E70C30400C2A00107F9B /* AppStatusManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStatusManager.swift; sourceTree = "<group>"; };
 		C5B2E70F30400D7100107F9B /* AppStatusDialogs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStatusDialogs.swift; sourceTree = "<group>"; };
 		C5F10F67303D79F100525CC1 /* AuthSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSessionManager.swift; sourceTree = "<group>"; };
@@ -410,7 +410,7 @@
 				DD2F2274302F29FD0025FC97 /* Assets.xcassets */,
 				DD2F2275302F29FD0025FC97 /* LaunchScreen.storyboard */,
 				DD2F2276302F29FD0025FC97 /* SpiceMonkApp.swift */,
-				C59C00903045596400A44298 /* GoogleService-Info.plist */,
+				C5A4D82D30499BAA00754433 /* GoogleService-Info.plist */,
 			);
 			path = SpiceMonk;
 			sourceTree = "<group>";
@@ -510,7 +510,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DD2F2278302F29FD0025FC97 /* Assets.xcassets in Resources */,
-				C59C00913045596400A44298 /* GoogleService-Info.plist in Resources */,
+				C5A4D82E30499BAA00754433 /* GoogleService-Info.plist in Resources */,
 				DD2F2279302F29FD0025FC97 /* LaunchScreen.storyboard in Resources */,
 				C5784A62303A000700C60492 /* DMSans-Regular.ttf in Resources */,
 				C5784A64303A000800C60492 /* DMSans-Medium.ttf in Resources */,
@@ -798,7 +798,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = SpiceMonk/SpiceMonk.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = TP9YK56DA7;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -831,8 +831,8 @@
 				);
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.5;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.SpiceMonk.app;
+				MARKETING_VERSION = 1.0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.spicemonk.user;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -844,7 +844,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				XROS_DEPLOYMENT_TARGET = 26.5;
 			};
 			name = Debug;
@@ -857,7 +857,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = SpiceMonk/SpiceMonk.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = TP9YK56DA7;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -890,8 +890,8 @@
 				);
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.5;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.SpiceMonk.app;
+				MARKETING_VERSION = 1.0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.spicemonk.user;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -903,7 +903,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				XROS_DEPLOYMENT_TARGET = 26.5;
 			};
 			name = Release;

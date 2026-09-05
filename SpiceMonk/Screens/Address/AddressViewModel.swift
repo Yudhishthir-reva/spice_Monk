@@ -25,6 +25,7 @@ class AddressViewModel: ObservableObject {
     var hasAddresses: Bool { !addresses.isEmpty }
 
     func load() {
+        guard UserDefaultManager.shared.isUserLoggedIn else { return }
         guard !isLoading else { return }
         isLoading = true
 
