@@ -30,10 +30,31 @@ struct HomeTopBar: View {
     var onSearchSubmit: (() -> Void)?
     var onSearchMic: (() -> Void)?
 
+    /// 1 = full green hero; 0 = sticky mint bar (scroll collapse or search mode).
+    private var heroVisible: CGFloat {
+        searchActive ? 0 : addressOpacity
+    }
+
+    /// Softer than smoothstep — stays open longer, then eases shut (feels less abrupt).
+    private var easedHero: CGFloat {
+        let t = heroVisible
+        // smoothstep(smoothstep(t)) — gentler shoulders at both ends
+        let s = t * t * (3 - 2 * t)
+        return s * s * (3 - 2 * s)
+    }
+
+    /// Android `lerp(0.dp, 26.dp, heroVisible)` — bottom corners only.
+    private var bottomCornerRadius: CGFloat {
+        28 * easedHero
+    }
+
     var body: some View {
-        VStack(spacing: searchActive ? 0 : 10) {
+        VStack(spacing: 10 * easedHero) {
             addressRow
-                .opacity(searchActive ? 0 : addressOpacity)
+                .opacity(easedHero)
+                .offset(y: -10 * (1 - easedHero))
+                .frame(height: addressRowExpandedHeight * easedHero, alignment: .top)
+                .clipped()
 
             SpiceSearchBar(
                 query: searchQuery,
@@ -50,83 +71,202 @@ struct HomeTopBar: View {
         .padding(.bottom, 10)
         .padding(.top, safeAreaTop + 8)
         .background {
-            ZStack(alignment: .top) {
-                // Sticky search settles on light canvas once the address row collapses.
-                Color(hex: "F7FAF7")
+            // Android: cross-fade hero aurora → headerCollapsed (mint + soft spices),
+            // with bottom corners that round when expanded and flatten on collapse.
+            ZStack {
+                AppTheme.homeHeaderSurface
+
+                HomeHeaderCollapsedCanvas()
+                    .opacity(1 - easedHero)
 
                 HomeHeaderAuroraCanvas()
-                    .opacity(addressOpacity)
-
-                // Keep the status-bar band dark even after the aurora fades, otherwise iOS
-                // flips Time / Wi‑Fi / Battery between light and dark mid-scroll.
-                AppTheme.homeHeaderTop
-                    .frame(height: safeAreaTop)
-                    .frame(maxWidth: .infinity)
-                    .opacity(1 - addressOpacity)
+                    .opacity(easedHero)
             }
             .ignoresSafeArea(edges: .top)
+            .clipShape(
+                UnevenRoundedRectangle(
+                    topLeadingRadius: 0,
+                    bottomLeadingRadius: bottomCornerRadius,
+                    bottomTrailingRadius: bottomCornerRadius,
+                    topTrailingRadius: 0,
+                    style: .continuous
+                )
+            )
+            .shadow(
+                color: Color.black.opacity(0.12 * (1 - easedHero)),
+                radius: 10 * (1 - easedHero),
+                y: 3 * (1 - easedHero)
+            )
         }
+        .animation(.spring(response: 0.42, dampingFraction: 0.90), value: searchActive)
     }
 
-    private var addressRow: some View {
-        HStack(spacing: 8) {
-            Button(action: onAddressTap) {
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "location.fill")
-                            .font(.appFont(size: 11))
-                            .foregroundStyle(.white)
-                        Text("Delivering to")
-                            .font(.appFont(size: 12, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.9))
+    /// Max address+delivery height while open (shrinks with `easedHero` after sticky pin).
+    private var addressRowExpandedHeight: CGFloat { 72 }
 
-                        // Pincode/city chip
-                        if let city = address?.cityName, !city.isEmptyString {
-                            Text(city.uppercased())
-                                .font(.appFont(size: 10, weight: .bold))
+    private var addressRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Button(action: onAddressTap) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "location.fill")
+                                .font(.appFont(size: 11))
                                 .foregroundStyle(.white)
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 2)
-                                .background(Color.white.opacity(0.22))
-                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            Text("Delivering to")
+                                .font(.appFont(size: 12, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.9))
+
+                            // Pincode/city chip
+                            if let city = address?.cityName, !city.isEmptyString {
+                                Text(city.uppercased())
+                                    .font(.appFont(size: 10, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 2)
+                                    .background(Color.white.opacity(0.22))
+                                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            }
+                        }
+
+                        HStack(spacing: 4) {
+                            Text(address?.shortLine.isEmptyString == false
+                                 ? address!.shortLine
+                                 : "Set your delivery address")
+                                .font(.appFont(size: 15, weight: .bold))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                            Image(systemName: "chevron.down")
+                                .font(.appFont(size: 11, weight: .bold))
+                                .foregroundStyle(.white)
                         }
                     }
+                }
+                .buttonStyle(.plain)
 
-                    HStack(spacing: 4) {
-                        Text(address?.shortLine.isEmptyString == false
-                             ? address!.shortLine
-                             : "Set your delivery address")
-                            .font(.appFont(size: 15, weight: .bold))
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                        Image(systemName: "chevron.down")
-                            .font(.appFont(size: 11, weight: .bold))
-                            .foregroundStyle(.white)
+                Spacer()
+
+                AnimatedHeaderBell {
+                    if let onNotificationTap {
+                        onNotificationTap()
+                    } else if let onProfileTap {
+                        onProfileTap()
                     }
                 }
             }
-            .buttonStyle(.plain)
 
-            Spacer()
-
-            AnimatedHeaderBell {
-                if let onNotificationTap {
-                    onNotificationTap()
-                } else if let onProfileTap {
-                    onProfileTap()
-                }
-            }
+            DeliveryPromiseStrip()
+                .opacity(easedHero)
+                .frame(height: 28 * easedHero)
+                .clipped()
         }
+    }
+}
+
+/// Android `DeliveryPromise` — scooter Lottie + brand one-liner under the address row.
+private struct DeliveryPromiseStrip: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            SpiceLottie(anim: .delivery)
+                .frame(width: 24, height: 24)
+            Text("Whole spices, ground fresh and delivered")
+                .font(.appFont(size: 12, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+            Spacer(minLength: 0)
+        }
+        .padding(.leading, 4)
+        .padding(.trailing, 12)
+        .padding(.vertical, 3)
+        .background(Color.white.opacity(0.14))
+        .clipShape(Capsule())
     }
 }
 
 private let TAU: CGFloat = 2.0 * .pi
 
-/// Living "Spiced Aurora" Canvas Background matching Android Jetpack Compose reference.
-/// 60/120 FPS GPU-accelerated drawing with drifting Lissajous glows, light sweep sheen, and rising spice specks.
- struct HomeHeaderAuroraCanvas: View {
+/// Collapsed sticky bar — Android FreshMint `headerCollapsed`: mint wash + soft spice fall.
+struct HomeHeaderCollapsedCanvas: View {
 
     var body: some View {
+        ZStack {
+            collapsedWash
+            SpiceAmbientField(style: .collapsed)
+        }
+    }
+
+    private var collapsedWash: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+            let date = timeline.date.timeIntervalSinceReferenceDate
+            let blobPhase = CGFloat(date.truncatingRemainder(dividingBy: 17.0) / 17.0)
+            let sweepPhase = CGFloat(date.truncatingRemainder(dividingBy: 9.0) / 9.0)
+
+            Canvas { context, size in
+                let w = size.width
+                let h = size.height
+                guard w > 0, h > 0 else { return }
+
+                let baseRect = CGRect(origin: .zero, size: size)
+                context.fill(
+                    Path(baseRect),
+                    with: .linearGradient(
+                        Gradient(colors: [
+                            AppTheme.homeHeaderCollapsedTop,
+                            AppTheme.homeHeaderCollapsedBottom
+                        ]),
+                        startPoint: .zero,
+                        endPoint: CGPoint(x: w, y: h)
+                    )
+                )
+
+                let a = blobPhase * TAU
+                let cx = w * 0.82 + sin(a) * w * 0.16
+                let cy = h * 0.30 + cos(a * 2) * h * 0.30
+                let radius = 0.46 * w
+                context.fill(
+                    Path(ellipseIn: CGRect(x: cx - radius, y: cy - radius, width: radius * 2, height: radius * 2)),
+                    with: .radialGradient(
+                        Gradient(colors: [
+                            Color(hex: "34D399").opacity(0.14),
+                            Color(hex: "34D399").opacity(0)
+                        ]),
+                        center: CGPoint(x: cx, y: cy),
+                        startRadius: 0,
+                        endRadius: radius
+                    )
+                )
+
+                let sweepX = (sweepPhase * 2.2 - 0.6) * w
+                context.fill(
+                    Path(baseRect),
+                    with: .linearGradient(
+                        Gradient(colors: [
+                            Color.white.opacity(0),
+                            Color.white.opacity(0.20),
+                            Color.white.opacity(0)
+                        ]),
+                        startPoint: CGPoint(x: sweepX, y: 0),
+                        endPoint: CGPoint(x: sweepX + w * 0.42, y: h)
+                    )
+                )
+            }
+        }
+    }
+}
+
+/// Living "Spiced Aurora" Canvas Background matching Android Jetpack Compose reference.
+/// Gradient + Lissajous glows + light sweep, with falling spice silhouettes (Android FreshMint header).
+struct HomeHeaderAuroraCanvas: View {
+
+    var body: some View {
+        ZStack {
+            auroraLayers
+            // Android header ParticleField(SpiceMix) — chillies / cinnamon / anise tumbling down.
+            SpiceAmbientField(style: .header)
+        }
+    }
+
+    private var auroraLayers: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
             let date = timeline.date.timeIntervalSinceReferenceDate
             let warmPhase = CGFloat(date.truncatingRemainder(dividingBy: 11.0) / 11.0)
@@ -207,28 +347,6 @@ private let TAU: CGFloat = 2.0 * .pi
                         endPoint: CGPoint(x: sweepX + w * 0.42, y: h)
                     )
                 )
-
-                // 4. 7 Rising spice specks / motes
-                for i in 0..<7 {
-                    let seed = CGFloat(i) * 0.137
-                    let p = (deepPhase + seed).truncatingRemainder(dividingBy: 1.0)
-                    let x = w * (CGFloat(i) * 0.1613 + 0.06).truncatingRemainder(dividingBy: 1.0) + sin((p + seed) * TAU) * w * 0.05
-                    let y = h * (1.05 - p * 1.15)
-                    let fade = sin(p * .pi)
-                    let radius = 1.2 + CGFloat(i % 3) * 0.7
-
-                    let speckRect = CGRect(
-                        x: x - radius,
-                        y: y - radius,
-                        width: radius * 2,
-                        height: radius * 2
-                    )
-
-                    context.fill(
-                        Path(ellipseIn: speckRect),
-                        with: .color(Color.white.opacity(Double(0.22 * fade)))
-                    )
-                }
             }
         }
     }
@@ -668,6 +786,9 @@ struct HomeSkeleton: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
+            SpiceLoader(size: 56)
+                .frame(maxWidth: .infinity)
+
             block(height: 180)
                 .padding(.horizontal, 16)
 
@@ -714,12 +835,8 @@ struct HomeErrorState: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            Image(systemName: "cloud.slash")
-                .font(.appFont(size: 30))
-                .foregroundStyle(AppTheme.accentRed)
-                .frame(width: 72, height: 72)
-                .background(AppTheme.accentSoft)
-                .clipShape(Circle())
+            SpiceLottie(anim: .noNetwork)
+                .frame(width: 140, height: 140)
 
             Text("Something went wrong")
                 .font(.appFont(size: 18, weight: .bold))

@@ -18,9 +18,10 @@ extension RouterManagable {
     var baseURL: String {
         switch currentEnvironment {
         case .stagging:
-            return "https://spicemonk.revateam.com/api"
+            return "https://spicemonk.trudataa.com/api"
+//            return "https://spicemonk.revateam.com/api"
         case .production:
-            return "https://spicemonk.revateam.com/api"
+            return "https://spicemonk.trudataa.com/api"
         }
     }
 

@@ -58,7 +58,7 @@ struct OrdersScreen: View {
             // Orders list
             Group {
                 if viewModel.isLoading && viewModel.orders.isEmpty {
-                    ProgressView()
+                    SpiceLoadingPane(message: "Fetching your orders…")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let error = viewModel.loadError, viewModel.orders.isEmpty {
                     VStack(spacing: 16) {
@@ -76,9 +76,8 @@ struct OrdersScreen: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if viewModel.orders.isEmpty {
                     VStack(spacing: 12) {
-                        Image(systemName: "bag.badge.questionmark")
-                            .font(.appFont(size: 40))
-                            .foregroundStyle(AppTheme.textMuted)
+                        SpiceLottie(anim: .emptyOrders)
+                            .frame(width: 140, height: 140)
                         Text("No Orders Found")
                             .font(.appFont(size: 16, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)

@@ -35,7 +35,9 @@ struct CouponCelebrationModalView: View {
                     dismissModal()
                 }
 
-            ConfettiView()
+            SpiceLottie(anim: .confetti, contentMode: .scaleAspectFill)
+                .allowsHitTesting(false)
+                .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 ZStack {
@@ -49,14 +51,8 @@ struct CouponCelebrationModalView: View {
                             value: ringPulse
                         )
 
-                    Circle()
-                        .fill(AppTheme.brandGreen)
-                        .frame(width: 64, height: 64)
-                        .shadow(color: AppTheme.brandGreen.opacity(0.35), radius: 10, x: 0, y: 5)
-
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(.white)
+                    SpiceLottie(anim: .couponTag)
+                        .frame(width: 72, height: 72)
                 }
                 .scaleEffect(checkmarkScale)
                 .padding(.top, 28)

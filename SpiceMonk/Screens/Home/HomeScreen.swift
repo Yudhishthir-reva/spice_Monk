@@ -55,7 +55,7 @@ struct HomeScreen: View {
                 })
             }
         }
-        .background(AppTheme.homeCanvas, ignoresSafeAreaEdges: .bottom)
+        .spiceAmbientCanvas()
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(item: $cartDestination) { destination in
             switch destination {
@@ -200,19 +200,33 @@ struct HomeScreen: View {
         )
     }
 
-    private let addressScrollThreshold: CGFloat = 44
+    /// Tuned on Dynamic Island phones (~59pt top inset) where ~10pt pin felt right.
+    /// Scales with safe-area so SE / notch / Plus / iPad keep the same visual tuck.
+    private func stickyPinDistance(safeAreaTop: CGFloat) -> CGFloat {
+        let referenceInset: CGFloat = 59 // iPhone 17 Plus / Pro-class Dynamic Island
+        let referencePin: CGFloat = 10
+        let scaled = safeAreaTop * (referencePin / referenceInset)
+        return min(16, max(6, scaled))
+    }
 
-    private var addressOpacity: CGFloat {
-        let clamped = min(max(searchBarOffset, -addressScrollThreshold), 0)
-        return max(0, min(1, 1.0 - (clamped / -addressScrollThreshold)))
+    /// Address collapse / mint fade — mostly content-driven; slight safe-area nudge.
+    private func collapseFadeDistance(safeAreaTop: CGFloat) -> CGFloat {
+        72 + safeAreaTop * 0.65 // ≈110 on 59pt devices
+    }
+
+    private func addressOpacity(safeAreaTop: CGFloat) -> CGFloat {
+        let fade = collapseFadeDistance(safeAreaTop: safeAreaTop)
+        let clamped = min(max(searchBarOffset, -fade), 0)
+        return max(0, min(1, 1.0 - (clamped / -fade)))
     }
 
     // MARK: - Header & Feed
 
     private func header(safeAreaTop: CGFloat) -> some View {
-        HomeTopBar(
+        let pin = stickyPinDistance(safeAreaTop: safeAreaTop)
+        return HomeTopBar(
             address: addressViewModel.defaultAddress,
-            addressOpacity: addressOpacity,
+            addressOpacity: addressOpacity(safeAreaTop: safeAreaTop),
             safeAreaTop: safeAreaTop,
             searchPlaceholders: viewModel.searchPlaceholders,
             onAddressTap: {
@@ -233,7 +247,7 @@ struct HomeScreen: View {
                     self.searchBarOffset = minY
                 }
             }
-            let offset = minY > -addressScrollThreshold ? 0 : -(minY + addressScrollThreshold)
+            let offset = minY > -pin ? 0 : -(minY + pin)
             return content.offset(y: offset)
         }
         .zIndex(1000003)

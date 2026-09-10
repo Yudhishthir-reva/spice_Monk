@@ -281,15 +281,8 @@ struct SavedAddressesScreen: View {
 
     private var emptyState: some View {
         VStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(Color(hex: "E8F5EE"))
-                    .frame(width: 72, height: 72)
-
-                Image(systemName: "mappin.slash")
-                    .font(.appFont(size: 28))
-                    .foregroundStyle(Color(hex: "1F6335"))
-            }
+            SpiceLottie(anim: .emptyAddress)
+                .frame(width: 140, height: 140)
 
             Text("No saved addresses")
                 .font(.appFont(size: 18, weight: .bold))

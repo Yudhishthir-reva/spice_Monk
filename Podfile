@@ -10,4 +10,5 @@ target 'SpiceMonk' do
   pod 'GooglePlaces'
   pod 'FirebaseCore'
   pod 'FirebaseMessaging'
+  # Lottie is linked via local Swift Package: Vendor/lottie-ios
 end

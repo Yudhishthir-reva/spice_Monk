@@ -56,7 +56,7 @@ struct WidgetProductsScreen: View {
         VStack(spacing: 0) {
             Group {
                 if viewModel.isLoading && viewModel.products.isEmpty {
-                    ProgressView()
+                    SpiceLoadingPane(message: "Looking up products…")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let error = viewModel.loadError, viewModel.products.isEmpty {
                     HomeErrorState(message: error) {
@@ -115,6 +115,8 @@ struct WidgetProductsScreen: View {
 
     private var emptyState: some View {
         VStack(spacing: 8) {
+            SpiceLottie(anim: .emptySearch)
+                .frame(width: 140, height: 140)
             Text("No products found")
                 .font(.appFont(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
@@ -124,6 +126,7 @@ struct WidgetProductsScreen: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 32)
         .refreshable { await waitForRefresh() }
     }
 

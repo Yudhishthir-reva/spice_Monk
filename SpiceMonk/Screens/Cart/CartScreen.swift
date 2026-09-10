@@ -71,7 +71,7 @@ struct CartScreen: View {
     var body: some View {
         Group {
             if cart.isLoading && cart.isEmpty {
-                ProgressView()
+                SpiceLoadingPane(message: "Loading your cart…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let error = cart.loadError, cart.isEmpty {
                 HomeErrorState(message: error) {
@@ -768,17 +768,13 @@ struct CartScreen: View {
 
     private var emptyState: some View {
         VStack(spacing: 8) {
-            Image(systemName: "cart.badge.minus")
-                .font(.appFont(size: 44, weight: .medium))
-                .foregroundStyle(AppTheme.brandGreen)
-                .frame(width: 110, height: 110)
-                .background(AppTheme.accentSoft)
-                .clipShape(Circle())
+            SpiceLottie(anim: .emptyCart)
+                .frame(width: 190, height: 190)
 
             Text("Your Cart is Empty")
                 .font(.appFont(size: 22, weight: .heavy))
                 .foregroundStyle(AppTheme.textPrimary)
-                .padding(.top, 16)
+                .padding(.top, 8)
 
             Text("Explore our premium spices, powders, and seasonings to start cooking healthy!")
                 .font(.appFont(size: 15))

@@ -102,7 +102,7 @@ struct CategoryProductsScreen: View {
     @ViewBuilder
     private var pane: some View {
         if viewModel.isLoading && viewModel.products.isEmpty {
-            ProgressView()
+            SpiceLoadingPane(message: "Grinding your shelf…")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let error = viewModel.loadError, viewModel.products.isEmpty {
             HomeErrorState(message: error) {
@@ -132,7 +132,7 @@ struct CategoryProductsScreen: View {
             .padding(12)
 
             if viewModel.isLoadingMore {
-                ProgressView()
+                SpiceLoader(size: 40)
                     .padding(.bottom, 24)
             }
         }
@@ -142,6 +142,8 @@ struct CategoryProductsScreen: View {
 
     private var emptyState: some View {
         VStack(spacing: 8) {
+            SpiceLottie(anim: .emptySearch)
+                .frame(width: 140, height: 140)
             Text("No products")
                 .font(.appFont(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
@@ -151,6 +153,7 @@ struct CategoryProductsScreen: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 32)
         .refreshable { await waitForRefresh() }
     }
 

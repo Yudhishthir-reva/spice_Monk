@@ -15,7 +15,7 @@ struct SearchSuggestionsPane: View {
             if viewModel.trimmedQuery.count < SearchViewModel.minQueryLength {
                 hint("Type at least 3 letters to search")
             } else if viewModel.isSuggesting && viewModel.suggestions.isEmpty {
-                ProgressView()
+                SpiceLoader(size: 48)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 40)
             } else if let error = viewModel.suggestionError, viewModel.suggestions.isEmpty {
@@ -98,6 +98,8 @@ struct SearchSuggestionsPane: View {
             viewModel.submit()
         } label: {
             VStack(spacing: 8) {
+                SpiceLottie(anim: .emptySearch)
+                    .frame(width: 120, height: 120)
                 Text("No matches")
                     .font(.appFont(size: 18, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)

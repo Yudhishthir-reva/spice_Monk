@@ -221,11 +221,16 @@ struct OrderOutcomeBadge: View {
                     )
                 )
                 .frame(width: 88, height: 88)
-                .overlay(
-                    Image(systemName: skin.symbol)
-                        .font(.system(size: 46, weight: .bold))
-                        .foregroundStyle(.white)
-                )
+                .overlay {
+                    if skin.celebrate {
+                        SpiceLottie(anim: .orderSuccess)
+                            .frame(width: 72, height: 72)
+                    } else {
+                        Image(systemName: skin.symbol)
+                            .font(.system(size: 46, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                }
                 .scaleEffect(badgeShown ? 1 : 0.4)
                 .opacity(badgeShown ? 1 : 0)
         }

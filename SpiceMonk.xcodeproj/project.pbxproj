@@ -7,7 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		16CF046D0D96495499D96304 /* cart_added.json in Resources */ = {isa = PBXBuildFile; fileRef = E2CDC10A80D346968DCC2BB5 /* cart_added.json */; };
+		2A8741FA0EE44AF798D50727 /* order_success.json in Resources */ = {isa = PBXBuildFile; fileRef = E9E0DAA4385D438AA31528D9 /* order_success.json */; };
+		3E816950262043CE9AC39743 /* no_network.json in Resources */ = {isa = PBXBuildFile; fileRef = 33963F00E89E418EB2B6EBFB /* no_network.json */; };
+		53F481F658F7426D8E615AEC /* spice_splash.json in Resources */ = {isa = PBXBuildFile; fileRef = A304905CA90040B9A606462C /* spice_splash.json */; };
+		54407F80DBF94B668C79EE23 /* empty_address.json in Resources */ = {isa = PBXBuildFile; fileRef = 3C98B2AD95B443F1A79E0762 /* empty_address.json */; };
+		6065459525C94571946572FD /* empty_cart.json in Resources */ = {isa = PBXBuildFile; fileRef = 0CAA4A5C7FDA4FE6ACD0CC1D /* empty_cart.json */; };
+		6C7B06A90739411EB2921C44 /* empty_orders.json in Resources */ = {isa = PBXBuildFile; fileRef = 2D2FE93A2FE94387887CAED1 /* empty_orders.json */; };
+		93FBA1C7EAA24490BED084C9 /* delivery_scooter.json in Resources */ = {isa = PBXBuildFile; fileRef = FFA64D0018FE473A9F825C32 /* delivery_scooter.json */; };
 		9D9AADD0DA30E07F320071A3 /* Pods_SpiceMonk.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2B952BC166F1B3357A409EC /* Pods_SpiceMonk.framework */; };
+		AB1D887F45F04A99B282641E /* out_of_stock.json in Resources */ = {isa = PBXBuildFile; fileRef = 84E5A3405C4B4CBBA29DAF31 /* out_of_stock.json */; };
+		B98621C87554426389256C88 /* payment_processing.json in Resources */ = {isa = PBXBuildFile; fileRef = 14C7D0903DD9487195DF836E /* payment_processing.json */; };
+		BBFBF6695FFE41778D5A5B3E /* empty_search.json in Resources */ = {isa = PBXBuildFile; fileRef = 89F2680392B64227A5D1ACFD /* empty_search.json */; };
 		C5784A353039E60000C60492 /* VariantSelectorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A343039E60000C60492 /* VariantSelectorSheet.swift */; };
 		C5784A373039EDC300C60492 /* ApplyCouponSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A363039EDC300C60492 /* ApplyCouponSheet.swift */; };
 		C5784A393039EEA200C60492 /* PaymentMethodPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5784A383039EEA200C60492 /* PaymentMethodPickerSheet.swift */; };
@@ -35,6 +46,9 @@
 		C5B2E70E30400C2A00107F9B /* AppStatusManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B2E70C30400C2A00107F9B /* AppStatusManager.swift */; };
 		C5B2E71030400D7100107F9B /* AppStatusDialogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B2E70F30400D7100107F9B /* AppStatusDialogs.swift */; };
 		C5F10F68303D79F100525CC1 /* AuthSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5F10F67303D79F100525CC1 /* AuthSessionManager.swift */; };
+		D2106DC4064F409E942742BC /* coupon_tag.json in Resources */ = {isa = PBXBuildFile; fileRef = CC880998D18A45B39592DF3D /* coupon_tag.json */; };
+		D492204E7C5842F88840DD28 /* spice_confetti.json in Resources */ = {isa = PBXBuildFile; fileRef = C92A63AC8A634A0AB05CA139 /* spice_confetti.json */; };
+		DB5C022E59FA4E4AB8BB428F /* spice_grinder.json in Resources */ = {isa = PBXBuildFile; fileRef = 7B8B4D1EA82F4151851E2D06 /* spice_grinder.json */; };
 		DD2F2278302F29FD0025FC97 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD2F2274302F29FD0025FC97 /* Assets.xcassets */; };
 		DD2F2279302F29FD0025FC97 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DD2F2275302F29FD0025FC97 /* LaunchScreen.storyboard */; };
 		DD2F227A302F29FD0025FC97 /* NetworkServiceManagable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F2256302F29FD0025FC97 /* NetworkServiceManagable.swift */; };
@@ -92,11 +106,25 @@
 		DD2F22E5303000010025FC97 /* CartServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F22E4303000010025FC97 /* CartServiceManager.swift */; };
 		DD2F22E7303000010025FC97 /* CartViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F22E6303000010025FC97 /* CartViewModel.swift */; };
 		DD2F22E9303000010025FC97 /* CartScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2F22E8303000010025FC97 /* CartScreen.swift */; };
+		EB51855CB0344A2DB612BA32 /* spice_loader.json in Resources */ = {isa = PBXBuildFile; fileRef = EA11DBA7F37A4FB88529126B /* spice_loader.json */; };
+		F3D00ACD887B4204A7024651 /* SpiceLottie.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B09317D9571418B8CD0C69D /* SpiceLottie.swift */; };
+		A1B2C3D4E5F60718293A4B5C /* SpiceAmbientField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5B /* SpiceAmbientField.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0CAA4A5C7FDA4FE6ACD0CC1D /* empty_cart.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = empty_cart.json; sourceTree = "<group>"; };
+		14C7D0903DD9487195DF836E /* payment_processing.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = payment_processing.json; sourceTree = "<group>"; };
+		2B09317D9571418B8CD0C69D /* SpiceLottie.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpiceLottie.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5B /* SpiceAmbientField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpiceAmbientField.swift; sourceTree = "<group>"; };
+		2D2FE93A2FE94387887CAED1 /* empty_orders.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = empty_orders.json; sourceTree = "<group>"; };
+		33963F00E89E418EB2B6EBFB /* no_network.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = no_network.json; sourceTree = "<group>"; };
+		3C98B2AD95B443F1A79E0762 /* empty_address.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = empty_address.json; sourceTree = "<group>"; };
 		429F89C368C7C076766D02F9 /* Pods-SpiceMonk.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SpiceMonk.debug.xcconfig"; path = "Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk.debug.xcconfig"; sourceTree = "<group>"; };
+		7B8B4D1EA82F4151851E2D06 /* spice_grinder.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = spice_grinder.json; sourceTree = "<group>"; };
+		84E5A3405C4B4CBBA29DAF31 /* out_of_stock.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = out_of_stock.json; sourceTree = "<group>"; };
+		89F2680392B64227A5D1ACFD /* empty_search.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = empty_search.json; sourceTree = "<group>"; };
 		8D15CEC326777E54DCEB7B24 /* Pods-SpiceMonk.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SpiceMonk.release.xcconfig"; path = "Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk.release.xcconfig"; sourceTree = "<group>"; };
+		A304905CA90040B9A606462C /* spice_splash.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = spice_splash.json; sourceTree = "<group>"; };
 		B2B952BC166F1B3357A409EC /* Pods_SpiceMonk.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SpiceMonk.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C5784A343039E60000C60492 /* VariantSelectorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VariantSelectorSheet.swift; sourceTree = "<group>"; };
 		C5784A363039EDC300C60492 /* ApplyCouponSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplyCouponSheet.swift; sourceTree = "<group>"; };
@@ -127,6 +155,8 @@
 		C5B2E70C30400C2A00107F9B /* AppStatusManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStatusManager.swift; sourceTree = "<group>"; };
 		C5B2E70F30400D7100107F9B /* AppStatusDialogs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStatusDialogs.swift; sourceTree = "<group>"; };
 		C5F10F67303D79F100525CC1 /* AuthSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSessionManager.swift; sourceTree = "<group>"; };
+		C92A63AC8A634A0AB05CA139 /* spice_confetti.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = spice_confetti.json; sourceTree = "<group>"; };
+		CC880998D18A45B39592DF3D /* coupon_tag.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = coupon_tag.json; sourceTree = "<group>"; };
 		DD2F21A1302F20850025FC97 /* SpiceMonk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpiceMonk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD2F2256302F29FD0025FC97 /* NetworkServiceManagable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkServiceManagable.swift; sourceTree = "<group>"; };
 		DD2F2257302F29FD0025FC97 /* NetworkServiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkServiceManager.swift; sourceTree = "<group>"; };
@@ -185,6 +215,10 @@
 		DD2F22E4303000010025FC97 /* CartServiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartServiceManager.swift; sourceTree = "<group>"; };
 		DD2F22E6303000010025FC97 /* CartViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartViewModel.swift; sourceTree = "<group>"; };
 		DD2F22E8303000010025FC97 /* CartScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartScreen.swift; sourceTree = "<group>"; };
+		E2CDC10A80D346968DCC2BB5 /* cart_added.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = cart_added.json; sourceTree = "<group>"; };
+		E9E0DAA4385D438AA31528D9 /* order_success.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = order_success.json; sourceTree = "<group>"; };
+		EA11DBA7F37A4FB88529126B /* spice_loader.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = spice_loader.json; sourceTree = "<group>"; };
+		FFA64D0018FE473A9F825C32 /* delivery_scooter.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = delivery_scooter.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -216,6 +250,28 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
+		C0F69D3ADB4647AAA266012A /* Lottie */ = {
+			isa = PBXGroup;
+			children = (
+				E2CDC10A80D346968DCC2BB5 /* cart_added.json */,
+				CC880998D18A45B39592DF3D /* coupon_tag.json */,
+				FFA64D0018FE473A9F825C32 /* delivery_scooter.json */,
+				3C98B2AD95B443F1A79E0762 /* empty_address.json */,
+				0CAA4A5C7FDA4FE6ACD0CC1D /* empty_cart.json */,
+				2D2FE93A2FE94387887CAED1 /* empty_orders.json */,
+				89F2680392B64227A5D1ACFD /* empty_search.json */,
+				33963F00E89E418EB2B6EBFB /* no_network.json */,
+				E9E0DAA4385D438AA31528D9 /* order_success.json */,
+				84E5A3405C4B4CBBA29DAF31 /* out_of_stock.json */,
+				14C7D0903DD9487195DF836E /* payment_processing.json */,
+				C92A63AC8A634A0AB05CA139 /* spice_confetti.json */,
+				7B8B4D1EA82F4151851E2D06 /* spice_grinder.json */,
+				EA11DBA7F37A4FB88529126B /* spice_loader.json */,
+				A304905CA90040B9A606462C /* spice_splash.json */,
+			);
+			path = Lottie;
+			sourceTree = "<group>";
+		};
 		C5784A3E3039F03C00C60492 /* Orders */ = {
 			isa = PBXGroup;
 			children = (
@@ -245,6 +301,7 @@
 			isa = PBXGroup;
 			children = (
 				C5784A6C303A000C00C60492 /* Fonts */,
+				C0F69D3ADB4647AAA266012A /* Lottie */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -391,6 +448,8 @@
 				DD2F2298302F4B010025FC97 /* SpiceIllustrations.swift */,
 				DD2F2299302F4B010025FC97 /* AnimatedBrandBackground.swift */,
 				DD2F229A302F4B010025FC97 /* SpiceBackdrops.swift */,
+				2B09317D9571418B8CD0C69D /* SpiceLottie.swift */,
+				A1B2C3D4E5F60718293A4B5B /* SpiceAmbientField.swift */,
 				DD2F22C0302FA0010025FC97 /* RemoteImage.swift */,
 			);
 			path = Utility;
@@ -466,6 +525,9 @@
 			dependencies = (
 			);
 			name = SpiceMonk;
+			packageProductDependencies = (
+				C5L0TT1E0000000000000002 /* Lottie */,
+			);
 			productName = SpiceMonk;
 			productReference = DD2F21A1302F20850025FC97 /* SpiceMonk.app */;
 			productType = "com.apple.product-type.application";
@@ -494,6 +556,9 @@
 			);
 			mainGroup = DD2F2198302F20850025FC97;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C5L0TT1E0000000000000001 /* XCLocalSwiftPackageReference "lottie-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DD2F21A2302F20850025FC97 /* Products */;
 			projectDirPath = "";
@@ -517,6 +582,21 @@
 				C5784A66303A000900C60492 /* DMSans-Bold.ttf in Resources */,
 				C5784A68303A000A00C60492 /* DMSans-Italic.ttf in Resources */,
 				C5784A6A303A000B00C60492 /* DMSans-BoldItalic.ttf in Resources */,
+				16CF046D0D96495499D96304 /* cart_added.json in Resources */,
+				D2106DC4064F409E942742BC /* coupon_tag.json in Resources */,
+				93FBA1C7EAA24490BED084C9 /* delivery_scooter.json in Resources */,
+				54407F80DBF94B668C79EE23 /* empty_address.json in Resources */,
+				6065459525C94571946572FD /* empty_cart.json in Resources */,
+				6C7B06A90739411EB2921C44 /* empty_orders.json in Resources */,
+				BBFBF6695FFE41778D5A5B3E /* empty_search.json in Resources */,
+				3E816950262043CE9AC39743 /* no_network.json in Resources */,
+				2A8741FA0EE44AF798D50727 /* order_success.json in Resources */,
+				AB1D887F45F04A99B282641E /* out_of_stock.json in Resources */,
+				B98621C87554426389256C88 /* payment_processing.json in Resources */,
+				D492204E7C5842F88840DD28 /* spice_confetti.json in Resources */,
+				DB5C022E59FA4E4AB8BB428F /* spice_grinder.json in Resources */,
+				EB51855CB0344A2DB612BA32 /* spice_loader.json in Resources */,
+				53F481F658F7426D8E615AEC /* spice_splash.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -531,13 +611,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -552,13 +628,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-SpiceMonk/Pods-SpiceMonk-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -621,6 +693,8 @@
 				DD2F22A5302F6D010025FC97 /* ProductCard.swift in Sources */,
 				DD2F22A6302F6D010025FC97 /* HomeWidgetViews.swift in Sources */,
 				DD2F22A7302F6D010025FC97 /* HomeChrome.swift in Sources */,
+				F3D00ACD887B4204A7024651 /* SpiceLottie.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5C /* SpiceAmbientField.swift in Sources */,
 				DD2F22A9302F6D010025FC97 /* VoiceSearchSheet.swift in Sources */,
 				DD2F22D1302FB0010025FC97 /* WidgetProductsViewModel.swift in Sources */,
 				C58CD04C303C4F5F0038A272 /* SavedAddressesScreen.swift in Sources */,
@@ -930,6 +1004,21 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		C5L0TT1E0000000000000001 /* XCLocalSwiftPackageReference "lottie-ios" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "Vendor/lottie-ios";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C5L0TT1E0000000000000002 /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C5L0TT1E0000000000000001 /* XCLocalSwiftPackageReference "lottie-ios" */;
+			productName = Lottie;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DD2F2199302F20850025FC97 /* Project object */;
 }

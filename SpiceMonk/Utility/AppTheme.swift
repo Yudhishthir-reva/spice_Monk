@@ -48,7 +48,10 @@ enum AppTheme {
     static let homeCanvas = Color(hex: "FAFAFA")
     static let homeHeaderTop = Color(hex: "177343")
     static let homeHeaderBottom = Color(hex: "0D4525")
-    static let homeHeaderSurface = Color(hex: "167444")
+    /// Collapsed sticky bar floor (Android `HomeHeaderSurface` / FreshMint mint wash).
+    static let homeHeaderSurface = Color(hex: "E1F1E7")
+    static let homeHeaderCollapsedTop = Color(hex: "E6F5EC")
+    static let homeHeaderCollapsedBottom = Color(hex: "D6EDDF")
     static let homeHeaderGlowWarm = Color(hex: "FFC53D")   // saffron glow
     static let homeHeaderGlowCool = Color(hex: "34D399")   // emerald mint glow
 

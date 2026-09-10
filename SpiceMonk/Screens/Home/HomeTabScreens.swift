@@ -32,20 +32,31 @@ struct CategoriesTabScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Aurora Title Header
-            HStack {
-                Text("Categories")
+            // Aurora Title Header (Android Categories: Shop by category)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Shop by category")
                     .font(.appFont(size: 20, weight: .bold))
                     .foregroundStyle(.white)
-
-                Spacer()
+                Text("Everything in the pantry, sorted")
+                    .font(.appFont(size: 13, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.85))
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16)
             .padding(.bottom, 14)
             .padding(.top, (UIApplication.shared.keyWindow?.safeAreaInsets.top ?? 50) + 8)
             .background {
                 HomeHeaderAuroraCanvas()
                     .ignoresSafeArea(edges: .top)
+                    .clipShape(
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: 0,
+                            bottomLeadingRadius: 26,
+                            bottomTrailingRadius: 26,
+                            topTrailingRadius: 0,
+                            style: .continuous
+                        )
+                    )
             }
 
             // Search bar in body
@@ -115,7 +126,7 @@ struct CategoriesTabScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(hex: "F7F8F7"))
+        .background(Color.clear)
         .ignoresSafeArea(edges: .top)
     }
 
@@ -200,6 +211,15 @@ struct AccountTabScreen: View {
             .background {
                 HomeHeaderAuroraCanvas()
                     .ignoresSafeArea(edges: .top)
+                    .clipShape(
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: 0,
+                            bottomLeadingRadius: 26,
+                            bottomTrailingRadius: 26,
+                            topTrailingRadius: 0,
+                            style: .continuous
+                        )
+                    )
             }
 
             // Content
@@ -363,7 +383,7 @@ struct AccountTabScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(hex: "F8FAF8"))
+        .background(Color.clear)
         .ignoresSafeArea(edges: .top)
         .sheet(isPresented: $isPickingAddress) {
             AddressPickerSheet(viewModel: addressViewModel)
