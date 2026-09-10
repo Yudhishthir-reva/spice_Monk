@@ -50,11 +50,19 @@ struct HomeTopBar: View {
         .padding(.bottom, 10)
         .padding(.top, safeAreaTop + 8)
         .background {
-            ZStack {
+            ZStack(alignment: .top) {
+                // Sticky search settles on light canvas once the address row collapses.
                 Color(hex: "F7FAF7")
 
                 HomeHeaderAuroraCanvas()
                     .opacity(addressOpacity)
+
+                // Keep the status-bar band dark even after the aurora fades, otherwise iOS
+                // flips Time / Wi‑Fi / Battery between light and dark mid-scroll.
+                AppTheme.homeHeaderTop
+                    .frame(height: safeAreaTop)
+                    .frame(maxWidth: .infinity)
+                    .opacity(1 - addressOpacity)
             }
             .ignoresSafeArea(edges: .top)
         }
