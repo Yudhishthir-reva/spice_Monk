@@ -9,9 +9,9 @@ struct LoginScreen: View {
 
     @StateObject var viewModel: LoginViewModel = .init()
     @FocusState private var isMobileFocused: Bool
+    @ObservedObject private var loginGate = LoginGate.shared
     @State private var didCheckAppStatus = false
     @State private var isSkipping = false
-    var allowsDismiss: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -133,29 +133,6 @@ struct LoginScreen: View {
                         .frame(minHeight: geo.size.height)
                     }
                     .scrollDismissesKeyboard(.interactively)
-
-                    if allowsDismiss {
-                        VStack {
-                            HStack {
-                                Spacer()
-                                Button {
-                                    LoginGate.shared.dismiss()
-                                } label: {
-                                    Image(systemName: "xmark")
-                                        .font(.appFont(size: 14, weight: .bold))
-                                        .foregroundStyle(Color(hex: "1F6335"))
-                                        .frame(width: 36, height: 36)
-                                        .background(Color.white)
-                                        .clipShape(Circle())
-                                        .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
-                                }
-                                .buttonStyle(.plain)
-                                .padding(.trailing, 18)
-                                .padding(.top, max(geo.safeAreaInsets.top, 12) + 8)
-                            }
-                            Spacer()
-                        }
-                    }
                 }
                 .animation(.easeInOut(duration: 0.35), value: isMobileFocused)
             }
@@ -165,6 +142,25 @@ struct LoginScreen: View {
                 OTPVerifyScreen(
                     mobile: viewModel.mobile.trim
                 )
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if loginGate.isPresented {
+                Button {
+                    LoginGate.shared.dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.appFont(size: 14, weight: .bold))
+                        .foregroundStyle(Color(hex: "1F6335"))
+                        .frame(width: 36, height: 36)
+                        .background(Color.white)
+                        .clipShape(Circle())
+                        .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
+                }
+                .buttonStyle(.plain)
+                .contentShape(Circle())
+                .padding(.top, 8)
+                .padding(.trailing, 16)
             }
         }
         .onAppear {
@@ -268,26 +264,24 @@ struct LoginScreen: View {
             }
             .disabled(viewModel.isShowProcessing || isSkipping)
 
-            if !allowsDismiss {
-                Button {
-                    skipLogin()
-                } label: {
-                    if isSkipping {
-                        ProgressView()
-                            .tint(Color(hex: "1F6335"))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                    } else {
-                        Text("Skip login")
-                            .font(.appFont(size: 16, weight: .bold))
-                            .foregroundStyle(Color(hex: "1F6335"))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                    }
+            Button {
+                skipLogin()
+            } label: {
+                if isSkipping {
+                    ProgressView()
+                        .tint(Color(hex: "1F6335"))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                } else {
+                    Text("Skip login")
+                        .font(.appFont(size: 16, weight: .bold))
+                        .foregroundStyle(Color(hex: "1F6335"))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
                 }
-                .buttonStyle(.plain)
-                .disabled(viewModel.isShowProcessing || isSkipping)
             }
+            .buttonStyle(.plain)
+            .disabled(viewModel.isShowProcessing || isSkipping)
         }
         .padding(18)
         .background(Color.white)
@@ -298,6 +292,12 @@ struct LoginScreen: View {
     private func skipLogin() {
         guard !isSkipping else { return }
         isMobileFocused = false
+
+        if LoginGate.shared.isPresented {
+            LoginGate.shared.dismiss()
+            return
+        }
+
         isSkipping = true
         GuestSessionManager.shared.ensureSession {
             isSkipping = false

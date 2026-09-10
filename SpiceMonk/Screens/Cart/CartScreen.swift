@@ -355,9 +355,13 @@ struct CartScreen: View {
 
     // MARK: - Items
 
+    private var visibleCartItems: [CartItem] {
+        cart.items.filter { $0.qty > 0 }
+    }
+
     private var itemsCard: some View {
         VStack(spacing: 0) {
-            ForEach(Array(cart.items.enumerated()), id: \.element.id) { index, item in
+            ForEach(Array(visibleCartItems.enumerated()), id: \.element.id) { index, item in
                 CartItemRow(
                     item: item,
                     isBusy: cart.isUpdating(item) || cart.isRemoving(item),
@@ -367,7 +371,7 @@ struct CartScreen: View {
                 )
                 .opacity(cart.isRemoving(item) ? 0.45 : 1)
 
-                if index < cart.items.count - 1 {
+                if index < visibleCartItems.count - 1 {
                     Divider()
                         .padding(.horizontal, 16)
                 }

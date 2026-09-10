@@ -133,7 +133,7 @@ struct HomeScreen: View {
         }, onTap: nil, completion: nil)
         .cartStoreToast()
         .fullScreenCover(isPresented: $loginGate.isPresented) {
-            LoginScreen(allowsDismiss: true)
+            LoginScreen()
         }
     }
 

@@ -47,7 +47,9 @@ final class CartStore: ObservableObject {
     var serviceManagable = CartServiceManager()
     private let catalogService = HomeServiceManager()
 
-    var isEmpty: Bool { items.isEmpty && pendingOptimisticQty.isEmpty }
+    var isEmpty: Bool {
+        items.allSatisfy { $0.qty < 1 } && pendingOptimisticQty.isEmpty
+    }
 
     /// Item count including optimistic first-add taps not yet on the server.
     var displayItemCount: Int {
@@ -93,20 +95,16 @@ final class CartStore: ObservableObject {
         return qty < limit
     }
 
-    /// Catalog + stepper: debounced first-add, or debounced `changeQty` when the line already exists.
+    /// Catalog + stepper: local qty updates instantly; one debounce (product+variant) sends the final qty.
     func incrementOrAdd(productId: Int, variantId: Int, availableQty: Int, maxOrderQty: Int? = nil) {
         runWhenReady { [weak self] in
-            guard let self else { return }
-            if let item = self.line(productId: productId, variantId: variantId), item.cartId > 0 {
-                self.changeQty(item, by: 1)
-            } else {
-                self.addOrIncrement(
-                    productId: productId,
-                    variantId: variantId,
-                    availableQty: availableQty,
-                    maxOrderQty: maxOrderQty
-                )
-            }
+            self?.nudgeQty(
+                productId: productId,
+                variantId: variantId,
+                by: 1,
+                availableQty: availableQty,
+                maxOrderQty: maxOrderQty
+            )
         }
     }
 
@@ -332,108 +330,127 @@ final class CartStore: ObservableObject {
         self.paymentMethod = .cod
     }
 
-    /// First add sends `qty: 1`. Later taps send the new total (`2`, `3`, …) via update when we
-    /// already have a `cart_id`, or via add if we only know product + variant.
-    /// Debounced so rapid taps on the same product collapse into a single API call.
+    /// First add and later +/- share one timer keyed by product+variant so rapid taps
+    /// (including minus before `cart_id` exists) collapse into a single API call.
     func addOrIncrement(productId: Int, variantId: Int, availableQty: Int, maxOrderQty: Int? = nil) {
-        let key = Self.key(productId: productId, variantId: variantId)
-
-        runWhenReady { [weak self] in
-            guard let self = self else { return }
-
-            let current = self.quantity(productId: productId, variantId: variantId)
-            let effectiveMax = maxOrderQty ?? self.line(productId: productId, variantId: variantId)?.maxOrderQty
-
-            if availableQty > 0, current >= availableQty {
-                self.toastMessage = "Only \(availableQty) units available in stock."
-                self.isShowToastView = true
-                return
-            }
-            if let maxQty = effectiveMax, maxQty > 0, current >= maxQty {
-                self.toastMessage = "Maximum limit for this item is \(maxQty) units."
-                self.isShowToastView = true
-                return
-            }
-
-            self.pendingQtyTimers[key]?.cancel()
-            self.pendingAddTapCount[key, default: 0] += 1
-            self.pendingAddKeys.insert(key)
-
-            let optimisticQty = current + 1
-            if let item = self.line(productId: productId, variantId: variantId), item.cartId > 0 {
-                self.patch(cartId: item.cartId) { $0.setQty(optimisticQty) }
-                self.syncSummaryFromItems()
-            } else {
-                self.pendingOptimisticQty[key] = (self.pendingOptimisticQty[key] ?? 0) + 1
-            }
-            self.bump()
-
-            let workItem = DispatchWorkItem { [weak self] in
-                guard let self = self else { return }
-                self.pendingQtyTimers[key] = nil
-                self.pendingAddKeys.remove(key)
-                let count = self.pendingAddTapCount[key] ?? 0
-                self.pendingAddTapCount[key] = nil
-                guard count > 0 else { return }
-                self.performAddOrIncrement(
-                    productId: productId,
-                    variantId: variantId,
-                    availableQty: availableQty,
-                    maxOrderQty: effectiveMax,
-                    tapCount: count
-                )
-            }
-            self.pendingQtyTimers[key] = workItem
-            self.debounceQueue.asyncAfter(deadline: .now() + self.qtyDebounceInterval, execute: workItem)
-        }
+        incrementOrAdd(
+            productId: productId,
+            variantId: variantId,
+            availableQty: availableQty,
+            maxOrderQty: maxOrderQty
+        )
     }
 
     func decrement(productId: Int, variantId: Int) {
         runWhenReady { [weak self] in
-            guard let self, let item = self.line(productId: productId, variantId: variantId) else { return }
-            self.changeQty(item, by: -1)
+            guard let self else { return }
+            let item = self.line(productId: productId, variantId: variantId)
+            self.nudgeQty(
+                productId: productId,
+                variantId: variantId,
+                by: -1,
+                availableQty: item?.availableQty ?? 0,
+                maxOrderQty: item?.maxOrderQty
+            )
         }
     }
 
     /// Optimistically updates the local qty and debounces the API call.
     /// Rapid +/- taps on the same item collapse into a single network request with the final qty.
     func changeQty(_ item: CartItem, by delta: Int) {
-        guard let current = line(productId: item.productId, variantId: item.variantId),
-              current.cartId == item.cartId else { return }
-        let next = current.qty + delta
+        nudgeQty(
+            productId: item.productId,
+            variantId: item.variantId,
+            by: delta,
+            availableQty: item.availableQty,
+            maxOrderQty: item.maxOrderQty
+        )
+    }
+
+    private func nudgeQty(
+        productId: Int,
+        variantId: Int,
+        by delta: Int,
+        availableQty: Int,
+        maxOrderQty: Int?
+    ) {
+        let current = quantity(productId: productId, variantId: variantId)
+        let next = current + delta
         if next < 1 {
-            debouncedRemove(item)
+            applyLocalQty(productId: productId, variantId: variantId, qty: 0)
+            scheduleQtyFlush(productId: productId, variantId: variantId)
             return
         }
-        if current.availableQty > 0, next > current.availableQty {
-            toastMessage = "Only \(current.availableQty) units available in stock."
+
+        let effectiveMax = maxOrderQty ?? line(productId: productId, variantId: variantId)?.maxOrderQty
+        if availableQty > 0, next > availableQty {
+            toastMessage = "Only \(availableQty) units available in stock."
             isShowToastView = true
             return
         }
-        if let maxQty = current.maxOrderQty, maxQty > 0, next > maxQty {
+        if let maxQty = effectiveMax, maxQty > 0, next > maxQty {
             toastMessage = "Maximum limit for this item is \(maxQty) units."
             isShowToastView = true
             return
         }
 
-        // Optimistic local update
-        patch(cartId: current.cartId) { $0.setQty(next) }
-        syncSummaryFromItems()
-        bump()
+        applyLocalQty(productId: productId, variantId: variantId, qty: next)
+        scheduleQtyFlush(productId: productId, variantId: variantId)
+    }
 
-        // Debounce the API call
-        let key = String(current.cartId)
+    private func applyLocalQty(productId: Int, variantId: Int, qty: Int) {
+        let key = Self.key(productId: productId, variantId: variantId)
+        if qty < 1 {
+            if let item = line(productId: productId, variantId: variantId), item.cartId > 0 {
+                patch(cartId: item.cartId) { $0.setQty(0) }
+                syncSummaryFromItems()
+            }
+            pendingOptimisticQty[key] = nil
+            bump()
+            return
+        }
+        if let item = line(productId: productId, variantId: variantId), item.cartId > 0 {
+            patch(cartId: item.cartId) { $0.setQty(qty) }
+            pendingOptimisticQty[key] = nil
+            syncSummaryFromItems()
+        } else {
+            pendingOptimisticQty[key] = qty
+        }
+        bump()
+    }
+
+    private func scheduleQtyFlush(productId: Int, variantId: Int) {
+        let key = Self.key(productId: productId, variantId: variantId)
         pendingQtyTimers[key]?.cancel()
         let workItem = DispatchWorkItem { [weak self] in
-            guard let self = self else { return }
+            guard let self else { return }
             self.pendingQtyTimers[key] = nil
-            if let latest = self.line(productId: current.productId, variantId: current.variantId),
-               latest.cartId == current.cartId {
-                self.updateQty(latest, qty: latest.qty)
-            }
+            self.flushQty(productId: productId, variantId: variantId)
         }
         pendingQtyTimers[key] = workItem
         debounceQueue.asyncAfter(deadline: .now() + qtyDebounceInterval, execute: workItem)
+    }
+
+    private func flushQty(productId: Int, variantId: Int) {
+        let key = Self.key(productId: productId, variantId: variantId)
+        pendingAddKeys.remove(key)
+        pendingAddTapCount[key] = nil
+        let qty = quantity(productId: productId, variantId: variantId)
+        if qty < 1 {
+            if let item = line(productId: productId, variantId: variantId), item.cartId > 0 {
+                removeItem(item)
+            }
+            pendingOptimisticQty[key] = nil
+            return
+        }
+        let item = line(productId: productId, variantId: variantId)
+        performAddOrIncrement(
+            productId: productId,
+            variantId: variantId,
+            availableQty: item?.availableQty ?? 0,
+            maxOrderQty: item?.maxOrderQty,
+            tapCount: qty
+        )
     }
 
     /// Removes the whole line in one tap (guest → `guest/cart/remove`, logged-in → `cart/remove`).
@@ -447,6 +464,8 @@ final class CartStore: ObservableObject {
         let key = String(item.cartId)
         pendingQtyTimers[key]?.cancel()
         pendingQtyTimers[key] = nil
+        pendingQtyTimers[Self.key(productId: item.productId, variantId: item.variantId)]?.cancel()
+        pendingQtyTimers[Self.key(productId: item.productId, variantId: item.variantId)] = nil
 
         // Optimistic local removal
         removingIds.insert(item.cartId)
@@ -665,9 +684,9 @@ final class CartStore: ObservableObject {
                     self.addingKeys.remove(key)
                     self.bump()
                     if response.status == true {
-                        // Keep optimistic qty until `fetchGuestCart` applies priced `data`
-                        // so the floating bar does not flash empty (₹0 / hide).
-                        self.fetch()
+                        if self.pendingQtyTimers[key] == nil {
+                            self.fetch()
+                        }
                     } else {
                         self.pendingOptimisticQty[key] = nil
                         self.toastMessage = response.message ?? "Unable to add this product."
@@ -741,7 +760,10 @@ final class CartStore: ObservableObject {
                     self.updatingIds.remove(item.cartId)
                     self.bump()
                     if response.status == true {
-                        self.fetch()
+                        let key = Self.key(productId: item.productId, variantId: item.variantId)
+                        if self.pendingQtyTimers[key] == nil {
+                            self.fetch()
+                        }
                     } else {
                         self.items = snapshot
                         self.syncSummaryFromItems()
@@ -1006,19 +1028,61 @@ final class CartStore: ObservableObject {
         isRefreshing = false
         didLoadOnce = true
         loadError = nil
-        pendingOptimisticQty.removeAll()
-        pendingAddKeys.removeAll()
+        pendingOptimisticQty = pendingOptimisticQty.filter { pendingQtyTimers[$0.key] != nil }
+        pendingAddKeys = pendingAddKeys.filter { pendingQtyTimers[$0] != nil || addingKeys.contains($0) }
         bump()
         let pending = pendingAfterLoad
         pendingAfterLoad.removeAll()
         pending.forEach { $0() }
     }
 
+    private func inFlightQtyOverrides() -> [String: Int] {
+        var map: [String: Int] = [:]
+        for item in items where item.productId > 0 {
+            let key = Self.key(productId: item.productId, variantId: item.variantId)
+            if pendingQtyTimers[key] != nil || addingKeys.contains(key) || updatingIds.contains(item.cartId) {
+                map[key] = quantity(productId: item.productId, variantId: item.variantId)
+            }
+        }
+        for (key, qty) in pendingOptimisticQty {
+            if pendingQtyTimers[key] != nil || addingKeys.contains(key) {
+                map[key] = qty
+            }
+        }
+        return map
+    }
+
+    private func reapplyInFlightQtyOverrides(_ map: [String: Int]) {
+        guard !map.isEmpty else { return }
+        for (key, qty) in map {
+            let parts = key.split(separator: "-")
+            guard parts.count == 2,
+                  let productId = Int(parts[0]),
+                  let variantId = Int(parts[1]) else { continue }
+            if qty < 1 {
+                if let item = line(productId: productId, variantId: variantId), item.cartId > 0 {
+                    patch(cartId: item.cartId) { $0.setQty(0) }
+                }
+                pendingOptimisticQty[key] = nil
+                continue
+            }
+            if let item = line(productId: productId, variantId: variantId), item.cartId > 0 {
+                patch(cartId: item.cartId) { $0.setQty(qty) }
+                pendingOptimisticQty[key] = nil
+            } else {
+                pendingOptimisticQty[key] = qty
+            }
+        }
+        syncSummaryFromItems()
+    }
+
     private func applyCartResponse(_ response: CartResponse, couponQuery: CartCouponQuery) {
+        let overrides = inFlightQtyOverrides()
         items = response.items.filter { $0.productId > 0 }
         summary = response.summary
         charges = response.charges
         deliveryInfo = response.deliveryInfo
+        reapplyInFlightQtyOverrides(overrides)
 
         switch couponQuery {
         case .cleared:
@@ -1156,36 +1220,11 @@ final class CartStore: ObservableObject {
     }
 
     private func schedulePendingQtySync(for item: CartItem) {
-        let key = String(item.cartId)
-        pendingQtyTimers[key]?.cancel()
-        let workItem = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-            self.pendingQtyTimers[key] = nil
-            if let latest = self.line(productId: item.productId, variantId: item.variantId),
-               latest.cartId == item.cartId {
-                self.updateQty(latest, qty: latest.qty)
-            }
-        }
-        pendingQtyTimers[key] = workItem
-        debounceQueue.asyncAfter(deadline: .now() + 0.15, execute: workItem)
+        scheduleQtyFlush(productId: item.productId, variantId: item.variantId)
     }
 
     private func schedulePendingAddSync(productId: Int, variantId: Int) {
-        let key = Self.key(productId: productId, variantId: variantId)
-        pendingQtyTimers[key]?.cancel()
-        let workItem = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-            self.pendingQtyTimers[key] = nil
-            let target = self.quantity(productId: productId, variantId: variantId)
-            guard target > 0 else { return }
-            if let line = self.line(productId: productId, variantId: variantId), line.cartId > 0 {
-                self.updateQty(line, qty: target)
-            } else {
-                self.add(productId: productId, variantId: variantId, qty: target)
-            }
-        }
-        pendingQtyTimers[key] = workItem
-        debounceQueue.asyncAfter(deadline: .now() + 0.15, execute: workItem)
+        scheduleQtyFlush(productId: productId, variantId: variantId)
     }
 
     private func reconcileLocalQty(productId: Int, variantId: Int, desiredQty: Int) {
@@ -1197,7 +1236,7 @@ final class CartStore: ObservableObject {
             patch(cartId: line.cartId) { $0.setQty(desiredQty) }
             syncSummaryFromItems()
             bump()
-            let timerKey = String(line.cartId)
+            let timerKey = Self.key(productId: productId, variantId: variantId)
             if pendingQtyTimers[timerKey] == nil,
                let latest = self.line(productId: productId, variantId: variantId) {
                 updateQty(latest, qty: desiredQty)
