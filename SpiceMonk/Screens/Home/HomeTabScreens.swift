@@ -16,13 +16,7 @@ enum HomeTabDestination: String, Hashable, Identifiable {
 /// Bottom-nav Categories tab: emerald green header with search + 3-column grid.
 struct CategoriesTabScreen: View {
 
-    let categories: [CategoryItem]
-    @State private var searchText = ""
-
-    private var filtered: [CategoryItem] {
-        if searchText.isEmpty { return categories }
-        return categories.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
-    }
+    @StateObject private var viewModel = CategoriesTabViewModel()
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -65,15 +59,15 @@ struct CategoriesTabScreen: View {
                     .font(.appFont(size: 15, weight: .medium))
                     .foregroundStyle(AppTheme.textMuted)
 
-                TextField("Search categories", text: $searchText)
+                TextField("Search categories", text: $viewModel.searchText)
                     .font(.appFont(size: 14, weight: .medium))
                     .foregroundStyle(AppTheme.textPrimary)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
 
-                if !searchText.isEmpty {
+                if !viewModel.searchText.isEmpty {
                     Button {
-                        searchText = ""
+                        viewModel.searchText = ""
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.appFont(size: 16))
@@ -90,44 +84,91 @@ struct CategoriesTabScreen: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
 
-            // Category grid
-            if filtered.isEmpty {
-                VStack(spacing: 8) {
-                    Text("No categories")
-                        .font(.appFont(size: 18, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                    Text("Categories will appear here once available.")
-                        .font(.appFont(size: 14))
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.horizontal, 32)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                ScrollView(.vertical, showsIndicators: false) {
-                    LazyVGrid(columns: columns, spacing: 14) {
-                        ForEach(filtered) { category in
-                            NavigationLink {
-                                WidgetProductsScreen(
-                                    searchQuery: "",
-                                    title: category.name,
-                                    categoryId: category.id
-                                )
-                            } label: {
-                                categoryCell(category)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 14)
-                    .padding(.bottom, 24)
-                }
-            }
+            categoryBody
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.clear)
         .ignoresSafeArea(edges: .top)
+        .onAppear {
+            viewModel.loadIfNeeded()
+        }
+        .toast(isPresenting: $viewModel.isShowToastView, duration: 1.8, offsetY: 10, alert: {
+            AlertToast(displayMode: .banner(.pop), type: .regular, title: viewModel.toastMessage)
+        }, onTap: nil, completion: nil)
+    }
+
+    @ViewBuilder
+    private var categoryBody: some View {
+        if viewModel.isLoading && viewModel.categories.isEmpty {
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let error = viewModel.loadError, viewModel.categories.isEmpty {
+            VStack(spacing: 12) {
+                Text(error)
+                    .font(.appFont(size: 14))
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .multilineTextAlignment(.center)
+                Button("Retry") {
+                    viewModel.loadFirstPage()
+                }
+                .font(.appFont(size: 14, weight: .bold))
+                .foregroundStyle(AppTheme.brandGreen)
+            }
+            .padding(.horizontal, 32)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if viewModel.categories.isEmpty {
+            VStack(spacing: 8) {
+                Text(viewModel.searchText.isEmpty ? "No categories" : "No matching categories")
+                    .font(.appFont(size: 18, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                Text(
+                    viewModel.searchText.isEmpty
+                    ? "Categories will appear here once available."
+                    : "Try a different search term."
+                )
+                .font(.appFont(size: 14))
+                .foregroundStyle(AppTheme.textSecondary)
+                .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 32)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            ScrollView(.vertical, showsIndicators: false) {
+                LazyVGrid(columns: columns, spacing: 14) {
+                    ForEach(viewModel.categories) { category in
+                        NavigationLink {
+                            CategoryProductsScreen(
+                                categoryId: category.id,
+                                title: category.name,
+                                siblings: viewModel.categories
+                            )
+                        } label: {
+                            categoryCell(category)
+                        }
+                        .buttonStyle(.plain)
+                        .onAppear {
+                            if category.id == viewModel.categories.last?.id {
+                                viewModel.loadMore()
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 24)
+
+                if viewModel.isLoadingMore {
+                    ProgressView()
+                        .padding(.bottom, 24)
+                }
+            }
+            .refreshable {
+                viewModel.refresh()
+                while viewModel.isRefreshing {
+                    try? await Task.sleep(for: .milliseconds(80))
+                }
+            }
+        }
     }
 
     private func categoryCell(_ item: CategoryItem) -> some View {

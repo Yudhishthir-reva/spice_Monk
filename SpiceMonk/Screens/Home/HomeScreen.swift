@@ -186,7 +186,7 @@ struct HomeScreen: View {
     // MARK: - Categories Tab
 
     private var categoriesContent: some View {
-        CategoriesTabScreen(categories: viewModel.allCategories)
+        CategoriesTabScreen()
     }
 
     // MARK: - Account Tab

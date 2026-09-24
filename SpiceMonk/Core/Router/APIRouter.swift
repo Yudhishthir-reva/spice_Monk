@@ -20,6 +20,7 @@ enum APIRouter: RouterManagable {
     case updateAddress(id: Int)
     case cityByPincode
     case widgetProducts
+    case categoryAll
     case categoryProducts
     case brandProducts
     case bannerProducts
@@ -78,6 +79,8 @@ enum APIRouter: RouterManagable {
             return "customer/address/pincode"
         case .widgetProducts:
             return "customer/widget/products"
+        case .categoryAll:
+            return "customer/category/all"
         case .categoryProducts:
             return "customer/category/products"
         case .brandProducts:
@@ -135,7 +138,7 @@ enum APIRouter: RouterManagable {
 
     var requestType: RequestMethodType {
         switch self {
-        case .addressList, .addressDetail, .cart, .coupons, .orders, .orderDetail:
+        case .addressList, .addressDetail, .cart, .coupons, .orders, .orderDetail, .categoryAll:
             return .get
         case .cartClear, .deleteAddress:
             return .delete

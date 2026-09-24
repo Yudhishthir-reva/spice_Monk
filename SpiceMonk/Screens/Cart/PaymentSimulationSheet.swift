@@ -46,7 +46,7 @@ struct PaymentSimulationSheet: View {
                     environment: initiateData.environment,
                     onPaymentRedirect: { url in
                         let urlString = url.absoluteString.lowercased()
-                        if urlString.contains("spicemonk.revateam.com") {
+                        if urlString.contains("spicemonk.in") || urlString.contains("spicemonk.revateam.com") {
                             verifyPayment()
                         }
                     }

@@ -174,6 +174,7 @@ struct OrderDetail: Decodable, Identifiable {
     let couponDiscount: Double
     let totalAmount: Double
     let notes: String?
+    let invoiceLink: String?
     let items: [OrderDetailItem]
     let deliveryAddress: OrderDetailAddress
 
@@ -192,6 +193,7 @@ struct OrderDetail: Decodable, Identifiable {
         case couponCode = "coupon_code"
         case couponDiscount = "coupon_discount"
         case totalAmount = "total_amount"
+        case invoiceLink = "invoice_link"
         case deliveryAddress = "delivery_address"
     }
 
@@ -214,8 +216,16 @@ struct OrderDetail: Decodable, Identifiable {
         couponDiscount = container.decodeDoubleLeniently(forKey: .couponDiscount) ?? 0
         totalAmount = container.decodeDoubleLeniently(forKey: .totalAmount) ?? 0
         notes = container.decodeStringLeniently(forKey: .notes)
+        invoiceLink = container.decodeStringLeniently(forKey: .invoiceLink)
         items = (try? container.decode([OrderDetailItem].self, forKey: .items)) ?? []
         deliveryAddress = try container.decode(OrderDetailAddress.self, forKey: .deliveryAddress)
+    }
+
+    var invoiceURL: URL? {
+        guard let link = invoiceLink?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !link.isEmpty,
+              let url = URL(string: link) else { return nil }
+        return url
     }
 }
 

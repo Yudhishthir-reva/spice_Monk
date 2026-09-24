@@ -9,6 +9,11 @@ struct PaymentMethodPickerSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var cart = CartStore.shared
+    @ObservedObject private var appStatus = AppStatusManager.shared
+
+    private var availableMethods: [PaymentMethod] {
+        PaymentMethod.availableCases
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,7 +42,7 @@ struct PaymentMethodPickerSheet: View {
 
             // Options List
             VStack(spacing: 16) {
-                ForEach(PaymentMethod.allCases) { method in
+                ForEach(availableMethods) { method in
                     optionRow(method)
                 }
             }
@@ -59,7 +64,13 @@ struct PaymentMethodPickerSheet: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
         }
-        .presentationDetents([.fraction(0.42), .medium])
+        .presentationDetents([availableMethods.count > 1 ? .fraction(0.42) : .fraction(0.32), .medium])
+        .onAppear {
+            cart.ensureValidPaymentMethod()
+        }
+        .onChange(of: appStatus.isCodEnabled) { _, _ in
+            cart.ensureValidPaymentMethod()
+        }
     }
 
     private func optionRow(_ method: PaymentMethod) -> some View {

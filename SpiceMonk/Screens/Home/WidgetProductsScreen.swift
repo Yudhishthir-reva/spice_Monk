@@ -51,9 +51,12 @@ struct WidgetProductsScreen: View {
     }
 
     @State private var showCart: Bool = false
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(spacing: 0) {
+            SpiceAuroraHeader(title: viewModel.title, onBack: { dismiss() })
+
             Group {
                 if viewModel.isLoading && viewModel.products.isEmpty {
                     SpiceLoadingPane(message: "Looking up products…")
@@ -75,7 +78,8 @@ struct WidgetProductsScreen: View {
             }
         }
         .background(Color.white)
-        .spiceNavigationBar(title: viewModel.title)
+        .navigationBarHidden(true)
+        .ignoresSafeArea(edges: .top)
         .navigationDestination(isPresented: $showCart) {
             CartScreen()
         }

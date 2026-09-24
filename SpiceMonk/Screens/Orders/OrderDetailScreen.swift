@@ -15,32 +15,42 @@ struct OrderDetailScreen: View {
     @State private var isRepeatingOrder = false
 
     var body: some View {
-        Group {
-            if viewModel.isLoading && viewModel.order == nil {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let error = viewModel.loadError {
-                VStack(spacing: 16) {
-                    Text(error)
-                        .font(.appFont(size: 14))
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .multilineTextAlignment(.center)
-                    Button("Retry") {
-                        viewModel.load(orderId: orderId)
+        VStack(spacing: 0) {
+            SpiceAuroraHeader(
+                title: viewModel.order?.orderNo ?? "Order details",
+                subtitle: viewModel.order?.date,
+                onBack: { dismiss() }
+            )
+
+            Group {
+                if viewModel.isLoading && viewModel.order == nil {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let error = viewModel.loadError {
+                    VStack(spacing: 16) {
+                        Text(error)
+                            .font(.appFont(size: 14))
+                            .foregroundStyle(AppTheme.textSecondary)
+                            .multilineTextAlignment(.center)
+                        Button("Retry") {
+                            viewModel.load(orderId: orderId)
+                        }
+                        .font(.appFont(size: 14, weight: .bold))
+                        .foregroundStyle(AppTheme.brandGreen)
                     }
-                    .font(.appFont(size: 14, weight: .bold))
-                    .foregroundStyle(AppTheme.brandGreen)
-                }
-                .padding(32)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let order = viewModel.order {
-                orderDetailContent(order)
-            } else {
-                ProgressView()
+                    .padding(32)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let order = viewModel.order {
+                    orderDetailContent(order)
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
         }
         .background(Color(hex: "F5F5F5"))
+        .navigationBarHidden(true)
+        .ignoresSafeArea(edges: .top)
         .navigationDestination(isPresented: $showCart) {
             CartScreen()
         }
@@ -57,6 +67,9 @@ struct OrderDetailScreen: View {
                     itemsCard(order)
                     savingsBanner(order)
                     billSummaryCard(order)
+                    if order.invoiceURL != nil {
+                        invoiceCard(order)
+                    }
                     addressCard(order)
                     paymentCard(order)
                 }
@@ -70,19 +83,6 @@ struct OrderDetailScreen: View {
                     showCart = true
                 }
                 stickyBottomBar(order)
-            }
-        }
-        .spiceNavigationBar()
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                VStack(spacing: 1) {
-                    Text(order.orderNo)
-                        .font(.appFont(size: 16, weight: .bold))
-                        .foregroundStyle(.white)
-                    Text(order.date)
-                        .font(.appFont(size: 11))
-                        .foregroundStyle(.white.opacity(0.85))
-                }
             }
         }
         .alert("Cancel Order", isPresented: $isConfirmingCancel) {
@@ -332,6 +332,47 @@ struct OrderDetailScreen: View {
                 .font(.appFont(size: 13, weight: .bold))
                 .foregroundStyle(color)
         }
+    }
+
+    // MARK: - Invoice
+
+    private func invoiceCard(_ order: OrderDetail) -> some View {
+        Button {
+            guard let url = order.invoiceURL else { return }
+            UIApplication.shared.open(url)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "doc.richtext.fill")
+                    .font(.appFont(size: 16))
+                    .foregroundStyle(AppTheme.brandGreen)
+                    .frame(width: 38, height: 38)
+                    .background(AppTheme.accentSoft)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Invoice")
+                        .font(.appFont(size: 14, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                    Text("View or download invoice")
+                        .font(.appFont(size: 12))
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
+
+                Spacer(minLength: 0)
+
+                Text("View")
+                    .font(.appFont(size: 14, weight: .bold))
+                    .foregroundStyle(AppTheme.brandGreen)
+            }
+            .padding(14)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.black.opacity(0.06), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Delivered Address

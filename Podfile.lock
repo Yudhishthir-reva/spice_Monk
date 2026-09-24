@@ -50,6 +50,7 @@ PODS:
   - GoogleUtilities/UserDefaults (8.1.2):
     - GoogleUtilities/Logger
     - GoogleUtilities/Privacy
+  - lottie-ios (4.6.1)
   - nanopb (3.30910.0):
     - nanopb/decode (= 3.30910.0)
     - nanopb/encode (= 3.30910.0)
@@ -62,6 +63,7 @@ DEPENDENCIES:
   - FirebaseMessaging
   - GoogleMaps
   - GooglePlaces
+  - lottie-ios
 
 SPEC REPOS:
   trunk:
@@ -73,6 +75,7 @@ SPEC REPOS:
     - GoogleMaps
     - GooglePlaces
     - GoogleUtilities
+    - lottie-ios
     - nanopb
     - PromisesObjC
 
@@ -85,9 +88,10 @@ SPEC CHECKSUMS:
   GoogleMaps: 306f6ea18af2dc9ef85d98b0d1b41bc7d506df5f
   GooglePlaces: 0a7a6fd5d2ecf83582072f368f8e18523f817123
   GoogleUtilities: 766ace00c6b10d8148408f329d10c4f051931850
+  lottie-ios: 6467ca7035120c5b0e0acee58bb679cf15875686
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
 
-PODFILE CHECKSUM: 8227a3754feb992bd3366877900fbb8d108af430
+PODFILE CHECKSUM: 099eb1803e4c24d71d6d2b598e2b7fcc5c24fe7b
 
 COCOAPODS: 1.17.0

@@ -34,6 +34,18 @@ class HomeServiceManager {
         )
     }
 
+    func fetchAllCategories(page: Int, perPage: Int = 15, search: String = "") -> AnyPublisher<CategoriesAllResponse, Error> {
+        networkService.request(
+            APIRouter.categoryAll,
+            params: [
+                "page": page,
+                "per_page": perPage,
+                "search": search
+            ],
+            headers: UserDefaultManager.shared.authHeader
+        )
+    }
+
     func fetchCategoryProducts(categoryId: Int, page: Int, perPage: Int = 10) -> AnyPublisher<CategoryProductsResponse, Error> {
         networkService.request(
             APIRouter.categoryProducts,

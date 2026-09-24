@@ -23,6 +23,8 @@ struct OrdersScreen: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            SpiceAuroraHeader(title: "Your orders", onBack: { dismiss() })
+
             // Scrollable Filter Chips
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
@@ -114,7 +116,9 @@ struct OrdersScreen: View {
                 showCart = true
             }
         }
-        .spiceNavigationBar(title: "Your orders")
+        .background(Color.white)
+        .navigationBarHidden(true)
+        .ignoresSafeArea(edges: .top)
         .navigationDestination(isPresented: $showCart) {
             CartScreen()
         }

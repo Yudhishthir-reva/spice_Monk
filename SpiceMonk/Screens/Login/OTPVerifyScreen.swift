@@ -18,129 +18,128 @@ struct OTPVerifyScreen: View {
     }
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .bottom) {
-                LinearGradient(
-                    colors: [
-                        Color(hex: "EDF7EE"),
-                        Color(hex: "E3F2E6"),
-                        Color(hex: "D8EBE0")
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+        VStack(spacing: 0) {
+            SpiceAuroraHeader(title: "Verify OTP", onBack: { dismiss() })
 
-                TopLeavesDecor(showsBranches: false)
+            GeometryReader { geo in
+                ZStack(alignment: .bottom) {
+                    LinearGradient(
+                        colors: [
+                            Color(hex: "EDF7EE"),
+                            Color(hex: "E3F2E6"),
+                            Color(hex: "D8EBE0")
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
                     .ignoresSafeArea()
-                    .allowsHitTesting(false)
 
-                Image("spices_mountains")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: geo.size.width)
-                    .frame(height: min(geo.size.height * 0.38, 290), alignment: .bottom)
-                    .clipped()
-                    .ignoresSafeArea(edges: .bottom)
-                    .allowsHitTesting(false)
+                    TopLeavesDecor(showsBranches: false)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
 
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack(spacing: 4) {
-                            Text("OTP sent to +91 \(formattedMobile)")
-                                .font(.appFont(size: 15, weight: .medium))
-                                .foregroundStyle(Color(hex: "3D5E48"))
-                            Button("Change") {
-                                dismiss()
+                    Image("spices_mountains")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geo.size.width)
+                        .frame(height: min(geo.size.height * 0.38, 290), alignment: .bottom)
+                        .clipped()
+                        .ignoresSafeArea(edges: .bottom)
+                        .allowsHitTesting(false)
+
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            HStack(spacing: 4) {
+                                Text("OTP sent to +91 \(formattedMobile)")
+                                    .font(.appFont(size: 15, weight: .medium))
+                                    .foregroundStyle(Color(hex: "3D5E48"))
+                                Button("Change") {
+                                    dismiss()
+                                }
+                                .font(.appFont(size: 15, weight: .bold))
+                                .foregroundStyle(Color(hex: "1F6335"))
                             }
-                            .font(.appFont(size: 15, weight: .bold))
-                            .foregroundStyle(Color(hex: "1F6335"))
-                        }
-                        .padding(.top, 16)
+                            .padding(.top, 16)
 
-                        VStack(spacing: 20) {
-                            otpBoxes
+                            VStack(spacing: 20) {
+                                otpBoxes
 
-                            Button {
-                                isOTPFocused = false
-                                viewModel.verifyOTP()
-                            } label: {
-                                HStack {
-                                    if viewModel.isShowProcessing {
-                                        ProgressView()
-                                            .tint(.white)
-                                            .frame(maxWidth: .infinity)
-                                    } else {
-                                        Spacer()
-                                        Text("Verify OTP")
-                                            .font(.appFont(size: 17, weight: .bold))
-                                            .foregroundStyle(.white)
-                                        Spacer()
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color.white.opacity(0.22))
-                                                .frame(width: 32, height: 32)
-                                            Image(systemName: "checkmark")
-                                                .font(.appFont(size: 13, weight: .bold))
+                                Button {
+                                    isOTPFocused = false
+                                    viewModel.verifyOTP()
+                                } label: {
+                                    HStack {
+                                        if viewModel.isShowProcessing {
+                                            ProgressView()
+                                                .tint(.white)
+                                                .frame(maxWidth: .infinity)
+                                        } else {
+                                            Spacer()
+                                            Text("Verify OTP")
+                                                .font(.appFont(size: 17, weight: .bold))
                                                 .foregroundStyle(.white)
+                                            Spacer()
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.white.opacity(0.22))
+                                                    .frame(width: 32, height: 32)
+                                                Image(systemName: "checkmark")
+                                                    .font(.appFont(size: 13, weight: .bold))
+                                                    .foregroundStyle(.white)
+                                            }
                                         }
                                     }
-                                }
-                                .padding(.horizontal, 16)
-                                .frame(height: 52)
-                                .background(
-                                    LinearGradient(
-                                        colors: [Color(hex: "23703B"), Color(hex: "18562B")],
-                                        startPoint: .top,
-                                        endPoint: .bottom
+                                    .padding(.horizontal, 16)
+                                    .frame(height: 52)
+                                    .background(
+                                        LinearGradient(
+                                            colors: [Color(hex: "23703B"), Color(hex: "18562B")],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
                                     )
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                }
+                                .disabled(viewModel.isShowProcessing)
                             }
-                            .disabled(viewModel.isShowProcessing)
+                            .padding(18)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .shadow(color: Color.black.opacity(0.07), radius: 14, x: 0, y: 6)
+                            .padding(.top, 24)
+
+                            HStack {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "clock")
+                                        .foregroundStyle(Color(hex: "1F6335"))
+                                    Text(viewModel.canResend ? "Didn't get the code?" : "Resend OTP in \(viewModel.timerText)")
+                                }
+                                .font(.appFont(size: 13, weight: .medium))
+                                .foregroundStyle(Color(hex: "3D5E48"))
+
+                                Spacer()
+
+                                Button("Resend Now") {
+                                    viewModel.resendOTP()
+                                }
+                                .font(.appFont(size: 13, weight: .bold))
+                                .foregroundStyle(viewModel.canResend ? Color(hex: "1F6335") : AppTheme.textMuted)
+                                .disabled(!viewModel.canResend)
+                            }
+                            .padding(.top, 16)
+                            .padding(.horizontal, 6)
+
+                            Spacer(minLength: 40)
                         }
-                        .padding(18)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                        .shadow(color: Color.black.opacity(0.07), radius: 14, x: 0, y: 6)
-                        .padding(.top, 24)
-
-                        HStack {
-                            HStack(spacing: 6) {
-                                Image(systemName: "clock")
-                                    .foregroundStyle(Color(hex: "1F6335"))
-                                Text(viewModel.canResend ? "Didn't get the code?" : "Resend OTP in \(viewModel.timerText)")
-                            }
-                            .font(.appFont(size: 13, weight: .medium))
-                            .foregroundStyle(Color(hex: "3D5E48"))
-
-                            Spacer()
-
-                            Button("Resend Now") {
-                                viewModel.resendOTP()
-                            }
-                            .font(.appFont(size: 13, weight: .bold))
-                            .foregroundStyle(viewModel.canResend ? Color(hex: "1F6335") : AppTheme.textMuted)
-                            .disabled(!viewModel.canResend)
-                        }
-                        .padding(.top, 16)
-                        .padding(.horizontal, 6)
-
-                        Spacer(minLength: 40)
+                        .padding(.horizontal, 20)
+                        .frame(minHeight: geo.size.height)
                     }
-                    .padding(.horizontal, 20)
-                    .frame(minHeight: geo.size.height)
+                    .scrollDismissesKeyboard(.interactively)
                 }
-                .scrollDismissesKeyboard(.interactively)
             }
         }
-        .navigationTitle("Verify OTP")
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarHidden(false)
-        .toolbar(.visible, for: .navigationBar)
-        .toolbarBackground(AppTheme.brandGreen, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .navigationBarHidden(true)
+        .ignoresSafeArea(edges: .top)
         .onAppear {
             isOTPFocused = true
         }

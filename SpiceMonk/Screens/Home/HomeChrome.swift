@@ -543,18 +543,9 @@ struct SearchTopBar: View {
     var body: some View {
         HStack(spacing: 10) {
             // Back button outside search field
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            SpiceBackButton {
                 onBack()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.appFont(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 38, height: 38)
-                    .background(Color.white.opacity(0.18))
-                    .clipShape(Circle())
             }
-            .buttonStyle(.plain)
 
             // Search input field capsule
             HStack(spacing: 8) {

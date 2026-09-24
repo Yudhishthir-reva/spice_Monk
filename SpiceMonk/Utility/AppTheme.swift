@@ -91,17 +91,9 @@ struct SpiceNavigationBarModifier: ViewModifier {
             .navigationBarBackButtonHidden(true)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    SpiceBackButton {
                         dismiss()
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.appFont(size: 17, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 32, height: 32)
-                            .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
                 }
 
                 if let title, !title.isEmpty {
@@ -113,6 +105,85 @@ struct SpiceNavigationBarModifier: ViewModifier {
                     }
                 }
             }
+    }
+}
+
+/// Circular back control used on category / aurora headers — keep this the single source of truth.
+struct SpiceBackButton: View {
+    var solidBrandBackground: Bool = false
+    var action: () -> Void
+
+    var body: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            action()
+        } label: {
+            Image(systemName: "chevron.left")
+                .font(.appFont(size: 16, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 38, height: 38)
+                .background(solidBrandBackground ? AppTheme.brandGreen : Color.white.opacity(0.18))
+                .clipShape(Circle())
+                .contentShape(Circle())
+                .shadow(
+                    color: solidBrandBackground ? Color.black.opacity(0.16) : .clear,
+                    radius: 6,
+                    x: 0,
+                    y: 3
+                )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Shared aurora top bar: circular back + title (+ optional subtitle / trailing).
+struct SpiceAuroraHeader<Trailing: View>: View {
+    let title: String
+    var subtitle: String? = nil
+    let onBack: () -> Void
+    @ViewBuilder var trailing: () -> Trailing
+
+    init(
+        title: String,
+        subtitle: String? = nil,
+        onBack: @escaping () -> Void,
+        @ViewBuilder trailing: @escaping () -> Trailing = { EmptyView() }
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.onBack = onBack
+        self.trailing = trailing
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            SpiceBackButton(action: onBack)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.appFont(size: 18, weight: .bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.appFont(size: 11, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            trailing()
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 12)
+        .padding(.top, (UIApplication.shared.keyWindow?.safeAreaInsets.top ?? 50) + 6)
+        .background {
+            HomeHeaderAuroraCanvas()
+                .ignoresSafeArea(edges: .top)
+        }
     }
 }
 

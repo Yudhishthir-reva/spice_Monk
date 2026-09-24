@@ -34,34 +34,7 @@ struct CategoryProductsScreen: View {
     var body: some View {
         VStack(spacing: 0) {
             // Aurora Header with Back Button and Category Title
-            HStack(spacing: 12) {
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    dismiss()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.appFont(size: 16, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 38, height: 38)
-                        .background(Color.white.opacity(0.18))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-
-                Text(viewModel.title)
-                    .font(.appFont(size: 18, weight: .bold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-
-                Spacer()
-            }
-            .padding(.horizontal, 14)
-            .padding(.bottom, 12)
-            .padding(.top, (UIApplication.shared.keyWindow?.safeAreaInsets.top ?? 50) + 6)
-            .background {
-                HomeHeaderAuroraCanvas()
-                    .ignoresSafeArea(edges: .top)
-            }
+            SpiceAuroraHeader(title: viewModel.title, onBack: { dismiss() })
 
             // Products list with sidebar rail
             HStack(alignment: .top, spacing: 0) {

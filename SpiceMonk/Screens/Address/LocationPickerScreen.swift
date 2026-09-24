@@ -134,18 +134,9 @@ struct LocationPickerScreen: View {
     private var topFloatingBar: some View {
         HStack(spacing: 10) {
             // Circular Back Button
-            Button {
+            SpiceBackButton(solidBrandBackground: true) {
                 dismiss()
-            } label: {
-                Image(systemName: "arrow.left")
-                    .font(.appFont(size: 16, weight: .bold))
-                    .foregroundStyle(Color(hex: "1F2937"))
-                    .frame(width: 48, height: 48)
-                    .background(Color.white)
-                    .clipShape(Circle())
-                    .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
             }
-            .buttonStyle(.plain)
 
             // Search Bar
             HStack(spacing: 10) {

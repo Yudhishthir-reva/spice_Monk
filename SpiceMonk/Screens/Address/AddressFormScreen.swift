@@ -124,6 +124,7 @@ struct AddressFormScreen: View {
         }
         .background(Color.white.ignoresSafeArea())
         .navigationBarHidden(true)
+        .ignoresSafeArea(edges: .top)
         .onAppear {
             setupInitialData()
         }
@@ -180,39 +181,10 @@ struct AddressFormScreen: View {
     // MARK: - Header Bar
 
     private var headerBar: some View {
-        HStack(spacing: 12) {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.appFont(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
-                    .background(Color.white.opacity(0.18))
-                    .clipShape(Circle())
-            }
-            .buttonStyle(.plain)
-
-            Text(editingAddress == nil ? "Add a new address" : "Edit address")
-                .font(.appFont(size: 19, weight: .bold))
-                .foregroundStyle(.white)
-
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background {
-            LinearGradient(
-                colors: [
-                    AppTheme.homeHeaderTop,
-                    Color(hex: "13683B"),
-                    AppTheme.homeHeaderBottom
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea(edges: .top)
-        }
+        SpiceAuroraHeader(
+            title: editingAddress == nil ? "Add a new address" : "Edit address",
+            onBack: { dismiss() }
+        )
     }
 
     // MARK: - Form Field Component

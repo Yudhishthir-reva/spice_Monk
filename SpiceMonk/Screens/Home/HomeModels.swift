@@ -70,7 +70,7 @@ struct BannerItem: Decodable, Identifiable {
 }
 
 /// Categories and brands arrive with identical fields and are rendered by the same chip.
-struct CategoryItem: Decodable, Identifiable {
+struct CategoryItem: Decodable, Identifiable, Hashable {
     let id: Int
     let name: String
     let imageUrl: String?
@@ -84,6 +84,32 @@ struct CategoryItem: Decodable, Identifiable {
         id = container.decodeIntLeniently(forKey: .id) ?? 0
         name = container.decodeStringLeniently(forKey: .name) ?? ""
         imageUrl = container.decodeStringLeniently(forKey: .image)
+    }
+
+    init(id: Int, name: String, imageUrl: String?) {
+        self.id = id
+        self.name = name
+        self.imageUrl = imageUrl
+    }
+}
+
+/// `GET customer/category/all` — paginated category list for the Categories tab.
+struct CategoriesAllResponse: Decodable {
+    let status: Bool?
+    let message: String?
+    let categories: [CategoryItem]
+    let pagination: PageInfo
+
+    enum CodingKeys: String, CodingKey {
+        case status, message, data, pagination
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        status = container.decodeBoolLeniently(forKey: .status)
+        message = container.decodeStringLeniently(forKey: .message)
+        categories = (try? container.decode([CategoryItem].self, forKey: .data)) ?? []
+        pagination = (try? container.decode(PageInfo.self, forKey: .pagination)) ?? .empty
     }
 }
 

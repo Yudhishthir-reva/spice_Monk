@@ -25,20 +25,28 @@ struct ProductDetailScreen: View {
     }
 
     var body: some View {
-        Group {
-            if viewModel.notFound {
-                missingState
-            } else if let error = viewModel.loadError, viewModel.product == nil {
-                HomeErrorState(message: error) {
-                    viewModel.load()
+        VStack(spacing: 0) {
+            SpiceAuroraHeader(
+                title: viewModel.displayName,
+                onBack: { dismiss() }
+            )
+
+            Group {
+                if viewModel.notFound {
+                    missingState
+                } else if let error = viewModel.loadError, viewModel.product == nil {
+                    HomeErrorState(message: error) {
+                        viewModel.load()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    detailBody
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                detailBody
             }
         }
         .background(Color.white)
-        .spiceNavigationBar(title: viewModel.product?.name ?? viewModel.seedName)
+        .navigationBarHidden(true)
+        .ignoresSafeArea(edges: .top)
         .navigationDestination(isPresented: $showCart) {
             CartScreen()
         }

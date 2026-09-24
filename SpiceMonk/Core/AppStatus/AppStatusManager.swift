@@ -55,10 +55,12 @@ final class AppStatusManager: ObservableObject {
     @Published var isSoftUpdate = false
     @Published var updateUrl = ""
     @Published var updateMessage = ""
+    @Published private(set) var isCodEnabled = true
 
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
+        isCodEnabled = UserDefaultManager.shared.isCodEnabled
         let storedMapKey = UserDefaultManager.shared.googleMapKey
         if !storedMapKey.isEmptyString {
             GoogleMapsConfig.provideAPIKey(storedMapKey)
@@ -81,15 +83,11 @@ final class AppStatusManager: ObservableObject {
         return URL(string: "https://wa.me/")
     }
 
-    var isCodEnabled: Bool {
-        appStatus?.codEnabled ?? UserDefaultManager.shared.isCodEnabled
-    }
-
     var resolvedUpdateURL: URL? {
         if !updateUrl.isEmptyString, let url = URL(string: updateUrl.trim) {
             return url
         }
-        return URL(string: "https://spicemonk.revateam.com")
+        return URL(string: "https://spicemonk.in")
     }
 
     func dismissSoftUpdate() {
@@ -143,6 +141,9 @@ final class AppStatusManager: ObservableObject {
         // 3. COD Enabled
         if let cod = data.codEnabled {
             UserDefaultManager.shared.setUserDefaultsBool(value: cod, key: .codEnabled)
+            self.isCodEnabled = cod
+        } else {
+            self.isCodEnabled = UserDefaultManager.shared.isCodEnabled
         }
 
         // 4. Maintenance Mode

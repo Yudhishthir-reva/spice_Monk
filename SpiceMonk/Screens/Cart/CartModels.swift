@@ -626,4 +626,17 @@ enum PaymentMethod: String, CaseIterable, Identifiable {
         case .cod: return "Pay the delivery partner when your order arrives"
         }
     }
+
+    /// Driven by config API `cod_enabled` (persisted via AppStatusManager).
+    static var isCodAvailable: Bool {
+        AppStatusManager.shared.isCodEnabled
+    }
+
+    static var availableCases: [PaymentMethod] {
+        isCodAvailable ? Array(allCases) : [.online]
+    }
+
+    static var preferredDefault: PaymentMethod {
+        isCodAvailable ? .cod : .online
+    }
 }

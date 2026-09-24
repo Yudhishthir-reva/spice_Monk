@@ -75,6 +75,7 @@ struct SavedAddressesScreen: View {
         }
         .background(Color(hex: "F8FAF8").ignoresSafeArea())
         .navigationBarHidden(true)
+        .ignoresSafeArea(edges: .top)
         .navigationDestination(isPresented: $showCart) {
             CartScreen(addressViewModel: viewModel)
         }
@@ -126,41 +127,10 @@ struct SavedAddressesScreen: View {
     // MARK: - Header Bar
 
     private var headerBar: some View {
-        HStack(spacing: 14) {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.appFont(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 38, height: 38)
-                    .background(Color.white.opacity(0.2))
-                    .clipShape(Circle())
-            }
-            .buttonStyle(.plain)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Your addresses")
-                    .font(.appFont(size: 20, weight: .bold))
-                    .foregroundStyle(.white)
-
-                Text("Manage your delivery locations")
-                    .font(.appFont(size: 13))
-                    .foregroundStyle(.white.opacity(0.85))
-            }
-
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 16)
-        .background(
-            LinearGradient(
-                colors: [AppTheme.homeHeaderTop, AppTheme.homeHeaderBottom],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea(edges: .top)
+        SpiceAuroraHeader(
+            title: "Your addresses",
+            subtitle: "Manage your delivery locations",
+            onBack: { dismiss() }
         )
     }
 

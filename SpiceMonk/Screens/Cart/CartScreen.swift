@@ -12,6 +12,7 @@ struct CartScreen: View {
     @ObservedObject var cart = CartStore.shared
     @ObservedObject var addressViewModel: AddressViewModel
     @ObservedObject private var loginGate = LoginGate.shared
+    @ObservedObject private var appStatus = AppStatusManager.shared
     @Environment(\.dismiss) private var dismiss
     @State private var isConfirmingClear = false
     @State private var isPickingAddress = false
@@ -24,9 +25,24 @@ struct CartScreen: View {
     @State private var placedOrderData: OrderPlaceData? = nil
     @State private var prepaidInitiateData: PaymentInitiateData? = nil
     @State private var pendingOrderPlaceData: OrderPlaceData? = nil
+    @State private var didHandlePrepaidOutcome = false
 
     init(addressViewModel: AddressViewModel = AddressViewModel()) {
         self.addressViewModel = addressViewModel
+    }
+
+    private func handlePrepaidSheetDismissed() {
+        defer {
+            didHandlePrepaidOutcome = false
+            pendingOrderPlaceData = nil
+        }
+        guard !didHandlePrepaidOutcome else { return }
+        didHandlePrepaidOutcome = true
+        let orderId = pendingOrderPlaceData?.orderId ?? 0
+        cart.handlePrepaidPaymentCancelled(
+            orderId: orderId,
+            message: "Payment cancelled by user."
+        )
     }
 
     private var itemCount: Int {
@@ -69,21 +85,47 @@ struct CartScreen: View {
     }
 
     var body: some View {
-        Group {
-            if cart.isLoading && cart.isEmpty {
-                SpiceLoadingPane(message: "Loading your cart…")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let error = cart.loadError, cart.isEmpty {
-                HomeErrorState(message: error) {
-                    cart.load()
+        VStack(spacing: 0) {
+            SpiceAuroraHeader(
+                title: "Shopping Cart",
+                subtitle: (!cart.isEmpty && itemCount > 0)
+                    ? (itemCount == 1 ? "1 item" : "\(itemCount) items")
+                    : nil,
+                onBack: { dismiss() }
+            ) {
+                if !cart.isEmpty {
+                    Button {
+                        isConfirmingClear = true
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.appFont(size: 15, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 38, height: 38)
+                            .background(Color.white.opacity(0.18))
+                            .clipShape(Circle())
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(cart.isClearing)
                 }
-            } else if cart.isEmpty {
-                emptyState
-            } else {
-                cartBody
             }
+
+            Group {
+                if cart.isLoading && cart.isEmpty {
+                    SpiceLoadingPane(message: "Loading your cart…")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let error = cart.loadError, cart.isEmpty {
+                    HomeErrorState(message: error) {
+                        cart.load()
+                    }
+                } else if cart.isEmpty {
+                    emptyState
+                } else {
+                    cartBody
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
             Group {
                 Color(hex: "F5F5F5")
@@ -99,6 +141,8 @@ struct CartScreen: View {
                 }
             }
         )
+        .navigationBarHidden(true)
+        .ignoresSafeArea(edges: .top)
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OrderPlacedSuccessfully"))) { notification in
             if let placedData = notification.object as? OrderPlaceData {
                 placedOrderData = placedData
@@ -121,14 +165,19 @@ struct CartScreen: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OrderInitiatedPrepaidPayment"))) { notification in
             if let initiateData = notification.object as? PaymentInitiateData,
                let placeData = notification.userInfo?["orderPlaceData"] as? OrderPlaceData {
+                didHandlePrepaidOutcome = false
                 pendingOrderPlaceData = placeData
                 prepaidInitiateData = initiateData
             }
         }
-        .sheet(item: $prepaidInitiateData) { initiateData in
+        .sheet(item: $prepaidInitiateData, onDismiss: {
+            handlePrepaidSheetDismissed()
+        }) { initiateData in
             PaymentSimulationSheet(
                 initiateData: initiateData,
                 onSuccess: {
+                    guard !didHandlePrepaidOutcome else { return }
+                    didHandlePrepaidOutcome = true
                     cart.clearCartAfterPrepaidSuccess()
                     if let placeData = pendingOrderPlaceData {
                         placedOrderData = placeData
@@ -136,57 +185,13 @@ struct CartScreen: View {
                     pendingOrderPlaceData = nil
                 },
                 onFailure: { error in
-                    cart.toastMessage = error
-                    cart.isShowToastView = true
+                    guard !didHandlePrepaidOutcome else { return }
+                    didHandlePrepaidOutcome = true
+                    let orderId = pendingOrderPlaceData?.orderId ?? initiateData.orderId
+                    cart.handlePrepaidPaymentCancelled(orderId: orderId, message: error)
                     pendingOrderPlaceData = nil
                 }
             )
-        }
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
-        .toolbar(.visible, for: .navigationBar)
-        .toolbarBackground(AppTheme.brandGreen, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    dismiss()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.appFont(size: 17, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-
-            ToolbarItem(placement: .principal) {
-                VStack(spacing: 1) {
-                    Text("Shopping Cart")
-                        .font(.appFont(size: 17, weight: .bold))
-                        .foregroundStyle(.white)
-                    if !cart.isEmpty, itemCount > 0 {
-                        Text(itemCount == 1 ? "1 item" : "\(itemCount) items")
-                            .font(.appFont(size: 11, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.85))
-                    }
-                }
-            }
-            if !cart.isEmpty {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        isConfirmingClear = true
-                    } label: {
-                        Image(systemName: "trash")
-                            .font(.appFont(size: 15, weight: .semibold))
-                            .foregroundStyle(.white)
-                    }
-                    .disabled(cart.isClearing)
-                }
-            }
         }
         .alert("Clear Cart?", isPresented: $isConfirmingClear) {
             Button("Clear", role: .destructive) { cart.clear() }
@@ -194,10 +199,13 @@ struct CartScreen: View {
         } message: {
             Text("Are you sure you want to remove all items from your cart?")
         }
-        .tint(.white)
         .onAppear {
+            cart.ensureValidPaymentMethod()
             cart.load()
             addressViewModel.load()
+        }
+        .onChange(of: appStatus.isCodEnabled) { _, _ in
+            cart.ensureValidPaymentMethod()
         }
         .onChange(of: loginGate.isLoggedIn) { _, loggedIn in
             if loggedIn {
@@ -389,7 +397,9 @@ struct CartScreen: View {
     // MARK: - Payment Method
 
     private var paymentMethodCard: some View {
-        Button {
+        let canChange = PaymentMethod.availableCases.count > 1
+        return Button {
+            guard canChange else { return }
             isPickingPaymentMethod = true
         } label: {
             HStack(spacing: 12) {
@@ -411,9 +421,11 @@ struct CartScreen: View {
 
                 Spacer(minLength: 0)
 
-                Text("Change")
-                    .font(.appFont(size: 14, weight: .bold))
-                    .foregroundStyle(AppTheme.brandGreen)
+                if canChange {
+                    Text("Change")
+                        .font(.appFont(size: 14, weight: .bold))
+                        .foregroundStyle(AppTheme.brandGreen)
+                }
             }
             .padding(14)
             .background(Color.white)
@@ -424,6 +436,7 @@ struct CartScreen: View {
             }
         }
         .buttonStyle(.plain)
+        .disabled(!canChange)
     }
 
     // MARK: - Coupon
