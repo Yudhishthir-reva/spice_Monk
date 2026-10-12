@@ -14,7 +14,7 @@ import Combine
 /// trick E-RSPL uses so the bar never leaves with the feed.
 struct HomeTopBar: View {
 
-    let address: Address?
+    let location: AddressViewModel.HeaderLocation
     /// 1 at rest, 0 once the address has scrolled through the threshold.
     let addressOpacity: CGFloat
     let safeAreaTop: CGFloat
@@ -117,9 +117,10 @@ struct HomeTopBar: View {
                                 .font(.appFont(size: 12, weight: .medium))
                                 .foregroundStyle(.white.opacity(0.9))
 
-                            // Pincode/city chip
-                            if let city = address?.cityName, !city.isEmptyString {
-                                Text(city.uppercased())
+                            // PIN chip, not the city: several saved addresses share a city, so
+                            // the chip read the same whichever one was picked (Android does the same).
+                            if !location.chip.isEmpty {
+                                Text(location.chip)
                                     .font(.appFont(size: 10, weight: .bold))
                                     .foregroundStyle(.white)
                                     .padding(.horizontal, 7)
@@ -130,9 +131,7 @@ struct HomeTopBar: View {
                         }
 
                         HStack(spacing: 4) {
-                            Text(address?.shortLine.isEmptyString == false
-                                 ? address!.shortLine
-                                 : "Set your delivery address")
+                            Text(location.line)
                                 .font(.appFont(size: 15, weight: .bold))
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
@@ -638,52 +637,71 @@ struct FloatingCartBar: View {
         }()
         let savings = cart.summary.totalSavings
 
+        /// Non-nil adds the "unlock free delivery" tray on top of the bar.
+        let freeDelivery = cart.freeDelivery
+
         if itemsCount > 0 {
-            Button(action: onTap) {
-                HStack(spacing: 12) {
-                    HStack(spacing: 10) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(Color.white.opacity(0.2))
-                                .frame(width: 36, height: 36)
+            VStack(spacing: 0) {
+                if let freeDelivery {
+                    FreeDeliveryTray(progress: freeDelivery)
+                }
 
-                            Image(systemName: "bag.fill")
-                                .font(.appFont(size: 16, weight: .bold))
-                                .foregroundStyle(.white)
-                        }
+                Button(action: onTap) {
+                    HStack(spacing: 12) {
+                        HStack(spacing: 10) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(Color.white.opacity(0.2))
+                                    .frame(width: 36, height: 36)
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("\(itemsCount) ITEM\(itemsCount == 1 ? "" : "S") • ₹\(Int(totalPay.rounded()))")
-                                .font(.appFont(size: 13, weight: .heavy))
-                                .foregroundStyle(.white)
+                                Image(systemName: "bag.fill")
+                                    .font(.appFont(size: 16, weight: .bold))
+                                    .foregroundStyle(.white)
+                            }
 
-                            if savings > 0 {
-                                Text("Saved ₹\(Int(savings.rounded())) on MRP")
-                                    .font(.appFont(size: 11, weight: .bold))
-                                    .foregroundStyle(.white.opacity(0.9))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("\(itemsCount) ITEM\(itemsCount == 1 ? "" : "S") • ₹\(Int(totalPay.rounded()))")
+                                    .font(.appFont(size: 13, weight: .heavy))
+                                    .foregroundStyle(.white)
+
+                                if savings > 0 {
+                                    Text("Saved ₹\(Int(savings.rounded())) on MRP")
+                                        .font(.appFont(size: 11, weight: .bold))
+                                        .foregroundStyle(.white.opacity(0.9))
+                                }
                             }
                         }
-                    }
 
-                    Spacer()
+                        Spacer()
 
-                    HStack(spacing: 4) {
-                        Text("View Cart")
-                            .font(.appFont(size: 13, weight: .heavy))
-                        Image(systemName: "arrow.right")
-                            .font(.appFont(size: 13, weight: .bold))
+                        HStack(spacing: 4) {
+                            Text("View Cart")
+                                .font(.appFont(size: 13, weight: .heavy))
+                            Image(systemName: "arrow.right")
+                                .font(.appFont(size: 13, weight: .bold))
+                        }
+                        .foregroundStyle(.white)
                     }
-                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background {
+                        if freeDelivery != nil {
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(AppTheme.brandGreen)
+                        }
+                    }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(AppTheme.ctaGradient)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .shadow(color: AppTheme.brandGreen.opacity(0.35), radius: 10, y: 4)
-                .padding(.horizontal, 14)
-                .padding(.bottom, 6)
+                .buttonStyle(.plain)
+                // The tray's own bottom padding already sets the gap above the bar.
+                .padding(.horizontal, freeDelivery == nil ? 0 : 4)
+                .padding(.bottom, freeDelivery == nil ? 0 : 4)
             }
-            .buttonStyle(.plain)
+            .background(freeDelivery == nil ? AnyShapeStyle(AppTheme.ctaGradient) : AnyShapeStyle(FreeDeliveryStyle.shell))
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .shadow(color: AppTheme.brandGreen.opacity(0.35), radius: 10, y: 4)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 6)
+            .animation(.easeInOut(duration: 0.25), value: freeDelivery != nil)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }

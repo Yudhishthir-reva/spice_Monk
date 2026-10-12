@@ -47,10 +47,8 @@ final class CartStore: ObservableObject {
     var serviceManagable = CartServiceManager()
     private let catalogService = HomeServiceManager()
 
-    /// Prepaid `placeOrder` clears the server cart before payment. Keep a snapshot so cancel can restore.
-    private var prepaidCartSnapshot: [PrepaidCartLineSnapshot] = []
     private var isHandlingPrepaidCancel = false
-    /// Blocks `load()` while Cashfree sheet is open so dismiss/`onAppear` does not wipe local items.
+    /// Blocks `load()` while Razorpay sheet is open so dismiss/`onAppear` does not wipe local items.
     private(set) var isAwaitingPrepaidPayment = false
 
     var isEmpty: Bool {
@@ -65,6 +63,17 @@ final class CartStore: ObservableObject {
     /// Customer subtotal from local line items (reflects optimistic qty patches).
     var displayCustomerTotal: Double {
         items.reduce(0) { $0 + $1.subtotal }
+    }
+
+    /// Nil until the server sends a charge carrying a `free_above` threshold.
+    /// `grandTotal` is dropped exactly when pending taps make the server's pricing stale,
+    /// so it doubles as "the server has priced the cart on screen".
+    var freeDelivery: FreeDeliveryProgress? {
+        freeDeliveryProgress(
+            charges: charges,
+            cartValue: summary.totalCustomerPrice,
+            serverConfirmed: grandTotal > 0
+        )
     }
 
     private init() {}
@@ -251,7 +260,7 @@ final class CartStore: ObservableObject {
         pendingQtyTimers.values.forEach { $0.cancel() }
         pendingQtyTimers.removeAll()
         pendingAddTapCount.removeAll()
-        clearPrepaidSnapshot()
+        isAwaitingPrepaidPayment = false
         isHandlingPrepaidCancel = false
         bump()
     }
@@ -271,17 +280,14 @@ final class CartStore: ObservableObject {
         isLoading = true
 
         let apiPaymentType = paymentMethod == .cod ? "cod" : "prepaid"
-        let couponCode = appliedCoupon?.code
-        if apiPaymentType == "prepaid" {
-            capturePrepaidCartSnapshot()
-        }
-        OrderServiceManager().placeOrder(addressId: addressId, paymentType: apiPaymentType, notes: notes, couponCode: couponCode)
+        let couponId = appliedCoupon?.couponId
+        OrderServiceManager().placeOrder(addressId: addressId, paymentType: apiPaymentType, notes: notes, couponId: couponId)
             .receive(on: RunLoop.main)
             .sink { [weak self] completion in
                 guard let self else { return }
-                self.isLoading = false
                 if case .failure(let error) = completion {
-                    self.clearPrepaidSnapshot()
+                    self.isLoading = false
+                    self.isAwaitingPrepaidPayment = false
                     self.toastMessage = (error as? RequestError)?.errorString ?? error.localizedDescription
                     self.isShowToastView = true
                 }
@@ -309,7 +315,7 @@ final class CartStore: ObservableObject {
                         self.initiatePaymentFlow(placedData: placedData)
                     }
                 } else {
-                    self.clearPrepaidSnapshot()
+                    self.isAwaitingPrepaidPayment = false
                     self.toastMessage = response.message ?? "Could not place order."
                     self.isShowToastView = true
                 }
@@ -334,7 +340,8 @@ final class CartStore: ObservableObject {
             } receiveValue: { [weak self] response in
                 guard let self else { return }
                 self.isLoading = false
-                if response.status == true, let initiateData = response.data {
+                if response.status == true, let initiateData = response.data,
+                   initiateData.orderId == placedData.orderId {
                     NotificationCenter.default.post(
                         name: NSNotification.Name("OrderInitiatedPrepaidPayment"),
                         object: initiateData,
@@ -343,7 +350,7 @@ final class CartStore: ObservableObject {
                 } else {
                     self.handlePrepaidPaymentCancelled(
                         orderId: placedData.orderId,
-                        message: response.message ?? "Payment initiation failed."
+                        message: response.message ?? "Razorpay payment configuration is unavailable. Please try again later."
                     )
                 }
             }
@@ -352,7 +359,6 @@ final class CartStore: ObservableObject {
 
     func clearCartAfterPrepaidSuccess() {
         isAwaitingPrepaidPayment = false
-        clearPrepaidSnapshot()
         self.items = []
         self.summary = .empty
         self.charges = []
@@ -363,7 +369,7 @@ final class CartStore: ObservableObject {
         self.paymentMethod = PaymentMethod.preferredDefault
     }
 
-    /// Cancel unpaid prepaid order and put cart items back if the server cleared them.
+    /// Cancel unpaid prepaid order and reload the authoritative server cart.
     func handlePrepaidPaymentCancelled(orderId: Int, message: String? = nil) {
         guard !isHandlingPrepaidCancel else { return }
         isHandlingPrepaidCancel = true
@@ -402,86 +408,24 @@ final class CartStore: ObservableObject {
             .store(in: &cancellables)
     }
 
-    private func capturePrepaidCartSnapshot() {
-        prepaidCartSnapshot = items
-            .filter { $0.qty > 0 && $0.productId > 0 && $0.variantId > 0 }
-            .map {
-                PrepaidCartLineSnapshot(
-                    productId: $0.productId,
-                    variantId: $0.variantId,
-                    qty: $0.qty
-                )
-            }
-    }
-
-    private func clearPrepaidSnapshot() {
-        prepaidCartSnapshot = []
-        isAwaitingPrepaidPayment = false
-    }
-
     private func syncCartAfterPrepaidCancel(completion: @escaping () -> Void) {
-        let snapshot = prepaidCartSnapshot
         serviceManagable.fetchCart(couponQuery: .default)
             .receive(on: RunLoop.main)
             .sink { [weak self] result in
                 guard let self else { return }
                 if case .failure = result {
-                    self.restoreCartLines(snapshot, completion: completion)
+                    self.isAwaitingPrepaidPayment = false
+                    completion()
                 }
             } receiveValue: { [weak self] response in
                 guard let self else { return }
-                let serverHasItems = response.items.contains { $0.qty > 0 && $0.productId > 0 }
-                if serverHasItems {
-                    self.applyCartResponse(response, couponQuery: .default)
-                    self.clearPrepaidSnapshot()
-                    completion()
-                } else if !snapshot.isEmpty {
-                    self.restoreCartLines(snapshot, completion: completion)
-                } else {
-                    self.applyCartResponse(response, couponQuery: .default)
-                    self.clearPrepaidSnapshot()
-                    completion()
+                if !response.items.contains(where: { $0.qty > 0 }) {
+                    self.clearCartAfterPrepaidSuccess()
                 }
-            }
-            .store(in: &cancellables)
-    }
-
-    private func restoreCartLines(
-        _ lines: [PrepaidCartLineSnapshot],
-        completion: @escaping () -> Void
-    ) {
-        guard !lines.isEmpty else {
-            clearPrepaidSnapshot()
-            completion()
-            return
-        }
-
-        let adds = lines.map { line in
-            serviceManagable.addToCart(
-                productId: line.productId,
-                variantId: line.variantId,
-                qty: line.qty
-            )
-            .map { _ in () }
-            .catch { _ in Just(()) }
-            .eraseToAnyPublisher()
-        }
-
-        Publishers.Sequence(sequence: adds)
-            .flatMap(maxPublishers: .max(1)) { $0 }
-            .collect()
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                guard let self else {
-                    completion()
-                    return
-                }
-                self.clearPrepaidSnapshot()
+                self.applyCartResponse(response, couponQuery: .default)
                 self.isAwaitingPrepaidPayment = false
-                self.isLoading = false
-                self.fetch()
                 completion()
-            } receiveValue: { _ in }
+            }
             .store(in: &cancellables)
     }
 
@@ -1372,6 +1316,11 @@ final class CartStore: ObservableObject {
             totalCustomerPrice: totalCustomer,
             totalSavings: max(totalMrp - totalCustomer, 0)
         )
+        // The server priced a cart that is no longer on screen. Dropping it makes `grandTotal`
+        // mean "the server has priced this cart", which is what `freeDelivery` reads to decide
+        // whether the charges' `is_free` can still be trusted; the bill falls back to the
+        // derived total meanwhile.
+        grandTotal = 0
     }
 
     private func schedulePendingQtySync(for item: CartItem) {
@@ -1404,12 +1353,6 @@ final class CartStore: ObservableObject {
     private static func key(productId: Int, variantId: Int) -> String {
         "\(productId)-\(variantId)"
     }
-}
-
-private struct PrepaidCartLineSnapshot {
-    let productId: Int
-    let variantId: Int
-    let qty: Int
 }
 
 private struct CartStoreToastModifier: ViewModifier {

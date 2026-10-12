@@ -49,7 +49,7 @@ class OrderServiceManager {
         )
     }
 
-    func placeOrder(addressId: Int, paymentType: String, notes: String, couponCode: String? = nil) -> AnyPublisher<OrderPlaceResponse, Error> {
+    func placeOrder(addressId: Int, paymentType: String, notes: String, couponId: Int? = nil) -> AnyPublisher<OrderPlaceResponse, Error> {
         var params: [String: Any] = [
             "address_id": addressId,
             "payment_type": paymentType
@@ -57,8 +57,8 @@ class OrderServiceManager {
         if !notes.isEmpty {
             params["notes"] = notes
         }
-        if let couponCode, !couponCode.isEmpty {
-            params["coupon_code"] = couponCode
+        if let couponId, couponId > 0 {
+            params["coupon_id"] = couponId
         }
         return networkService.request(
             APIRouter.orderPlace,
@@ -76,8 +76,11 @@ class OrderServiceManager {
         )
     }
 
-    func verifyPayment(orderId: Int) -> AnyPublisher<PaymentVerifyResponse, Error> {
-        let params: [String: Any] = ["order_id": orderId]
+    func verifyPayment(orderId: Int, result: RazorpayPaymentResult) -> AnyPublisher<PaymentVerifyResponse, Error> {
+        var params: [String: Any] = ["order_id": orderId]
+        params["razorpay_order_id"] = result.orderId
+        params["razorpay_payment_id"] = result.paymentId
+        params["razorpay_signature"] = result.signature
         return networkService.request(
             APIRouter.paymentVerify,
             params: params,

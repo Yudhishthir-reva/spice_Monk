@@ -44,6 +44,7 @@ struct OutcomeSkin: Equatable {
 enum OrderOutcome: Identifiable, Equatable {
     var id: String {
         switch self {
+        case .cancelled(let data): return "cancelled-\(data.orderId)"
         case .placed(let data): return "placed-\(data.orderId)"
         case .paid(let data): return "paid-\(data.orderId)"
         case .pending(let data): return "pending-\(data?.orderId ?? 0)"
@@ -51,16 +52,24 @@ enum OrderOutcome: Identifiable, Equatable {
         }
     }
 
+    case cancelled(orderData: OrderPlaceData)
     case placed(orderData: OrderPlaceData)
     case paid(orderData: OrderPlaceData)
     case pending(orderData: OrderPlaceData? = nil)
     case failed(orderData: OrderPlaceData? = nil, reason: String? = nil)
 
+    var orderId: Int? {
+        switch self {
+        case .placed(let data), .paid(let data), .cancelled(let data): return data.orderId
+        case .pending(let data), .failed(let data, _): return data?.orderId
+        }
+    }
+
     var skin: OutcomeSkin {
         switch self {
         case .placed, .paid:
             return .success
-        case .pending:
+        case .pending, .cancelled:
             return .pending
         case .failed:
             return .failed
@@ -69,6 +78,8 @@ enum OrderOutcome: Identifiable, Equatable {
 
     var title: String {
         switch self {
+        case .cancelled:
+            return "Payment cancelled"
         case .paid:
             return "Payment successful!"
         case .placed:
@@ -82,6 +93,8 @@ enum OrderOutcome: Identifiable, Equatable {
 
     var subtitle: String {
         switch self {
+        case .cancelled:
+            return "You closed checkout before payment was confirmed. View your order for its latest status."
         case .paid:
             return "We've got your money and your order. The monks are packing your spices."
         case .placed:
@@ -102,7 +115,7 @@ enum OrderOutcome: Identifiable, Equatable {
             return "Amount paid"
         case .placed:
             return "Pay on delivery"
-        case .pending:
+        case .pending, .cancelled:
             return "Amount"
         case .failed:
             return "Amount due"
@@ -111,7 +124,7 @@ enum OrderOutcome: Identifiable, Equatable {
 
     var orderNo: String? {
         switch self {
-        case .placed(let data), .paid(let data):
+        case .placed(let data), .paid(let data), .cancelled(let data):
             return data.orderNo.isEmpty ? nil : data.orderNo
         case .pending(let data), .failed(let data, _):
             return (data?.orderNo.isEmpty == false) ? data?.orderNo : nil
@@ -120,7 +133,7 @@ enum OrderOutcome: Identifiable, Equatable {
 
     var grandTotal: Double? {
         switch self {
-        case .placed(let data), .paid(let data):
+        case .placed(let data), .paid(let data), .cancelled(let data):
             return data.grandTotal > 0 ? data.grandTotal : nil
         case .pending(let data), .failed(let data, _):
             if let total = data?.grandTotal, total > 0 {
@@ -132,6 +145,8 @@ enum OrderOutcome: Identifiable, Equatable {
 
     var chip1: (icon: String, text: String) {
         switch self {
+        case .cancelled:
+            return ("xmark.circle", "Checkout closed")
         case .paid:
             return ("creditcard", "Paid online")
         case .placed:
@@ -145,30 +160,34 @@ enum OrderOutcome: Identifiable, Equatable {
 
     var chip2: (icon: String, text: String) {
         switch self {
+        case .cancelled:
+            return ("doc.text", "Check order status")
         case .paid, .placed:
             return ("clock", "Packed shortly")
         case .pending:
             return ("clock", "Awaiting update")
         case .failed:
-            return ("arrow.clockwise", "Retry available")
+            return ("doc.text", "Check order status")
         }
     }
 
     var primaryButtonTitle: String {
         switch self {
+        case .cancelled:
+            return "View order"
         case .paid, .placed, .pending:
             return "Track my order"
         case .failed:
-            return "Try again"
+            return "View order"
         }
     }
 
     var primaryButtonIcon: String {
         switch self {
-        case .paid, .placed, .pending:
+        case .paid, .placed, .pending, .cancelled:
             return "doc.text"
         case .failed:
-            return "arrow.clockwise"
+            return "doc.text"
         }
     }
 

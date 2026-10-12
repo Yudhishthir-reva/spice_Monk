@@ -170,6 +170,18 @@ struct CartCharge: Decodable, Identifiable {
         isFree ? "FREE" : CartItem.rupees(amount)
     }
 
+    /// Backend sends the delivery line as "Delivery Charges" / "Delivery Fee" depending on build.
+    var isDeliveryCharge: Bool {
+        title.localizedCaseInsensitiveContains("deliver")
+    }
+
+    /// `free_above` arrives as "499", "₹499" or "499.00" depending on the backend build.
+    var freeAboveAmount: Double? {
+        guard let freeAbove, !freeAbove.isEmpty else { return nil }
+        guard let value = Double(freeAbove.filter({ $0.isNumber || $0 == "." })), value > 0 else { return nil }
+        return value
+    }
+
     enum CodingKeys: String, CodingKey {
         case title, amount
         case isFree = "is_free"
@@ -639,4 +651,58 @@ enum PaymentMethod: String, CaseIterable, Identifiable {
     static var preferredDefault: PaymentMethod {
         isCodAvailable ? .cod : .online
     }
+}
+
+// MARK: - Free delivery threshold
+
+/// How far the cart is from the free-delivery threshold, mirroring Android's `FreeDeliveryProgress`.
+/// Derived from the delivery charge's `free_above`, so it only exists when the server offers a threshold.
+struct FreeDeliveryProgress {
+
+    let threshold: Double
+    let cartValue: Double
+    /// The fee the customer pays (or, once unlocked, saves).
+    let fee: Double
+    let isUnlocked: Bool
+
+    var remaining: Double { isUnlocked ? 0 : max(threshold - cartValue, 0) }
+
+    var fraction: Double {
+        guard threshold > 0 else { return 1 }
+        return isUnlocked ? 1 : min(max(cartValue / threshold, 0), 1)
+    }
+
+    var remainingLabel: String { Self.rupees(remaining) }
+    var thresholdLabel: String { Self.rupees(threshold) }
+    var feeLabel: String { Self.rupees(fee) }
+    var cartValueLabel: String { Self.rupees(cartValue) }
+
+    /// Android rounds these up so the nudge never asks for less than it takes.
+    static func rupees(_ amount: Double) -> String {
+        "₹\(Int(amount.rounded(.up)))"
+    }
+}
+
+/// Picks the delivery charge (falling back to any charge with a threshold) and measures `cartValue`
+/// against it.
+///
+/// `serverConfirmed` is false while optimistic quantities are on screen: the server's `is_free` then
+/// prices a cart that no longer matches, so only the local total decides. Once confirmed, the
+/// server's word wins too — it may waive the fee for reasons the threshold alone doesn't show.
+func freeDeliveryProgress(
+    charges: [CartCharge],
+    cartValue: Double,
+    serverConfirmed: Bool
+) -> FreeDeliveryProgress? {
+    let withThreshold = charges.filter { $0.freeAboveAmount != nil }
+    guard let charge = withThreshold.first(where: { $0.isDeliveryCharge }) ?? withThreshold.first,
+          let threshold = charge.freeAboveAmount
+    else { return nil }
+
+    return FreeDeliveryProgress(
+        threshold: threshold,
+        cartValue: cartValue,
+        fee: charge.amount,
+        isUnlocked: cartValue >= threshold || (serverConfirmed && charge.isFree)
+    )
 }

@@ -18,7 +18,7 @@ extension RouterManagable {
     var baseURL: String {
         switch currentEnvironment {
         case .stagging:
-            return "https://spicemonk.in/965874/api"
+            return "https://spicemonk.trudataa.com/api"
         case .production:
             return "https://spicemonk.in/965874/api"
         }

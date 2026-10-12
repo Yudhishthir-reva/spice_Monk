@@ -16,29 +16,32 @@ struct CartScreen: View {
     @Environment(\.dismiss) private var dismiss
     @State private var isConfirmingClear = false
     @State private var isPickingAddress = false
-    @State private var isAddingAddress = false
     @State private var isApplyingCoupon = false
     @State private var showCelebrationModal = false
     @State private var celebrationCoupon: AppliedCouponData? = nil
     @State private var isPickingPaymentMethod = false
     @State private var navigateToOrderId: Int? = nil
-    @State private var placedOrderData: OrderPlaceData? = nil
+    @State private var orderOutcome: OrderOutcome?
     @State private var prepaidInitiateData: PaymentInitiateData? = nil
     @State private var pendingOrderPlaceData: OrderPlaceData? = nil
     @State private var didHandlePrepaidOutcome = false
+    @State private var pendingPaymentOutcome: OrderOutcome?
 
-    init(addressViewModel: AddressViewModel = AddressViewModel()) {
+    init(addressViewModel: AddressViewModel = .shared) {
         self.addressViewModel = addressViewModel
     }
 
     private func handlePrepaidSheetDismissed() {
         defer {
+            orderOutcome = pendingPaymentOutcome
+            pendingPaymentOutcome = nil
             didHandlePrepaidOutcome = false
             pendingOrderPlaceData = nil
         }
         guard !didHandlePrepaidOutcome else { return }
         didHandlePrepaidOutcome = true
         let orderId = pendingOrderPlaceData?.orderId ?? 0
+        if let data = pendingOrderPlaceData { pendingPaymentOutcome = .cancelled(orderData: data) }
         cart.handlePrepaidPaymentCancelled(
             orderId: orderId,
             message: "Payment cancelled by user."
@@ -145,19 +148,18 @@ struct CartScreen: View {
         .ignoresSafeArea(edges: .top)
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OrderPlacedSuccessfully"))) { notification in
             if let placedData = notification.object as? OrderPlaceData {
-                placedOrderData = placedData
+                orderOutcome = .placed(orderData: placedData)
             }
         }
-        .fullScreenCover(item: $placedOrderData) { data in
-            OrderSuccessScreen(
-                orderData: data,
-                onTrack: {
-                    placedOrderData = nil
-                    // Wait briefly or trigger navigate to detail screen
-                    navigateToOrderId = data.orderId
+        .fullScreenCover(item: $orderOutcome) { outcome in
+            OrderOutcomeScreen(
+                outcome: outcome,
+                onPrimaryAction: {
+                    orderOutcome = nil
+                    navigateToOrderId = outcome.orderId
                 },
-                onDismiss: {
-                    placedOrderData = nil
+                onSecondaryAction: {
+                    orderOutcome = nil
                     dismiss()
                 }
             )
@@ -180,16 +182,23 @@ struct CartScreen: View {
                     didHandlePrepaidOutcome = true
                     cart.clearCartAfterPrepaidSuccess()
                     if let placeData = pendingOrderPlaceData {
-                        placedOrderData = placeData
+                        pendingPaymentOutcome = .paid(orderData: placeData)
                     }
                     pendingOrderPlaceData = nil
                 },
-                onFailure: { error in
+                onFailure: { message in
                     guard !didHandlePrepaidOutcome else { return }
                     didHandlePrepaidOutcome = true
-                    let orderId = pendingOrderPlaceData?.orderId ?? initiateData.orderId
-                    cart.handlePrepaidPaymentCancelled(orderId: orderId, message: error)
-                    pendingOrderPlaceData = nil
+                    pendingPaymentOutcome = .failed(orderData: pendingOrderPlaceData, reason: message)
+                    cart.handlePrepaidPaymentCancelled(orderId: initiateData.orderId)
+                },
+                onCancel: {
+                    guard !didHandlePrepaidOutcome else { return }
+                    didHandlePrepaidOutcome = true
+                    if let data = pendingOrderPlaceData {
+                        pendingPaymentOutcome = .cancelled(orderData: data)
+                    }
+                    cart.handlePrepaidPaymentCancelled(orderId: initiateData.orderId)
                 }
             )
         }
@@ -214,11 +223,6 @@ struct CartScreen: View {
         }
         .sheet(isPresented: $isPickingAddress) {
             AddressPickerSheet(viewModel: addressViewModel)
-        }
-        .sheet(isPresented: $isAddingAddress) {
-            AddressFormScreen { _ in
-                addressViewModel.load()
-            }
         }
         .sheet(isPresented: $isApplyingCoupon) {
             ApplyCouponSheet { applied in
@@ -254,6 +258,7 @@ struct CartScreen: View {
                 LazyVStack(spacing: 12) {
                     deliveryAddressCard
                     deliverySlaBanner
+                    freeDeliveryCard
                     itemsCard
                     paymentMethodCard
                     couponCard
@@ -310,11 +315,7 @@ struct CartScreen: View {
 
             Button(address == nil ? "Add" : "Change") {
                 LoginGate.shared.requireLogin {
-                    if address == nil {
-                        isAddingAddress = true
-                    } else {
-                        isPickingAddress = true
-                    }
+                    isPickingAddress = true
                 }
             }
             .font(.appFont(size: 14, weight: .bold))
@@ -359,6 +360,33 @@ struct CartScreen: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(AppTheme.brandGreen.opacity(0.2), lineWidth: 1)
         }
+    }
+
+    // MARK: - Free delivery
+
+    /// Only present once the server sets a threshold on one of the charges.
+    private var freeDelivery: FreeDeliveryProgress? {
+        cart.freeDelivery
+    }
+
+    @ViewBuilder
+    private var freeDeliveryCard: some View {
+        if let progress = freeDelivery {
+            FreeDeliveryProgressCard(progress: progress)
+        }
+    }
+
+    /// A nudge under the delivery charge's label, e.g. how much more unlocks free delivery.
+    private func freeDeliveryBillHint(_ hint: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "truck.box.fill")
+                .font(.appFont(size: 10, weight: .bold))
+            Text(hint)
+                .font(.appFont(size: 10.5, weight: .semibold))
+            Spacer(minLength: 0)
+        }
+        .foregroundStyle(AppTheme.accentOrange)
+        .padding(.top, -4)
     }
 
     // MARK: - Items
@@ -585,8 +613,9 @@ struct CartScreen: View {
             if !cart.charges.isEmpty {
                 ForEach(cart.charges) { charge in
                     if charge.isFree {
+                        let freeAboveText = charge.freeAboveAmount.map { " (above \(FreeDeliveryProgress.rupees($0)))" } ?? ""
                         billRow(
-                            label: charge.title,
+                            label: charge.title + freeAboveText,
                             value: "FREE",
                             strike: charge.amount > 0 ? CartItem.rupees(charge.amount) : nil,
                             color: AppTheme.brandGreen
@@ -597,6 +626,11 @@ struct CartScreen: View {
                             value: CartItem.rupees(charge.amount),
                             color: AppTheme.textSecondary
                         )
+                        if let progress = freeDelivery,
+                           !progress.isUnlocked,
+                           charge.freeAboveAmount == progress.threshold {
+                            freeDeliveryBillHint("Add \(progress.remainingLabel) more to make this FREE")
+                        }
                     }
                 }
             } else {
@@ -698,11 +732,7 @@ struct CartScreen: View {
             // Address strip
             Button {
                 LoginGate.shared.requireLogin {
-                    if addressViewModel.defaultAddress == nil {
-                        isAddingAddress = true
-                    } else {
-                        isPickingAddress = true
-                    }
+                    isPickingAddress = true
                 }
             } label: {
                 HStack(spacing: 6) {
@@ -750,10 +780,16 @@ struct CartScreen: View {
                     }
                 } label: {
                     HStack(spacing: 8) {
-                        Text("Place Order")
+                        if cart.isLoading {
+                            ProgressView()
+                                .tint(.white)
+                        }
+                        Text(cart.isLoading ? "Processing…" : "Place Order")
                             .font(.appFont(size: 16, weight: .bold))
-                        Image(systemName: "arrow.right")
-                            .font(.appFont(size: 14, weight: .bold))
+                        if !cart.isLoading {
+                            Image(systemName: "arrow.right")
+                                .font(.appFont(size: 14, weight: .bold))
+                        }
                     }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -762,7 +798,7 @@ struct CartScreen: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .disabled(cart.isClearing || cart.isLoading)
+                .disabled(cart.isClearing || cart.isLoading || addressViewModel.isLoading)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)

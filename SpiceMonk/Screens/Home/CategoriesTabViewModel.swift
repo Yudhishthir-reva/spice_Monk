@@ -104,15 +104,22 @@ final class CategoriesTabViewModel: ObservableObject {
                 self.isLoadingMore = false
                 self.isRefreshing = false
 
+                var added = response.categories.count
                 if appending {
                     let existing = Set(self.categories.map(\.id))
-                    self.categories.append(contentsOf: response.categories.filter { !existing.contains($0.id) })
+                    let fresh = response.categories.filter { !existing.contains($0.id) }
+                    added = fresh.count
+                    self.categories.append(contentsOf: fresh)
                 } else {
                     self.categories = response.categories
                 }
 
-                self.page = response.pagination.currentPage
-                self.hasMore = response.pagination.hasMore && !response.categories.isEmpty
+                // The cursor is ours, not the server's echo: a response without `current_page`
+                // decodes as 1 and would pin every further request to page 2 forever.
+                self.page = requestedPage
+                self.hasMore = response.pagination.hasMore
+                    && !response.categories.isEmpty
+                    && (!appending || added > 0)
                 self.loadError = nil
             }
     }

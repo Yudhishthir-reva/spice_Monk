@@ -8,7 +8,7 @@ import SwiftUI
 struct HomeScreen: View {
 
     @StateObject var viewModel = HomeViewModel()
-    @StateObject private var addressViewModel = AddressViewModel()
+    @ObservedObject private var addressViewModel = AddressViewModel.shared
     @StateObject private var searchViewModel = SearchViewModel()
     @ObservedObject private var cartStore = CartStore.shared
     @ObservedObject private var loginGate = LoginGate.shared
@@ -89,6 +89,7 @@ struct HomeScreen: View {
                     viewModel.loadHome()
                 }
                 addressViewModel.load()
+                addressViewModel.resolveDeviceLocationIfNeeded()
                 CartStore.shared.loadIfNeeded()
             }
             if !didCheckAppStatus {
@@ -99,6 +100,7 @@ struct HomeScreen: View {
         .onChange(of: loginGate.isLoggedIn) { _, loggedIn in
             if loggedIn {
                 addressViewModel.load()
+                addressViewModel.resolveDeviceLocationIfNeeded()
             }
         }
         .sheet(isPresented: $isPickingAddress) {
@@ -225,7 +227,7 @@ struct HomeScreen: View {
     private func header(safeAreaTop: CGFloat) -> some View {
         let pin = stickyPinDistance(safeAreaTop: safeAreaTop)
         return HomeTopBar(
-            address: addressViewModel.defaultAddress,
+            location: addressViewModel.headerLocation,
             addressOpacity: addressOpacity(safeAreaTop: safeAreaTop),
             safeAreaTop: safeAreaTop,
             searchPlaceholders: viewModel.searchPlaceholders,

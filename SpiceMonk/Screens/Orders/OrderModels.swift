@@ -9,6 +9,21 @@ struct OrderStatus: Decodable {
     let code: Int
     let label: String
     let color: String
+
+    var showsDeliveryTimeline: Bool { (0...3).contains(code) }
+
+    enum CodingKeys: String, CodingKey { case code, label, color }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        guard let value = container.decodeIntLeniently(forKey: .code) else {
+            throw DecodingError.dataCorruptedError(forKey: .code, in: container,
+                debugDescription: "Missing or invalid order status code")
+        }
+        code = value
+        label = try container.decode(String.self, forKey: .label)
+        color = try container.decode(String.self, forKey: .color)
+    }
 }
 
 struct OrderTimelineStep: Decodable, Identifiable {
@@ -17,6 +32,16 @@ struct OrderTimelineStep: Decodable, Identifiable {
     let completed: Bool
 
     var id: String { label }
+
+    enum CodingKeys: String, CodingKey { case label, date, completed }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        label = try container.decode(String.self, forKey: .label)
+        let rawDate = container.decodeStringLeniently(forKey: .date)
+        date = rawDate == "<null>" || rawDate == "" ? nil : rawDate
+        completed = container.decodeBoolLeniently(forKey: .completed) ?? false
+    }
 }
 
 struct OrderExpectedDate: Decodable {
@@ -303,31 +328,60 @@ struct OrderPlaceResponse: Decodable {
     }
 }
 
-// MARK: - Cashfree Payment Models
+// MARK: - Razorpay Payment Models
 
 struct PaymentInitiateData: Decodable, Identifiable {
     var id: Int { orderId }
     let orderId: Int
-    let cfOrderId: String
-    let paymentSessionId: String
-    let orderAmount: Double
-    let environment: String
+    let razorpayOrderId: String
+    let razorpayKeyId: String
+    let customerName: String?
+    let customerEmail: String?
+    let customerMobile: String?
+    /// Smallest currency unit, supplied by the server (paise for INR).
+    let amount: Int
+    let currency: String
 
     enum CodingKeys: String, CodingKey {
         case orderId = "order_id"
-        case cfOrderId = "cf_order_id"
-        case paymentSessionId = "payment_session_id"
-        case orderAmount = "order_amount"
-        case environment
+        case razorpayOrderId = "razorpay_order_id"
+        case razorpayKeyId = "key_id"
+        case customerName = "customer_name"
+        case customerEmail = "customer_email"
+        case customerMobile = "customer_mobile"
+        case amount, currency
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         orderId = container.decodeIntLeniently(forKey: .orderId) ?? 0
-        cfOrderId = container.decodeStringLeniently(forKey: .cfOrderId) ?? ""
-        paymentSessionId = container.decodeStringLeniently(forKey: .paymentSessionId) ?? ""
-        orderAmount = container.decodeDoubleLeniently(forKey: .orderAmount) ?? 0
-        environment = container.decodeStringLeniently(forKey: .environment) ?? ""
+        razorpayOrderId = try container.decode(String.self, forKey: .razorpayOrderId)
+        razorpayKeyId = try container.decode(String.self, forKey: .razorpayKeyId)
+        customerName = container.decodeStringLeniently(forKey: .customerName)
+        customerEmail = container.decodeStringLeniently(forKey: .customerEmail)
+        customerMobile = container.decodeStringLeniently(forKey: .customerMobile)
+        amount = try container.decode(Int.self, forKey: .amount)
+        currency = try container.decode(String.self, forKey: .currency)
+        guard orderId > 0, razorpayOrderId.hasPrefix("order_"),
+              razorpayKeyId.hasPrefix("rzp_"), amount > 0, currency == "INR" else {
+            throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath,
+                debugDescription: "Invalid Razorpay checkout configuration"))
+        }
+    }
+}
+
+struct RazorpayPaymentResult {
+    let paymentId: String
+    let orderId: String
+    let signature: String
+
+    init?(data: [String: String]) {
+        guard let paymentId = data["razorpay_payment_id"], !paymentId.isEmpty,
+              let orderId = data["razorpay_order_id"], !orderId.isEmpty,
+              let signature = data["razorpay_signature"], !signature.isEmpty else { return nil }
+        self.paymentId = paymentId
+        self.orderId = orderId
+        self.signature = signature
     }
 }
 

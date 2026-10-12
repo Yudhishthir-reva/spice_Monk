@@ -136,6 +136,15 @@ enum APIRouter: RouterManagable {
         }
     }
 
+    var contentType: RequestContentType {
+        switch self {
+        case .paymentInitiate:
+            return .json
+        default:
+            return .multipartForm
+        }
+    }
+
     var requestType: RequestMethodType {
         switch self {
         case .addressList, .addressDetail, .cart, .coupons, .orders, .orderDetail, .categoryAll:

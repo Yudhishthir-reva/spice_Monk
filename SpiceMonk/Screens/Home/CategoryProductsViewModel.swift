@@ -101,15 +101,24 @@ class CategoryProductsViewModel: ObservableObject {
                     self.title = apiTitle
                 }
 
+                var added = response.products.count
                 if appending {
                     let existing = Set(self.products.map(\.id))
-                    self.products.append(contentsOf: response.products.filter { !existing.contains($0.id) })
+                    let fresh = response.products.filter { !existing.contains($0.id) }
+                    added = fresh.count
+                    self.products.append(contentsOf: fresh)
                 } else {
                     self.products = response.products
                 }
 
-                self.page = response.pagination.currentPage
-                self.hasMore = response.pagination.hasMore && !response.products.isEmpty
+                // The cursor is ours, not the server's echo: a response without `current_page`
+                // decodes as 1 and would pin every further request to page 2 forever.
+                self.page = requestedPage
+                // A page that adds nothing new can never move the last-cell trigger again, so
+                // treating it as the end beats re-requesting it on every scroll.
+                self.hasMore = response.pagination.hasMore
+                    && !response.products.isEmpty
+                    && (!appending || added > 0)
                 self.loadError = nil
             }
     }

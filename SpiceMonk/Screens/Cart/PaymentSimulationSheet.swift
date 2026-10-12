@@ -12,9 +12,12 @@ struct PaymentSimulationSheet: View {
     let initiateData: PaymentInitiateData
     let onSuccess: () -> Void
     let onFailure: (String) -> Void
+    let onCancel: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var isVerifying = false
+    @State private var didFinish = false
+    @State private var paymentResult: RazorpayPaymentResult?
     @State private var errorMessage: String? = nil
     @State private var cancellables = Set<AnyCancellable>()
 
@@ -41,14 +44,25 @@ struct PaymentSimulationSheet: View {
                     .background(Color.red)
                 }
 
-                CashfreeCheckoutWebView(
-                    paymentSessionId: initiateData.paymentSessionId,
-                    environment: initiateData.environment,
-                    onPaymentRedirect: { url in
-                        let urlString = url.absoluteString.lowercased()
-                        if urlString.contains("spicemonk.in") || urlString.contains("spicemonk.revateam.com") {
-                            verifyPayment()
-                        }
+                RazorpayCheckoutWebView(
+                    initiateData: initiateData,
+                    onSuccess: { result in
+                        guard !didFinish, paymentResult == nil else { return }
+                        paymentResult = result
+                        verifyPayment()
+                    },
+                    onFailure: { message in
+                        guard !didFinish, paymentResult == nil else { return }
+                        didFinish = true
+                        onFailure(message)
+                        dismiss()
+                    },
+                    onError: { errorMessage = $0 },
+                    onCancel: {
+                        guard !didFinish, !isVerifying, paymentResult == nil else { return }
+                        didFinish = true
+                        onCancel()
+                        dismiss()
                     }
                 )
                 .ignoresSafeArea(edges: .bottom)
@@ -59,9 +73,12 @@ struct PaymentSimulationSheet: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") {
-                        onFailure("Payment cancelled by user.")
+                        guard !didFinish, !isVerifying, paymentResult == nil else { return }
+                        didFinish = true
+                        onCancel()
                         dismiss()
                     }
+                    .disabled(isVerifying || paymentResult != nil)
                     .foregroundStyle(AppTheme.textSecondary)
                 }
 
@@ -72,20 +89,22 @@ struct PaymentSimulationSheet: View {
                         Button("Verify") {
                             verifyPayment()
                         }
+                        .disabled(paymentResult == nil)
                         .font(.appFont(size: 15, weight: .bold))
                         .foregroundStyle(AppTheme.brandGreen)
                     }
                 }
             }
         }
+        .interactiveDismissDisabled()
     }
 
     private func verifyPayment() {
-        guard !isVerifying else { return }
+        guard !isVerifying, let paymentResult else { return }
         isVerifying = true
         errorMessage = nil
 
-        OrderServiceManager().verifyPayment(orderId: initiateData.orderId)
+        OrderServiceManager().verifyPayment(orderId: initiateData.orderId, result: paymentResult)
             .receive(on: RunLoop.main)
             .sink { completion in
                 isVerifying = false
@@ -94,17 +113,21 @@ struct PaymentSimulationSheet: View {
                 }
             } receiveValue: { response in
                 isVerifying = false
-                if response.status == true && response.data?.isPaid == true {
+                if response.status == true && response.data?.isPaid == true && response.data?.orderId == initiateData.orderId {
+                    guard !didFinish else { return }
+                    didFinish = true
                     onSuccess()
                     dismiss()
                 } else {
-                    errorMessage = response.message ?? "Payment is still pending on Cashfree gateway."
+                    errorMessage = response.message ?? "Payment is still pending on Razorpay gateway."
                 }
             }
             .store(in: &cancellables)
     }
 }
 
+// Cashfree checkout is disabled; retained below for reference.
+#if false
 // MARK: - Cashfree JS SDK WebView
 
 /// Loads a local HTML page that includes the Cashfree JavaScript SDK and
@@ -233,6 +256,112 @@ struct CashfreeCheckoutWebView: UIViewRepresentable {
                 print("[CashfreeWebView] Finished loading: \(url.absoluteString)")
                 parent.onPaymentRedirect(url)
             }
+        }
+    }
+}
+
+#endif
+
+// MARK: - Razorpay Checkout
+
+struct RazorpayCheckoutWebView: UIViewRepresentable {
+    let initiateData: PaymentInitiateData
+    let onSuccess: (RazorpayPaymentResult) -> Void
+    let onFailure: (String) -> Void
+    let onError: (String) -> Void
+    let onCancel: () -> Void
+
+    func makeUIView(context: Context) -> WKWebView {
+        let configuration = WKWebViewConfiguration()
+        configuration.userContentController.add(context.coordinator, name: "payment")
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.navigationDelegate = context.coordinator
+        let options: [String: Any] = [
+            "key": initiateData.razorpayKeyId,
+            "order_id": initiateData.razorpayOrderId,
+            "amount": initiateData.amount,
+            "currency": initiateData.currency,
+            "name": "SpiceMonk",
+            "retry": ["enabled": false],
+            "prefill": [
+                "name": initiateData.customerName ?? "",
+                "email": initiateData.customerEmail ?? "",
+                "contact": initiateData.customerMobile ?? ""
+            ]
+        ]
+        // Base64 avoids inserting server-provided strings into executable HTML.
+        guard let json = try? JSONSerialization.data(withJSONObject: options) else { return webView }
+        let encoded = json.base64EncodedString()
+        let html = """
+        <!doctype html><html><head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        </head><body><p>Loading secure payment…</p>
+        <script>
+        function send(type, data) {
+            window.webkit.messageHandlers.payment.postMessage({type: type, data: data || {}});
+        }
+        </script>
+        <script src="https://checkout.razorpay.com/v1/checkout.js"
+                onerror="send('error', {message: 'Unable to load Razorpay. Check your connection.'})"></script>
+        <script>
+        try {
+            const options = JSON.parse(atob("\(encoded)"));
+            let completed = false;
+            options.handler = function(response) {
+                completed = true;
+                send('success', response);
+            };
+            options.modal = {ondismiss: function() { if (!completed) send('cancel'); }};
+            const checkout = new Razorpay(options);
+            checkout.on('payment.failed', function(response) {
+                if (completed) return;
+                completed = true;
+                send('failure', {message: response.error.description || 'Payment failed. Please try again.'});
+            });
+            checkout.open();
+        } catch (error) { send('error', {message: 'Unable to open Razorpay. Please try again.'}); }
+        </script></body></html>
+        """
+        webView.loadHTMLString(html, baseURL: URL(string: "https://spicemonk.in"))
+        return webView
+    }
+
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
+
+    static func dismantleUIView(_ uiView: WKWebView, coordinator: Coordinator) {
+        uiView.configuration.userContentController.removeScriptMessageHandler(forName: "payment")
+        uiView.navigationDelegate = nil
+        uiView.stopLoading()
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
+        let parent: RazorpayCheckoutWebView
+        init(_ parent: RazorpayCheckoutWebView) { self.parent = parent }
+
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            guard message.frameInfo.isMainFrame,
+                  let body = message.body as? [String: Any],
+                  let type = body["type"] as? String else { return }
+            let data = body["data"] as? [String: String] ?? [:]
+            switch type {
+            case "success":
+                guard let result = RazorpayPaymentResult(data: data),
+                      result.orderId == parent.initiateData.razorpayOrderId else {
+                    parent.onError("Invalid payment response. Please verify payment status.")
+                    return
+                }
+                parent.onSuccess(result)
+            case "failure": parent.onFailure(data["message"] ?? "Payment could not be completed.")
+            case "cancel": parent.onCancel()
+            case "error": parent.onError(data["message"] ?? "Payment could not be completed.")
+            default: break
+            }
+        }
+
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            parent.onError("Unable to load payment. Check your connection and try again.")
         }
     }
 }

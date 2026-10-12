@@ -56,7 +56,7 @@ struct PaymentMethodPickerSheet: View {
                     .font(.appFont(size: 14))
                     .foregroundStyle(AppTheme.textMuted)
 
-                Text("Online payments are processed securely by Cashfree. We never see or store your card details.")
+                Text("Online payments are processed securely by Razorpay. We never see or store your card details.")
                     .font(.appFont(size: 11))
                     .foregroundStyle(AppTheme.textMuted)
                     .lineSpacing(3)

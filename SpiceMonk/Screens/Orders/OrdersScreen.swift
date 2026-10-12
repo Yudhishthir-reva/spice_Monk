@@ -13,12 +13,12 @@ struct OrdersScreen: View {
     
     private let statusFilters = [
         ("", "All"),
-        ("0", "Pending"),
+        ("-1", "Payment Pending"),
+        ("0", "Order Placed"),
         ("1", "Confirmed"),
-        ("2", "Processing"),
-        ("3", "Shipped"),
-        ("4", "Delivered"),
-        ("5", "Cancelled")
+        ("2", "Shipped"),
+        ("3", "Delivered"),
+        ("4", "Cancelled")
     ]
     
     var body: some View {
@@ -204,24 +204,28 @@ struct OrdersScreen: View {
                 .padding(.vertical, 4)
                 
                 // Timeline View
-                OrderTimelineView(timeline: order.timeline)
-                
-                // Expected Date Box
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(statusColor)
-                        .frame(width: 6, height: 6)
-                    
-                    Text("\(order.expectedDate.label) \(order.expectedDate.date)")
-                        .font(.appFont(size: 12, weight: .semibold))
-                        .foregroundStyle(AppTheme.textPrimary)
+                if order.status.showsDeliveryTimeline && !order.timeline.isEmpty {
+                    OrderTimelineView(timeline: order.timeline)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(statusColor.opacity(0.06))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 
+                if order.status.code != -1 {
+                    // Expected Date Box
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(statusColor)
+                            .frame(width: 6, height: 6)
+
+                        Text("\(order.expectedDate.label) \(order.expectedDate.date)")
+                            .font(.appFont(size: 12, weight: .semibold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(statusColor.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+
                 // Footer Link
                 HStack {
                     Text("View details")

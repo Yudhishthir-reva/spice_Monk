@@ -31,7 +31,7 @@ class WidgetProductsViewModel: ObservableObject {
 
     private var page = 1
     private let perPage = 10
-    private var cancellables = Set<AnyCancellable>()
+    private var fetchCancellable: AnyCancellable?
     var serviceManagable = HomeServiceManager()
 
     init(source: PagedCatalogSource, title: String) {
@@ -63,7 +63,7 @@ class WidgetProductsViewModel: ObservableObject {
     }
 
     private func fetch(page requestedPage: Int, appending: Bool) {
-        pagePublisher(page: requestedPage)
+        fetchCancellable = pagePublisher(page: requestedPage)
             .receive(on: RunLoop.main)
             .sink { [weak self] completion in
                 guard let self else { return }
@@ -92,18 +92,26 @@ class WidgetProductsViewModel: ObservableObject {
                     self.title = apiTitle
                 }
 
+                var added = page.products.count
                 if appending {
                     let existing = Set(self.products.map(\.id))
-                    self.products.append(contentsOf: page.products.filter { !existing.contains($0.id) })
+                    let fresh = page.products.filter { !existing.contains($0.id) }
+                    added = fresh.count
+                    self.products.append(contentsOf: fresh)
                 } else {
                     self.products = page.products
                 }
 
-                self.page = page.pagination.currentPage
-                self.hasMore = page.pagination.hasMore && !page.products.isEmpty
+                // The cursor is ours, not the server's echo: a response without `current_page`
+                // decodes as 1 and would pin every further request to page 2 forever.
+                self.page = requestedPage
+                // A page that adds nothing new can never move the last-cell trigger again, so
+                // treating it as the end beats re-requesting it on every scroll.
+                self.hasMore = page.pagination.hasMore
+                    && !page.products.isEmpty
+                    && (!appending || added > 0)
                 self.loadError = nil
             }
-            .store(in: &cancellables)
     }
 
     private func pagePublisher(page: Int) -> AnyPublisher<(title: String?, products: [ProductItem], pagination: PageInfo), Error> {

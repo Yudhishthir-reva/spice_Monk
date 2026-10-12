@@ -147,14 +147,21 @@ class ProductDetailViewModel: ObservableObject {
                 self.isLoadingRelated = false
                 self.isLoadingMoreRelated = false
                 let incoming = response.products.filter { $0.id != self.productId && $0.id > 0 }
+                var added = incoming.count
                 if reset {
                     self.related = incoming
                 } else {
                     let existing = Set(self.related.map(\.id))
-                    self.related.append(contentsOf: incoming.filter { !existing.contains($0.id) })
+                    let fresh = incoming.filter { !existing.contains($0.id) }
+                    added = fresh.count
+                    self.related.append(contentsOf: fresh)
                 }
-                self.relatedPage = response.pagination.currentPage
-                self.relatedHasMore = response.pagination.hasMore && !incoming.isEmpty
+                // The cursor is ours, not the server's echo: a response without `current_page`
+                // decodes as 1 and would pin every further request to page 2 forever.
+                self.relatedPage = page
+                self.relatedHasMore = response.pagination.hasMore
+                    && !incoming.isEmpty
+                    && (reset || added > 0)
             }
             .store(in: &cancellables)
     }

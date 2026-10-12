@@ -5,7 +5,7 @@
 
 import Foundation
 
-let currentEnvironment: RequestEnvironmentType = .stagging
+let currentEnvironment: RequestEnvironmentType = .production
 
 let kDateFormatterHHMMA: DateFormatter = {
     let dateFormatter = DateFormatter()

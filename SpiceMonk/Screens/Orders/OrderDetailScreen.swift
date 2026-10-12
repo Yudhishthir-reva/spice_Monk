@@ -103,11 +103,13 @@ struct OrderDetailScreen: View {
     private func statusCard(_ order: OrderDetail) -> some View {
         let statusColor: Color
         switch order.statusCode {
-        case 3, 4: // Shipped, Delivered
+        case 2, 3: // Shipped, Delivered
             statusColor = Color(hex: "4CAF50")
-        case 5: // Cancelled
+        case 4: // Cancelled
             statusColor = Color(hex: "F44336")
-        default: // Pending, Confirmed, Processing
+        case 1: // Confirmed
+            statusColor = Color(hex: "2196F3")
+        default: // Payment Pending, Order Placed
             statusColor = Color(hex: "FFB300")
         }
 
