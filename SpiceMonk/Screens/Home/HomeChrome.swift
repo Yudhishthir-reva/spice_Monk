@@ -76,11 +76,18 @@ struct HomeTopBar: View {
             ZStack {
                 AppTheme.homeHeaderSurface
 
-                HomeHeaderCollapsedCanvas()
-                    .opacity(1 - easedHero)
+                // Both layers used to run their timelines the whole time, so the one faded to
+                // invisible still redrew every frame — and the expensive aurora kept going at
+                // full tilt exactly while the user was scrolling the grid past it.
+                if easedHero < 0.99 {
+                    HomeHeaderCollapsedCanvas()
+                        .opacity(1 - easedHero)
+                }
 
-                HomeHeaderAuroraCanvas()
-                    .opacity(easedHero)
+                if easedHero > 0.01 {
+                    HomeHeaderAuroraCanvas()
+                        .opacity(easedHero)
+                }
             }
             .ignoresSafeArea(edges: .top)
             .clipShape(
@@ -266,7 +273,9 @@ struct HomeHeaderAuroraCanvas: View {
     }
 
     private var auroraLayers: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
+        // 30fps: these phases drift over 6–14s, so the extra 30 frames a second bought
+        // nothing visible and cost a full-header Canvas redraw each time.
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
             let date = timeline.date.timeIntervalSinceReferenceDate
             let warmPhase = CGFloat(date.truncatingRemainder(dividingBy: 11.0) / 11.0)
             let coolPhase = CGFloat((date + 14.5 * 0.33).truncatingRemainder(dividingBy: 14.5) / 14.5)
@@ -357,7 +366,7 @@ private struct AnimatedHeaderBell: View {
     let onTap: () -> Void
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
             let date = timeline.date.timeIntervalSinceReferenceDate
             let ringPhase = CGFloat(date.truncatingRemainder(dividingBy: 4.2) / 4.2)
             let pulsePhase = CGFloat(date.truncatingRemainder(dividingBy: 1.6) / 1.6)

@@ -26,9 +26,12 @@ struct HomeScreen: View {
     var body: some View {
         NavigationStack {
             mainContent
-                .environment(\EnvironmentValues.onSelectVariantSheet) { product in
-                    selectedVariantProduct = product
-                }
+        }
+        // On the stack, not on its content: pushed destinations are rendered by the stack, so an
+        // environment value set inside never reached them. Category, widget and related-product
+        // grids lost the handler and silently added the default variant instead of asking.
+        .environment(\EnvironmentValues.onSelectVariantSheet) { product in
+            selectedVariantProduct = product
         }
     }
 

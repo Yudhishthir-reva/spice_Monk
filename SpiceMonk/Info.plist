@@ -4,6 +4,16 @@
 <dict>
 	<key>GoogleMapsAPIKey</key>
 	<string>AIzaSyDJkNce6YTS2hfX4GmkWUmycbYh1dkdEMA</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tez</string>
+		<string>gpay</string>
+		<string>phonepe</string>
+		<string>paytmmp</string>
+		<string>bhim</string>
+		<string>credpay</string>
+		<string>upi</string>
+	</array>
 	<key>UIAppFonts</key>
 	<array>
 		<string>DMSans-Regular.ttf</string>

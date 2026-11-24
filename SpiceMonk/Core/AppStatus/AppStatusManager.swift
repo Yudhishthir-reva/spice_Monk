@@ -87,7 +87,7 @@ final class AppStatusManager: ObservableObject {
         if !updateUrl.isEmptyString, let url = URL(string: updateUrl.trim) {
             return url
         }
-        return URL(string: "https://spicemonk.in")
+        return URL(string: currentEnvironment.webOrigin)
     }
 
     func dismissSoftUpdate() {

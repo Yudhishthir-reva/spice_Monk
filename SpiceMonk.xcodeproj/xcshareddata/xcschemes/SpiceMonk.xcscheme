@@ -17,6 +17,7 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "DD2F21A0302F20850025FC97"
                BuildableName = "SpiceMonk.app"
+               BlueprintName = "SpiceMonk"
                ReferencedContainer = "container:SpiceMonk.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -46,6 +47,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "DD2F21A0302F20850025FC97"
             BuildableName = "SpiceMonk.app"
+            BlueprintName = "SpiceMonk"
             ReferencedContainer = "container:SpiceMonk.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -62,6 +64,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "DD2F21A0302F20850025FC97"
             BuildableName = "SpiceMonk.app"
+            BlueprintName = "SpiceMonk"
             ReferencedContainer = "container:SpiceMonk.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

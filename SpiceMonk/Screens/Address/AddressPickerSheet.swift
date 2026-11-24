@@ -16,9 +16,14 @@ struct AddressPickerSheet: View {
     @State private var pickedLocation: ResolvedLocationInfo? = nil
     @State private var isAddingWithLocation = false
     @State private var isAddingFromGPS = false
+    @State private var prefillFromPin: ResolvedLocationInfo? = nil
+    @State private var isAddingFromPin = false
     @State private var isManaging = false
 
     private var filteredAddresses: [Address] {
+        // A PIN query doesn't filter the list: its answer is the serviceability verdict under the
+        // field, not a subset of the saved addresses (same rule as Android).
+        guard !AddressViewModel.isPinCode(searchQuery) else { return viewModel.addresses }
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !query.isEmpty else { return viewModel.addresses }
         return viewModel.addresses.filter { address in
@@ -42,6 +47,7 @@ struct AddressPickerSheet: View {
                     ScrollView(.vertical, showsIndicators: false) {
                         VStack(spacing: 14) {
                             searchField
+                            pinLookupResult
                             quickActionsCard
                             savedAddressesSection
                         }
@@ -69,9 +75,16 @@ struct AddressPickerSheet: View {
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .onAppear {
+            // The view model outlives this sheet now, so a verdict from a previous visit would
+            // otherwise reappear above an empty search field.
+            searchQuery = ""
+            viewModel.clearLocationSearch()
             viewModel.load()
         }
-        .sheet(isPresented: $showLocationPicker) {
+        .onDisappear {
+            viewModel.clearLocationSearch()
+        }
+        .fullScreenCover(isPresented: $showLocationPicker) {
             LocationPickerScreen { info in
                 pickedLocation = info
                 showLocationPicker = false
@@ -81,6 +94,14 @@ struct AddressPickerSheet: View {
         .sheet(isPresented: $isAddingWithLocation) {
             AddressFormScreen(initialInfo: pickedLocation) { _ in
                 pickedLocation = nil
+                viewModel.load()
+            }
+        }
+        .sheet(isPresented: $isAddingFromPin) {
+            AddressFormScreen(initialInfo: prefillFromPin) { _ in
+                prefillFromPin = nil
+                searchQuery = ""
+                viewModel.clearLocationSearch()
                 viewModel.load()
             }
         }
@@ -107,14 +128,24 @@ struct AddressPickerSheet: View {
                 .font(.appFont(size: 16, weight: .medium))
                 .foregroundStyle(AppTheme.textMuted)
 
-            TextField("Search by area, PIN code or name", text: $searchQuery)
+            TextField("Search by PIN code or saved address", text: $searchQuery)
                 .font(.appFont(size: 14, weight: .medium))
                 .foregroundStyle(AppTheme.textPrimary)
                 .autocorrectionDisabled()
+                .onChange(of: searchQuery) { _, raw in
+                    let normalized = AddressViewModel.normalizedLocationQuery(raw)
+                    if normalized != raw { searchQuery = normalized }
+                    viewModel.searchLocation(query: normalized)
+                }
 
-            if !searchQuery.isEmpty {
+            if viewModel.isSearchingPin {
+                ProgressView()
+                    .controlSize(.small)
+                    .tint(AppTheme.brandGreen)
+            } else if !searchQuery.isEmpty {
                 Button {
                     searchQuery = ""
+                    viewModel.clearLocationSearch()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.appFont(size: 15))
@@ -131,6 +162,86 @@ struct AddressPickerSheet: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Color.black.opacity(0.06), lineWidth: 1)
         }
+    }
+
+    // MARK: - PIN lookup
+
+    /// Serviceable areas to pick from, or why the PIN didn't work. Mirrors Android's
+    /// `PinLookupResult`, including offering the district when the PIN lists no areas.
+    @ViewBuilder
+    private var pinLookupResult: some View {
+        if let result = viewModel.pinResult {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("\(result.district), \(result.state) · \(result.pinCode ?? searchQuery)")
+                    .font(.appFont(size: 12, weight: .heavy))
+                    .foregroundStyle(AppTheme.badgeSuccess)
+
+                // No areas listed still means the PIN resolved — offer the district itself so the
+                // tap through to the form isn't a dead end.
+                let areas = result.areas.isEmpty ? [result.district] : result.areas
+                ForEach(areas, id: \.self) { area in
+                    Button {
+                        selectPinArea(area, in: result)
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "mappin.circle.fill")
+                                .font(.appFont(size: 16))
+                                .foregroundStyle(AppTheme.textMuted)
+                            Text(area)
+                                .font(.appFont(size: 14, weight: .semibold))
+                                .foregroundStyle(AppTheme.textPrimary)
+                                .lineLimit(1)
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.right")
+                                .font(.appFont(size: 12, weight: .bold))
+                                .foregroundStyle(AppTheme.textMuted)
+                        }
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(AppTheme.brandGreen.opacity(0.25), lineWidth: 1)
+            }
+        } else if let error = viewModel.pinError {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "exclamationmark.circle.fill")
+                    .font(.appFont(size: 15))
+                    .foregroundStyle(Color(hex: "D32F2F"))
+                Text(error)
+                    .font(.appFont(size: 12, weight: .semibold))
+                    .foregroundStyle(Color(hex: "C62828"))
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(hex: "FDF0F1"))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color(hex: "F5C6CB"), lineWidth: 1)
+            }
+        }
+    }
+
+    /// Hands the PIN and the chosen area to the address form, which re-runs its own lookup to fill
+    /// in the rest. No coordinate is known from a PIN, so the form keeps its default map centre.
+    private func selectPinArea(_ area: String, in result: PincodeLocation) {
+        var info = ResolvedLocationInfo(coordinate: LocationManager.defaultCoordinate)
+        info.postalCode = result.pinCode ?? searchQuery
+        info.area = area
+        info.city = result.district
+        info.state = result.state
+        prefillFromPin = info
+        isAddingFromPin = true
     }
 
     // MARK: - Quick Actions

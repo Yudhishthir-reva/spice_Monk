@@ -128,7 +128,7 @@ struct AddressFormScreen: View {
         .onAppear {
             setupInitialData()
         }
-        .sheet(isPresented: $showMapPicker) {
+        .fullScreenCover(isPresented: $showMapPicker) {
             LocationPickerScreen { location in
                 viewModel.applyPickedLocation(location)
                 mapCenterCoord = location.coordinate

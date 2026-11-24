@@ -61,7 +61,14 @@ final class GuestSessionManager {
 
     static let shared = GuestSessionManager()
 
-    private var cancellables = Set<AnyCancellable>()
+    /// One in-flight request each — but callers are coalesced onto it rather than replacing it.
+    /// A plain single-slot cancellable looked like it fixed the unbounded `Set`, and instead made a
+    /// second caller cancel the first one's request, so the first completion never ran and whatever
+    /// it was gating (an add-to-cart, a skip-login) was silently dropped.
+    private var guestLoginCancellable: AnyCancellable?
+    private var mergeCartCancellable: AnyCancellable?
+    private var guestLoginWaiters: [() -> Void] = []
+    private var mergeCartWaiters: [() -> Void] = []
     private let loginService = LoginServiceManager()
 
     private init() {}
@@ -75,19 +82,34 @@ final class GuestSessionManager {
             completion()
             return
         }
-        loginService.guestLogin()
+        // Already asking: wait on that answer instead of cancelling it out from under the first caller.
+        guestLoginWaiters.append(completion)
+        guard guestLoginWaiters.count == 1 else { return }
+
+        guestLoginCancellable = loginService.guestLogin()
             .receive(on: DispatchQueue.main)
-            .sink { result in
+            .sink { [weak self] result in
                 if case .failure(let error) = result {
                     print("❌ [GuestSession] guest-login failed: \(error)")
                 }
-                completion()
+                self?.drainGuestLoginWaiters()
             } receiveValue: { response in
                 if response.status == true, let token = response.guestToken, !token.isEmpty {
                     UserDefaultManager.shared.saveGuestSession(token: token, expiresIn: response.expiresIn)
                 }
             }
-            .store(in: &cancellables)
+    }
+
+    private func drainGuestLoginWaiters() {
+        let waiters = guestLoginWaiters
+        guestLoginWaiters = []
+        waiters.forEach { $0() }
+    }
+
+    private func drainMergeCartWaiters() {
+        let waiters = mergeCartWaiters
+        mergeCartWaiters = []
+        waiters.forEach { $0() }
     }
 
     func mergeGuestCartThen(completion: @escaping () -> Void) {
@@ -97,18 +119,20 @@ final class GuestSessionManager {
             completion()
             return
         }
-        loginService.mergeGuestCart(guestToken: token)
+        mergeCartWaiters.append(completion)
+        guard mergeCartWaiters.count == 1 else { return }
+
+        mergeCartCancellable = loginService.mergeGuestCart(guestToken: token)
             .receive(on: DispatchQueue.main)
-            .sink { result in
+            .sink { [weak self] result in
                 if case .failure(let error) = result {
                     print("❌ [GuestSession] merge-guest-cart failed: \(error)")
                 }
                 UserDefaultManager.shared.clearGuestSession()
-                completion()
+                self?.drainMergeCartWaiters()
             } receiveValue: { response in
                 print("✅ [GuestSession] \(response.message ?? "Cart merged.")")
             }
-            .store(in: &cancellables)
     }
 }
 

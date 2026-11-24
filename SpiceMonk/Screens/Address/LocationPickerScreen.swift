@@ -28,6 +28,16 @@ struct LocationPickerScreen: View {
     @State private var searchResults: [PlaceSearchResult] = []
     @State private var isSearching: Bool = false
     @State private var showSearchResults: Bool = false
+    @State private var searchTask: Task<Void, Never>?
+    /// Bumped per keystroke; a detached geocoder callback compares against it before
+    /// writing, since cancelling the task cannot reach work already handed to CoreLocation.
+    @State private var searchGeneration = 0
+    /// One token spans a run of keystrokes plus the Details call they lead to, so Google bills the
+    /// whole thing as a single autocomplete session instead of one request per character.
+    @State private var placesSession = GMSAutocompleteSessionToken()
+
+    private static let minQueryLength = 3
+    private static let searchDebounce: Duration = .milliseconds(350)
 
     var initialCoordinate: CLLocationCoordinate2D? = nil
     let onLocationSelected: (ResolvedLocationInfo) -> Void
@@ -269,9 +279,14 @@ struct LocationPickerScreen: View {
         .padding(.horizontal, 20)
         .padding(.top, 20)
         .padding(.bottom, 28)
-        .background(Color.white)
-        .clipShape(RoundedCornerShape(radius: 24, corners: [.topLeft, .topRight]))
-        .shadow(color: Color.black.opacity(0.14), radius: 16, y: -4)
+        // The map ignores the safe area but this overlay doesn't, so without extending the fill the
+        // card stopped above the home indicator and the map showed through under it.
+        .background {
+            RoundedCornerShape(radius: 24, corners: [.topLeft, .topRight])
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.14), radius: 16, y: -4)
+                .ignoresSafeArea(edges: .bottom)
+        }
     }
 
     private var displayAreaTitle: String {
@@ -296,7 +311,7 @@ struct LocationPickerScreen: View {
 
     private var searchResultsList: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ForEach(searchResults) { result in
+            ForEach(visibleSearchResults) { result in
                 Button {
                     selectSearchResult(result)
                 } label: {
@@ -325,7 +340,7 @@ struct LocationPickerScreen: View {
                 }
                 .buttonStyle(.plain)
 
-                if result.id != searchResults.last?.id {
+                if result.id != visibleSearchResults.last?.id {
                     Divider()
                         .padding(.leading, 44)
                 }
@@ -334,7 +349,14 @@ struct LocationPickerScreen: View {
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(color: Color.black.opacity(0.18), radius: 12, x: 0, y: 4)
-        .frame(maxHeight: 240)
+    }
+
+    /// Places caps predictions at five; the geocoder fallback doesn't, and an uncapped list would
+    /// run down over the map. Capping the rows keeps the card hugging its content — a
+    /// `.frame(maxHeight:)` after the background can't, because that frame is greedy and left the
+    /// card floating in the middle of 240pt of empty space.
+    private var visibleSearchResults: [PlaceSearchResult] {
+        Array(searchResults.prefix(6))
     }
 
     // MARK: - Location & Geocoding Logic
@@ -388,45 +410,90 @@ struct LocationPickerScreen: View {
     }
 
     private func handleSearchQueryChange(_ query: String) {
+        // Cancelling first does double duty: it keeps a burst of keystrokes to one request, and it
+        // stops a slow earlier response from landing on top of a newer one.
+        searchTask?.cancel()
+        searchGeneration += 1
+        let generation = searchGeneration
+
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed.count >= 2 else {
+        guard trimmed.count >= Self.minQueryLength else {
             searchResults = []
             showSearchResults = false
+            isSearching = false
             return
         }
 
-        isSearching = true
         showSearchResults = true
+        searchTask = Task { @MainActor in
+            try? await Task.sleep(for: Self.searchDebounce)
+            guard !Task.isCancelled else { return }
 
-        let filter = GMSAutocompleteFilter()
-        filter.country = "IN"
+            isSearching = true
+            let predictions = await autocomplete(trimmed)
+            guard !Task.isCancelled else { return }
 
-        GMSPlacesClient.shared().findAutocompletePredictions(
-            fromQuery: trimmed,
-            filter: filter,
-            sessionToken: nil
-        ) { predictions, error in
-            Task { @MainActor in
-                self.isSearching = false
-                if let predictions = predictions, !predictions.isEmpty {
-                    self.searchResults = predictions.map {
-                        PlaceSearchResult(
-                            id: $0.placeID,
-                            title: $0.attributedPrimaryText.string,
-                            subtitle: $0.attributedSecondaryText?.string ?? ""
-                        )
-                    }
-                } else {
-                    searchWithAppleGeocoder(query: trimmed)
+            isSearching = false
+            if let predictions, !predictions.isEmpty {
+                searchResults = predictions.map {
+                    PlaceSearchResult(
+                        id: $0.placeID,
+                        title: $0.attributedPrimaryText.string,
+                        subtitle: $0.attributedSecondaryText?.string ?? ""
+                    )
                 }
+            } else {
+                searchWithAppleGeocoder(query: trimmed, generation: generation)
             }
         }
     }
 
-    private func searchWithAppleGeocoder(query: String) {
+    /// Biased to whatever the map is centred on, so "MG Road" offers the one nearby first.
+    private func autocomplete(_ query: String) async -> [GMSAutocompletePrediction]? {
+        let filter = GMSAutocompleteFilter()
+        filter.country = "IN"
+        filter.locationBias = GMSPlaceRectangularLocationOption(
+            CLLocationCoordinate2D(
+                latitude: centerCoordinate.latitude + 0.35,
+                longitude: centerCoordinate.longitude + 0.35
+            ),
+            CLLocationCoordinate2D(
+                latitude: centerCoordinate.latitude - 0.35,
+                longitude: centerCoordinate.longitude - 0.35
+            )
+        )
+
+        return await withCheckedContinuation { continuation in
+            GMSPlacesClient.shared().findAutocompletePredictions(
+                fromQuery: query,
+                filter: filter,
+                sessionToken: placesSession
+            ) { predictions, error in
+                if let error {
+                    print("📍 [Places Autocomplete] '\(query)' failed: \(error.localizedDescription)")
+                } else {
+                    print("📍 [Places Autocomplete] '\(query)' -> \(predictions?.count ?? 0) predictions")
+                }
+                continuation.resume(returning: predictions)
+            }
+        }
+    }
+
+    /// Fallback when Places returns nothing — including when the key isn't cleared for the Places
+    /// API, which fails every request. Hinted with the visible map region: unhinted, "Bandra" from
+    /// a map centred on Mumbai came back as a village in Rajasthan.
+    private func searchWithAppleGeocoder(query: String, generation: Int) {
         let geocoder = CLGeocoder()
-        geocoder.geocodeAddressString(query) { placemarks, _ in
+        let region = CLCircularRegion(
+            center: centerCoordinate,
+            radius: 60_000,
+            identifier: "search-bias"
+        )
+        geocoder.geocodeAddressString(query, in: region) { placemarks, _ in
             Task { @MainActor in
+                // A slower lookup for an abandoned prefix must not land on top of a newer one;
+                // cancelling the debounce task cannot reach a request already with CoreLocation.
+                guard generation == self.searchGeneration else { return }
                 guard let marks = placemarks else {
                     self.searchResults = []
                     return
@@ -442,14 +509,20 @@ struct LocationPickerScreen: View {
     }
 
     private func selectSearchResult(_ result: PlaceSearchResult) {
+        searchTask?.cancel()
         showSearchResults = false
         searchQuery = result.title
+
+        let session = placesSession
+        // A token is valid for exactly one Details call; reusing a spent one silently reverts the
+        // next search to per-request billing.
+        placesSession = GMSAutocompleteSessionToken()
 
         let fields: GMSPlaceField = [.coordinate, .formattedAddress, .addressComponents, .name]
         GMSPlacesClient.shared().fetchPlace(
             fromPlaceID: result.id,
             placeFields: fields,
-            sessionToken: nil
+            sessionToken: session
         ) { place, error in
             Task { @MainActor in
                 if let place = place {

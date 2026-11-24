@@ -82,7 +82,7 @@ struct SavedAddressesScreen: View {
         .onAppear {
             viewModel.load()
         }
-        .sheet(isPresented: $showLocationPicker) {
+        .fullScreenCover(isPresented: $showLocationPicker) {
             LocationPickerScreen { info in
                 pickedLocation = info
                 showLocationPicker = false

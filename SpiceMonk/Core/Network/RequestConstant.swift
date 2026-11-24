@@ -36,9 +36,37 @@ enum RequestMethodType: String {
     case delete = "DELETE"
 }
 
+/// Every value that differs between environments hangs off this enum, so switching is the single
+/// `currentEnvironment` line in `AppConstant.swift` and nothing else has to be remembered.
 enum RequestEnvironmentType {
     case stagging
     case production
+
+    var baseURL: String {
+        switch self {
+        case .stagging:
+            return "https://spicemonk.in/staging/api"
+        case .production:
+            return "https://spicemonk.in/965874/api"
+        }
+    }
+
+    /// Customer-facing policies page linked from the login screen.
+    var policiesURL: URL? {
+        URL(string: "\(webOrigin)/SpiceMonk_B2C_Policies_and_Terms.html")
+    }
+
+    /// Origin the gateway checkout page is loaded under. It has to track the API host, because the
+    /// payment keys are registered per domain — a production origin over a staging order is
+    /// exactly the mismatch the gateway rejects.
+    var webOrigin: String {
+        switch self {
+        case .stagging:
+            return "https://spicemonk.trudataa.com"
+        case .production:
+            return "https://spicemonk.in"
+        }
+    }
 }
 
 enum RequestError: Error {

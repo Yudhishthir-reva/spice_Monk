@@ -47,7 +47,7 @@ enum OrderOutcome: Identifiable, Equatable {
         case .cancelled(let data): return "cancelled-\(data.orderId)"
         case .placed(let data): return "placed-\(data.orderId)"
         case .paid(let data): return "paid-\(data.orderId)"
-        case .pending(let data): return "pending-\(data?.orderId ?? 0)"
+        case .pending(let data, let reason): return "pending-\(data?.orderId ?? 0)-\(reason ?? "")"
         case .failed(let data, let reason): return "failed-\(data?.orderId ?? 0)-\(reason ?? "")"
         }
     }
@@ -55,13 +55,13 @@ enum OrderOutcome: Identifiable, Equatable {
     case cancelled(orderData: OrderPlaceData)
     case placed(orderData: OrderPlaceData)
     case paid(orderData: OrderPlaceData)
-    case pending(orderData: OrderPlaceData? = nil)
+    case pending(orderData: OrderPlaceData? = nil, reason: String? = nil)
     case failed(orderData: OrderPlaceData? = nil, reason: String? = nil)
 
     var orderId: Int? {
         switch self {
         case .placed(let data), .paid(let data), .cancelled(let data): return data.orderId
-        case .pending(let data), .failed(let data, _): return data?.orderId
+        case .pending(let data, _), .failed(let data, _): return data?.orderId
         }
     }
 
@@ -99,7 +99,12 @@ enum OrderOutcome: Identifiable, Equatable {
             return "We've got your money and your order. The monks are packing your spices."
         case .placed:
             return "The monks are packing your spices."
-        case .pending:
+        case .pending(_, let reason):
+            // The resolver's wording is the money-safety message ("if money was deducted, it's
+            // safe"). It used to go to a toast behind this very cover and was never read.
+            if let reason, !reason.isEmpty {
+                return reason
+            }
             return "We are awaiting confirmation from the payment provider."
         case .failed(_, let reason):
             if let reason, !reason.isEmpty {
@@ -126,7 +131,7 @@ enum OrderOutcome: Identifiable, Equatable {
         switch self {
         case .placed(let data), .paid(let data), .cancelled(let data):
             return data.orderNo.isEmpty ? nil : data.orderNo
-        case .pending(let data), .failed(let data, _):
+        case .pending(let data, _), .failed(let data, _):
             return (data?.orderNo.isEmpty == false) ? data?.orderNo : nil
         }
     }
@@ -135,7 +140,7 @@ enum OrderOutcome: Identifiable, Equatable {
         switch self {
         case .placed(let data), .paid(let data), .cancelled(let data):
             return data.grandTotal > 0 ? data.grandTotal : nil
-        case .pending(let data), .failed(let data, _):
+        case .pending(let data, _), .failed(let data, _):
             if let total = data?.grandTotal, total > 0 {
                 return total
             }

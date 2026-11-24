@@ -22,8 +22,15 @@ struct VariantSelectorSheet: View {
 
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 12) {
-                    ForEach(product.variants) { variant in
-                        variantRow(variant)
+                    if product.variants.isEmpty {
+                        // The card opens this on `variants_count`, which the list endpoints send
+                        // independently of the `variants` array — a payload with the count but no
+                        // array would otherwise leave the user staring at a blank panel.
+                        emptyVariants
+                    } else {
+                        ForEach(product.variants) { variant in
+                            variantRow(variant)
+                        }
                     }
                 }
                 .padding(16)
@@ -32,6 +39,25 @@ struct VariantSelectorSheet: View {
         .background(Color.white)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+    }
+
+    private var emptyVariants: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "shippingbox")
+                .font(.appFont(size: 28))
+                .foregroundStyle(AppTheme.textMuted)
+
+            Text("Sizes unavailable right now")
+                .font(.appFont(size: 14, weight: .semibold))
+                .foregroundStyle(AppTheme.textPrimary)
+
+            Text("Open the product page to pick a size.")
+                .font(.appFont(size: 12))
+                .foregroundStyle(AppTheme.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 28)
     }
 
     private var header: some View {

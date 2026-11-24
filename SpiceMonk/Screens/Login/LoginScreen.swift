@@ -12,6 +12,7 @@ struct LoginScreen: View {
     @ObservedObject private var loginGate = LoginGate.shared
     @State private var didCheckAppStatus = false
     @State private var isSkipping = false
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         NavigationStack {
@@ -371,6 +372,17 @@ struct LoginScreen: View {
     // MARK: - Terms & Privacy Banner
 
     private var termsPillBanner: some View {
+        Button {
+            guard let url = currentEnvironment.policiesURL else { return }
+            openURL(url)
+        } label: {
+            termsPillContent
+        }
+        .buttonStyle(.plain)
+        .disabled(currentEnvironment.policiesURL == nil)
+    }
+
+    private var termsPillContent: some View {
         HStack(spacing: 8) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.appFont(size: 18, weight: .bold))

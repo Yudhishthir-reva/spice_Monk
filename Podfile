@@ -11,6 +11,8 @@ target 'SpiceMonk' do
   pod 'FirebaseCore'
   pod 'FirebaseMessaging'
   pod 'lottie-ios'
+  # Native checkout: the web checkout in a WKWebView cannot hand off to UPI apps.
+  pod 'razorpay-pod'
 end
 
 post_install do |installer|

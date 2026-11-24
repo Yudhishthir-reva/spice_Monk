@@ -75,15 +75,26 @@ class OrdersViewModel: ObservableObject {
                 self.isLoading = false
                 self.isRefreshing = false
 
-                self.currentPage = response.pagination.currentPage
+                // The cursor is ours, not the server's echo: a response without `current_page`
+                // decodes as 1 and would pin every further request to page 2 forever.
+                self.currentPage = page
                 self.lastPage = response.pagination.lastPage
-                self.hasMore = response.pagination.hasMore
 
+                var added = response.orders.count
                 if page == 1 {
                     self.orders = response.orders
                 } else {
-                    self.orders.append(contentsOf: response.orders)
+                    let existing = Set(self.orders.map(\.id))
+                    let fresh = response.orders.filter { !existing.contains($0.id) }
+                    added = fresh.count
+                    self.orders.append(contentsOf: fresh)
                 }
+
+                // A page that adds nothing new can never move the list again, so treating it as
+                // the end beats re-requesting it — and beats appending the same orders twice.
+                self.hasMore = response.pagination.hasMore
+                    && !response.orders.isEmpty
+                    && (page == 1 || added > 0)
 
                 self.loadError = self.orders.isEmpty ? "No orders found." : nil
             }

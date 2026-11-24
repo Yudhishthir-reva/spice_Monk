@@ -369,7 +369,33 @@ final class CartStore: ObservableObject {
         self.paymentMethod = PaymentMethod.preferredDefault
     }
 
-    /// Cancel unpaid prepaid order and reload the authoritative server cart.
+    /// Reloads the cart after a checkout the customer abandoned, and leaves the order alone.
+    ///
+    /// Deliberately does NOT cancel. The client cannot know that no money moved: the only check it
+    /// can make is a status call that races the gateway's webhook, so a cancel here can land on an
+    /// order the customer was already debited for. Android never cancels on any payment outcome
+    /// either — an unpaid order is simply left for the customer to pay or for the server to expire.
+    func refreshAfterAbandonedPayment(message: String? = nil) {
+        guard !isHandlingPrepaidCancel else { return }
+        isHandlingPrepaidCancel = true
+        isAwaitingPrepaidPayment = false
+
+        syncCartAfterPrepaidCancel { [weak self] in
+            guard let self else { return }
+            self.isHandlingPrepaidCancel = false
+            if let message, !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                self.toastMessage = message
+                self.isShowToastView = true
+            }
+        }
+    }
+
+    /// Cancels an order whose checkout never opened, and reloads the server cart.
+    ///
+    /// Only safe before a gateway session exists — `initiatePaymentFlow` failing means the customer
+    /// was never shown a payment screen, so nothing can have been charged. Once checkout has opened,
+    /// use `refreshAfterAbandonedPayment` instead: from that point on the client cannot tell
+    /// "unpaid" from "paid, webhook still in flight".
     func handlePrepaidPaymentCancelled(orderId: Int, message: String? = nil) {
         guard !isHandlingPrepaidCancel else { return }
         isHandlingPrepaidCancel = true

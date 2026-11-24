@@ -5,6 +5,8 @@
 
 import Foundation
 
+/// The only switch. Every per-environment value (API host, payment page origin) is derived from
+/// it on `RequestEnvironmentType`, so this line is the whole change.
 let currentEnvironment: RequestEnvironmentType = .production
 
 let kDateFormatterHHMMA: DateFormatter = {

@@ -23,29 +23,97 @@ struct CartScreen: View {
     @State private var navigateToOrderId: Int? = nil
     @State private var orderOutcome: OrderOutcome?
     @State private var prepaidInitiateData: PaymentInitiateData? = nil
+    @State private var checkoutStage: CheckoutStage? = nil
     @State private var pendingOrderPlaceData: OrderPlaceData? = nil
     @State private var didHandlePrepaidOutcome = false
-    @State private var pendingPaymentOutcome: OrderOutcome?
 
     init(addressViewModel: AddressViewModel = .shared) {
         self.addressViewModel = addressViewModel
     }
 
-    private func handlePrepaidSheetDismissed() {
-        defer {
-            orderOutcome = pendingPaymentOutcome
-            pendingPaymentOutcome = nil
-            didHandlePrepaidOutcome = false
-            pendingOrderPlaceData = nil
+    private func startCheckout(_ initiateData: PaymentInitiateData) {
+        // No presenter means the scene is mid-transition (Control Centre, a call banner, the app
+        // switcher). Returning silently here used to strand the order: no overlay, no outcome, and
+        // `isAwaitingPrepaidPayment` left true so every later cart load was refused.
+        guard let presenter = Self.topViewController() else {
+            prepaidInitiateData = nil
+            applyResolution(
+                .pending(message: "We couldn't open the payment screen. Your order is saved — open it from Orders to pay."),
+                initiateData: initiateData
+            )
+            return
         }
+
+        // Another mounted cart already owns this checkout; do not raise an overlay this instance
+        // could never clear, since only one of them can receive the SDK's callback.
+        let started = RazorpayCheckoutController.shared.open(
+            initiateData: initiateData,
+            description: "SpiceMonk order",
+            from: presenter
+        ) { outcome in
+            Task {
+                let resolution = await PaymentResolver.shared.resolve(
+                    orderId: initiateData.orderId,
+                    outcome: outcome,
+                    onStep: { step in
+                        Task { @MainActor in checkoutStage = CheckoutStage.from(step) }
+                    }
+                )
+                await MainActor.run {
+                    checkoutStage = nil
+                    prepaidInitiateData = nil
+                    applyResolution(resolution, initiateData: initiateData)
+                }
+            }
+        }
+
+        if started {
+            checkoutStage = .atGateway
+        } else {
+            prepaidInitiateData = nil
+        }
+    }
+
+    private func applyResolution(_ resolution: PaymentResolution, initiateData: PaymentInitiateData) {
         guard !didHandlePrepaidOutcome else { return }
         didHandlePrepaidOutcome = true
-        let orderId = pendingOrderPlaceData?.orderId ?? 0
-        if let data = pendingOrderPlaceData { pendingPaymentOutcome = .cancelled(orderData: data) }
-        cart.handlePrepaidPaymentCancelled(
-            orderId: orderId,
-            message: "Payment cancelled by user."
-        )
+
+        switch resolution {
+        case .paid:
+            cart.clearCartAfterPrepaidSuccess()
+            if let placeData = pendingOrderPlaceData {
+                orderOutcome = .paid(orderData: placeData)
+            }
+        case .pending(let message):
+            // Money may have moved and the order stands — do not touch it, just report.
+            // The message rides on the outcome itself: as a toast it rendered behind the
+            // full-screen cover raised in the same update and expired unseen.
+            cart.clearCartAfterPrepaidSuccess()
+            orderOutcome = .pending(orderData: pendingOrderPlaceData, reason: message)
+        case .cancelled(let message):
+            // Report it, but never cancel the order: `quickCheck` races the gateway's webhook, so
+            // "not paid yet" can simply mean "we asked too early".
+            if let data = pendingOrderPlaceData {
+                orderOutcome = .cancelled(orderData: data)
+            }
+            cart.refreshAfterAbandonedPayment(message: message)
+        case .failed(let message):
+            orderOutcome = .failed(orderData: pendingOrderPlaceData, reason: message)
+            cart.refreshAfterAbandonedPayment(message: message)
+        }
+        pendingOrderPlaceData = nil
+    }
+
+    /// The SDK presents its own screen, so it needs a live controller to present from.
+    private static func topViewController() -> UIViewController? {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let scene = scenes.first { $0.activationState == .foregroundActive }
+            ?? scenes.first { $0.activationState == .foregroundInactive }
+            ?? scenes.first
+        var top = scene?.windows.first(where: \.isKeyWindow)?.rootViewController
+            ?? scene?.windows.first?.rootViewController
+        while let presented = top?.presentedViewController { top = presented }
+        return top
     }
 
     private var itemCount: Int {
@@ -172,35 +240,16 @@ struct CartScreen: View {
                 prepaidInitiateData = initiateData
             }
         }
-        .sheet(item: $prepaidInitiateData, onDismiss: {
-            handlePrepaidSheetDismissed()
-        }) { initiateData in
-            PaymentSimulationSheet(
-                initiateData: initiateData,
-                onSuccess: {
-                    guard !didHandlePrepaidOutcome else { return }
-                    didHandlePrepaidOutcome = true
-                    cart.clearCartAfterPrepaidSuccess()
-                    if let placeData = pendingOrderPlaceData {
-                        pendingPaymentOutcome = .paid(orderData: placeData)
-                    }
-                    pendingOrderPlaceData = nil
-                },
-                onFailure: { message in
-                    guard !didHandlePrepaidOutcome else { return }
-                    didHandlePrepaidOutcome = true
-                    pendingPaymentOutcome = .failed(orderData: pendingOrderPlaceData, reason: message)
-                    cart.handlePrepaidPaymentCancelled(orderId: initiateData.orderId)
-                },
-                onCancel: {
-                    guard !didHandlePrepaidOutcome else { return }
-                    didHandlePrepaidOutcome = true
-                    if let data = pendingOrderPlaceData {
-                        pendingPaymentOutcome = .cancelled(orderData: data)
-                    }
-                    cart.handlePrepaidPaymentCancelled(orderId: initiateData.orderId)
-                }
-            )
+        .onChange(of: prepaidInitiateData?.orderId) { _, orderId in
+            guard orderId != nil, let data = prepaidInitiateData else { return }
+            startCheckout(data)
+        }
+        .overlay {
+            // An overlay rather than a sheet: the SDK presents its own screen, and stacking a
+            // second presentation under it flashed an empty dark sheet on every checkout.
+            if let checkoutStage {
+                PaymentProgressOverlay(stage: checkoutStage)
+            }
         }
         .alert("Clear Cart?", isPresented: $isConfirmingClear) {
             Button("Clear", role: .destructive) { cart.clear() }

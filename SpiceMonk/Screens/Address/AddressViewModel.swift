@@ -20,10 +20,14 @@ class AddressViewModel: ObservableObject {
     @Published private(set) var didAttemptLoad = false
     @Published private(set) var deviceLocation: ResolvedLocationInfo?
     @Published private(set) var isResolvingDevice = false
+    @Published private(set) var isSearchingPin = false
+    @Published private(set) var pinResult: PincodeLocation?
+    @Published private(set) var pinError: String?
     @Published var isShowToastView = false
     @Published var toastMessage = ""
 
     private var cancellables = Set<AnyCancellable>()
+    private var pinCancellable: AnyCancellable?
     var serviceManagable = AddressServiceManager()
 
     /// The address the header speaks for. The backend flags one as default; if it ever sends a list
@@ -180,5 +184,71 @@ class AddressViewModel: ObservableObject {
                 self.deviceLocation = info
             }
         }
+    }
+
+    // MARK: - Location search
+
+    static let pinCodeLength = 6
+
+    static func isPinCode(_ query: String) -> Bool {
+        query.count == pinCodeLength && query.allSatisfy(\.isNumber)
+    }
+
+    /// Caps a numeric query at six digits so it stays something the PIN lookup can accept.
+    ///
+    /// Anything non-numeric is returned untouched: trimming here ran on every keystroke, so the
+    /// space in "MG Road" was deleted as fast as it was typed and multi-word search was impossible.
+    /// Trimming belongs at the point of comparison, not in the text field's own binding.
+    static func normalizedLocationQuery(_ raw: String) -> String {
+        let candidate = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !candidate.isEmpty, candidate.allSatisfy(\.isNumber) else { return raw }
+        return String(candidate.prefix(pinCodeLength))
+    }
+
+    /// Fires only on a complete PIN, so there is nothing to debounce — one query, one request.
+    /// Anything shorter just clears the verdict and leaves the field filtering saved addresses.
+    func searchLocation(query: String) {
+        guard Self.isPinCode(query) else {
+            pinCancellable?.cancel()
+            isSearchingPin = false
+            pinResult = nil
+            pinError = nil
+            return
+        }
+
+        isSearchingPin = true
+        pinResult = nil
+        pinError = nil
+
+        pinCancellable = serviceManagable.lookupPincode(query)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] completion in
+                guard let self else { return }
+                self.isSearchingPin = false
+                if case .failure(let error) = completion {
+                    self.pinResult = nil
+                    self.pinError = (error as? RequestError)?.errorString
+                        ?? "We don't deliver to \(query) yet"
+                }
+            } receiveValue: { [weak self] response in
+                guard let self else { return }
+                self.isSearchingPin = false
+                if response.status == true, let location = response.location, location.isUsable {
+                    self.pinResult = location
+                    self.pinError = nil
+                } else {
+                    self.pinResult = nil
+                    self.pinError = response.message?.isEmptyString == false
+                        ? response.message
+                        : "We don't deliver to \(query) yet"
+                }
+            }
+    }
+
+    func clearLocationSearch() {
+        pinCancellable?.cancel()
+        isSearchingPin = false
+        pinResult = nil
+        pinError = nil
     }
 }

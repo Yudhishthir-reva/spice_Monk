@@ -4,6 +4,8 @@
 //
 
 import SwiftUI
+import ImageIO
+import UniformTypeIdentifiers
 
 /// Downloads are owned here rather than by the views that display them. A paged `TabView` or a lazy
 /// row recycles its children constantly, and a download tied to a child dies with it — which is why
@@ -16,8 +18,11 @@ private nonisolated final class DecodedImageCache: @unchecked Sendable {
 
     private let storage = NSCache<NSURL, UIImage>()
 
-    init(countLimit: Int) {
+    init(countLimit: Int, totalCostLimit: Int) {
         storage.countLimit = countLimit
+        // A count limit alone bounds nothing that matters: 200 full-size product shots is hundreds
+        // of megabytes. Costing each entry by its real bitmap size is what keeps memory in check.
+        storage.totalCostLimit = totalCostLimit
     }
 
     func image(for url: URL) -> UIImage? {
@@ -25,7 +30,8 @@ private nonisolated final class DecodedImageCache: @unchecked Sendable {
     }
 
     func insert(_ image: UIImage, for url: URL) {
-        storage.setObject(image, forKey: url as NSURL)
+        let cost = image.cgImage.map { $0.bytesPerRow * $0.height } ?? 0
+        storage.setObject(image, forKey: url as NSURL, cost: cost)
     }
 }
 
@@ -33,13 +39,36 @@ actor ImageLoader {
 
     static let shared = ImageLoader()
 
-    private nonisolated let cache = DecodedImageCache(countLimit: 200)
+    private nonisolated let cache = DecodedImageCache(countLimit: 200, totalCostLimit: 96 * 1024 * 1024)
     private var inFlight: [URL: Task<UIImage, Error>] = [:]
 
     private init() {}
 
     nonisolated func cached(_ url: URL) -> UIImage? {
         cache.image(for: url)
+    }
+
+    /// Decodes straight to a size the screen can actually use. `UIImage(data:)` keeps the source
+    /// resolution, so a 2000px product shot drawn into a 150pt tile made Core Animation rescale a
+    /// huge bitmap on every frame of a scroll — the stutter customers were reporting.
+    private static func decode(_ data: Data, maxPixelSize: CGFloat = 1_200) -> UIImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, [
+            kCGImageSourceShouldCache: false
+        ] as CFDictionary) else { return nil }
+
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            // Decoding here keeps the work on this background task instead of the first frame
+            // that draws the image.
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize
+        ]
+
+        guard let thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+            return UIImage(data: data)
+        }
+        return UIImage(cgImage: thumbnail)
     }
 
     func image(for url: URL) async throws -> UIImage {
@@ -57,7 +86,7 @@ actor ImageLoader {
             guard
                 let http = response as? HTTPURLResponse,
                 (200..<300).contains(http.statusCode),
-                let image = UIImage(data: data)
+                let image = Self.decode(data)
             else {
                 throw URLError(.cannotDecodeContentData)
             }
